@@ -30,6 +30,7 @@ export async function syncPageChunks(
     content: chunk.content,
     token_count: chunk.tokenCount,
     embedding: JSON.stringify(embeddings[i]),
+    content_hash: page.content_hash,
   }));
 
   const { error } = await adminClient
@@ -57,20 +58,23 @@ export async function syncAllPages(
     return { pagesProcessed: 0, chunksCreated: 0 };
   }
 
-  // Find pages that already have chunks
+  // Find pages that already have chunks, with the content_hash they were generated from
   const { data: existingChunks } = await adminClient
     .from("knowledge_base_chunks")
-    .select("page_id")
+    .select("page_id, content_hash")
     .eq("org_id", orgId);
 
-  const pagesWithChunks = new Set(
-    (existingChunks ?? []).map((c: { page_id: string }) => c.page_id)
-  );
+  const chunkedPageHashes = new Map<string, string | null>();
+  for (const c of existingChunks ?? []) {
+    chunkedPageHashes.set(c.page_id, c.content_hash);
+  }
 
-  // Only process pages without chunks
-  const pagesToProcess = pages.filter(
-    (p: KnowledgeBasePage) => !pagesWithChunks.has(p.id)
-  );
+  // Process pages that have no chunks or whose content has changed
+  const pagesToProcess = pages.filter((p: KnowledgeBasePage) => {
+    const existingHash = chunkedPageHashes.get(p.id);
+    if (existingHash === undefined) return true; // no chunks yet
+    return existingHash !== p.content_hash; // content changed
+  });
 
   let totalChunks = 0;
   for (const page of pagesToProcess) {

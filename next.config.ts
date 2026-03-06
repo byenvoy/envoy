@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["jsdom"],
+  serverExternalPackages: ["jsdom", "puppeteer"],
 };
 
 export default nextConfig;

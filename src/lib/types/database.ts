@@ -32,5 +32,6 @@ export interface KnowledgeBaseChunk {
   content: string;
   token_count: number;
   embedding: number[] | null;
+  content_hash: string | null;
   created_at: string;
 }
