@@ -32,7 +32,11 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute = path.startsWith("/login") || path.startsWith("/signup");
   const isDashboardRoute =
-    path.startsWith("/onboarding") || path.startsWith("/knowledge-base");
+    path.startsWith("/onboarding") ||
+    path.startsWith("/knowledge-base") ||
+    path.startsWith("/inbox") ||
+    path.startsWith("/playground") ||
+    path.startsWith("/settings");
 
   if (!user && isDashboardRoute) {
     const url = request.nextUrl.clone();

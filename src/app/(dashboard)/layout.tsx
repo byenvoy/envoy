@@ -28,6 +28,12 @@ export default async function DashboardLayout({
               Envoyer
             </Link>
             <Link
+              href="/inbox"
+              className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Inbox
+            </Link>
+            <Link
               href="/knowledge-base"
               className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
             >
@@ -38,6 +44,12 @@ export default async function DashboardLayout({
               className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
             >
               Playground
+            </Link>
+            <Link
+              href="/settings"
+              className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Settings
             </Link>
           </div>
           <form action="/api/auth/signout" method="post">

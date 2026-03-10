@@ -1,7 +1,13 @@
+interface ConversationMessage {
+  role: "customer" | "agent";
+  content: string;
+}
+
 interface PromptInput {
   companyName: string;
   chunks: { content: string; sourceUrl?: string }[];
   customerMessage: string;
+  conversationHistory?: ConversationMessage[];
 }
 
 interface PromptOutput {
@@ -9,7 +15,7 @@ interface PromptOutput {
   user: string;
 }
 
-export function buildDraftPrompt({ companyName, chunks, customerMessage }: PromptInput): PromptOutput {
+export function buildDraftPrompt({ companyName, chunks, customerMessage, conversationHistory }: PromptInput): PromptOutput {
   const system = `You are a customer support agent for ${companyName}. Your job is to draft helpful, concise, and professional email replies to customer inquiries.
 
 Rules:
@@ -26,11 +32,25 @@ Rules:
     })
     .join("\n\n");
 
+  const historySection =
+    conversationHistory && conversationHistory.length > 0
+      ? `## Conversation History
+
+${conversationHistory
+  .map(
+    (msg) =>
+      `[${msg.role === "customer" ? "Customer" : "Agent"}]: ${msg.content}`
+  )
+  .join("\n\n")}
+
+`
+      : "";
+
   const user = `## Knowledge Base Context
 
 ${contextSection}
 
-## Customer Email
+${historySection}## Customer Email
 
 ${customerMessage}
 

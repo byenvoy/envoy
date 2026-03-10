@@ -16,7 +16,7 @@ A Ghost-like, self-hosted customer support platform with a human-in-the-loop RAG
 | Vector Store | Supabase pgvector | Keeps vectors in the same database, avoids a separate Pinecone dependency |
 | Embeddings | OpenAI `text-embedding-3-small` | $0.02 per 1M tokens, strong retrieval performance, 1536 dimensions. Cost is negligible even during development (embedding a few hundred documents costs fractions of a penny). Using one embedding model from development through production avoids vector space compatibility issues. Embedding model is an infrastructure decision, not user-facing. Fixed for the hosted version; configurable via environment variable for self-hosted but defaults to OpenAI. |
 | LLM | Anthropic Claude Haiku (default), swappable in Phase 5 | Strong instruction-following and grounding in provided context. Deep familiarity with Claude's prompting behavior accelerates iteration on draft quality. Cost-efficient for high-volume drafting. LLM call abstracted behind a provider interface from Phase 1 so swapping models is trivial. |
-| Email Infrastructure | Inbound.new or Resend Inbound | Handles receiving, parsing, threading, and sending emails programmatically |
+| Email Infrastructure | Gmail/Outlook OAuth (IMAP/SMTP), Inbound.new as fallback | OAuth for zero-friction onboarding with Gmail/Microsoft; IMAP for receiving, SMTP for sending through the user's own account. Inbound.new retained as webhook-based fallback for non-Gmail/Outlook users. |
 | Web Scraping / Markdown Extraction | Mozilla Readability + Turndown | Readability isolates main content (strips nav, headers, footers, ads), then Turndown converts clean HTML to markdown. Fully local, no external API keys, works for self-hosted without dependencies. Jina Reader available as an optional fallback for sites with aggressive bot detection (requires user-provided API key). |
 | RAG Framework | None (custom pipeline) | The RAG pipeline is four operations: chunk text, call embedding API, query pgvector, construct prompt. Does not justify a framework dependency. LlamaIndex can be reconsidered if integration count grows to the point where dynamic tool routing is needed. |
 | Deployment | Render/Railway/Fly.io (hosted) / Docker Compose (self-hosted) | Significantly cheaper than Vercel at scale. All support Docker containers natively. Self-hosted version ships the same Docker image alongside Supabase's Docker Compose. |
@@ -221,6 +221,64 @@ create table draft_replies (
 
 ---
 
+### Phase 3.5: Replace Inbound.new with Gmail/Outlook OAuth
+
+**Goal:** Replace the webhook-based email integration (Inbound.new) with direct OAuth connections to Gmail and Microsoft, eliminating DNS configuration and enabling zero-friction onboarding. Users click "Connect with Google" or "Connect with Microsoft" and Envoyer reads from and sends through their existing email account.
+
+**Why:** DNS configuration (MX records, domain verification, email forwarding) is the primary onboarding friction. OAuth lets users connect their existing `support@company.com` inbox with a single click. Replies are sent through the user's own mail server, so they come from their real address with no domain setup. The user's existing inbox (Gmail/Outlook) continues to work alongside Envoyer — Envoyer is just another client reading the same mailbox. This is the approach used by Front and Freshdesk.
+
+**Features:**
+- "Connect with Google" and "Connect with Microsoft" OAuth flows in Settings
+- IMAP polling via cron-triggered API route (every 2 minutes) to check for new emails
+- New emails processed through the existing RAG pipeline (reuse `generateDraftForTicket()`)
+- Approved replies sent via SMTP through the user's own account using OAuth tokens
+- Encrypted token storage (AES-256-GCM at application layer)
+- Connection health monitoring (token refresh, error tracking, auto-deactivation after repeated failures)
+- Inbound.new retained as fallback for users not on Gmail/Outlook
+- Settings UI updated with connection method picker: "Connect your email" (OAuth) vs "Webhook" (Inbound.new)
+
+**Technical details:**
+- Google OAuth scopes: `https://mail.google.com/` (or Gmail API with `gmail.readonly` + `gmail.send`)
+- Microsoft OAuth scopes: `IMAP.AccessAsUser.All`, `SMTP.Send`, `offline_access`
+- NPM packages: `imapflow` (IMAP client), `nodemailer` (SMTP sending), `mailparser` (email parsing)
+- Cron-triggered polling route (`/api/email/poll`) with Postgres advisory locks to prevent concurrent runs
+- New `email_connections` table for OAuth tokens, IMAP/SMTP config, and polling state
+- `tickets.source` column to branch approve route between SMTP (OAuth) and Inbound.new
+- `sendReply()` abstraction that checks ticket source and sends via the appropriate method
+- OAuth buttons hidden when Google/Microsoft client IDs are not configured (self-hosted compatibility)
+
+**Database additions:**
+
+```sql
+create table email_connections (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid references organizations(id),
+  email_address_id uuid references email_addresses(id),
+  provider text not null, -- 'google', 'microsoft'
+  access_token_encrypted text not null,
+  refresh_token_encrypted text not null,
+  token_expires_at timestamptz not null,
+  imap_host text not null,
+  imap_port integer not null default 993,
+  smtp_host text not null,
+  smtp_port integer not null default 587,
+  last_polled_at timestamptz,
+  last_polled_uid text,
+  last_error text,
+  error_count integer not null default 0,
+  is_active boolean default true,
+  created_at timestamptz default now()
+);
+```
+
+**Environment variables:**
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`
+- `ENCRYPTION_KEY` (32-byte hex string for AES-256-GCM)
+- `CRON_SECRET` (shared secret for authenticating the poll endpoint)
+
+---
+
 ### Phase 4: Shopify Integration
 
 **Goal:** Pull customer order data to enrich RAG responses with account-specific context.
@@ -285,7 +343,7 @@ create table integrations (
 - CLI or setup wizard for initial configuration
 - MIT or similar permissive license
 - README with quickstart guide
-- Users bring their own OpenAI/Anthropic API keys and Inbound.new account
+- Users bring their own OpenAI/Anthropic API keys and Google/Microsoft OAuth credentials (or Inbound.new account as fallback)
 
 **Hosted version (paid):**
 - Multi-tenant deployment on Render/Railway/Fly.io + Supabase
@@ -308,7 +366,8 @@ create table integrations (
 | Low draft approval rate makes the product feel useless | Track approval rates from Phase 3. Invest in prompt tuning, chunk quality, and re-ranking before adding features. |
 | Embedding drift when knowledge base changes frequently | Hash-based sync in Phase 2 ensures vectors stay current. Add monitoring for sync failures. |
 | Shopify/Stripe API rate limits | Cache customer data with short TTLs (5-10 min). Batch lookups where possible. |
-| Email threading breaks | Lean on Inbound.new's native threading. Store thread_id and always include context. |
+| Email threading breaks | Store thread_id and always include context. IMAP preserves In-Reply-To/References headers; SMTP replies include proper threading headers via nodemailer. |
+| OAuth token expiry/revocation | Auto-refresh tokens before expiry. After 3 consecutive refresh failures, deactivate connection and surface reconnection prompt in Settings UI. |
 | Self-hosted users struggle with setup | Invest in Docker Compose reliability and a setup wizard. Minimize required external services. |
 | LLM hallucinations in customer-facing responses | The human-in-the-loop approval step is the primary safeguard. Add confidence scoring in later phases. |
 

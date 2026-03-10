@@ -23,11 +23,13 @@ export async function retrieveAndDraft({
   orgId,
   companyName,
   customerMessage,
+  conversationHistory,
 }: {
   supabase: SupabaseClient;
   orgId: string;
   companyName: string;
   customerMessage: string;
+  conversationHistory?: { role: "customer" | "agent"; content: string }[];
 }): Promise<RetrieveResult> {
   // Embed the customer message
   const queryEmbedding = await embedText(customerMessage);
@@ -69,6 +71,7 @@ export async function retrieveAndDraft({
       sourceUrl: c.source_url,
     })),
     customerMessage,
+    conversationHistory,
   });
 
   const llm = createLLMProvider();
