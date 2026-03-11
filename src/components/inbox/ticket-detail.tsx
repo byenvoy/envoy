@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { StatusBadge } from "./status-badge";
 import { ThreadView, type ThreadMessage } from "./thread-view";
 import type { Ticket, DraftReply } from "@/lib/types/database";
+import type { ShopifyCustomerContext, ShopifyOrder } from "@/lib/types/shopify";
 
 interface TicketDetailProps {
   ticket: Ticket;
@@ -20,6 +21,7 @@ export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProp
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [customerContextOpen, setCustomerContextOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function handleAction(action: "approve" | "discard" | "regenerate") {
@@ -81,6 +83,7 @@ export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProp
 
   const isSentOrDiscarded = ticket.status === "sent" || ticket.status === "discarded";
   const chunks = draft?.chunks_used ?? [];
+  const customerContext = draft?.customer_context as ShopifyCustomerContext | null;
 
   return (
     <div className="space-y-6">
@@ -227,6 +230,87 @@ export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProp
                       </p>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Customer Context (Shopify) */}
+          {customerContext && (customerContext.customer || customerContext.recent_orders?.length > 0 || customerContext.active_returns?.length > 0) && (
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <button
+                onClick={() => setCustomerContextOpen(!customerContextOpen)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-zinc-900 dark:text-zinc-50"
+              >
+                <span>Customer Context</span>
+                <span className="text-zinc-400">{customerContextOpen ? "−" : "+"}</span>
+              </button>
+              {customerContextOpen && (
+                <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                  {customerContext.customer && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Customer</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-50">
+                        {[customerContext.customer.first_name, customerContext.customer.last_name].filter(Boolean).join(" ") || "Unknown"}
+                      </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        {customerContext.customer.email}
+                      </p>
+                      <div className="mt-1 flex gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                        <span>Orders: {customerContext.customer.orders_count}</span>
+                        <span>Total spent: ${customerContext.customer.total_spent}</span>
+                        <span>Since: {new Date(customerContext.customer.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {customerContext.recent_orders?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Recent Orders</p>
+                      {customerContext.recent_orders.map((order: ShopifyOrder) => (
+                        <div key={order.id} className="mb-2 rounded border border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50">{order.name}</span>
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="mt-0.5 flex gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            <span>{order.financial_status}</span>
+                            <span>{order.fulfillment_status ?? "Unfulfilled"}</span>
+                            <span>{order.total_price} {order.currency}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                            {order.line_items.map((li) => `${li.title}${li.variant_title ? ` (${li.variant_title})` : ""} x${li.quantity}`).join(", ")}
+                          </p>
+                          {order.fulfillments.map((f, fi) =>
+                            f.tracking_number ? (
+                              <p key={fi} className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                Tracking: {f.tracking_url ? (
+                                  <a href={f.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">
+                                    {f.tracking_number}
+                                  </a>
+                                ) : f.tracking_number}
+                                {f.estimated_delivery_at && ` — Est. delivery: ${new Date(f.estimated_delivery_at).toLocaleDateString()}`}
+                              </p>
+                            ) : null
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {customerContext.active_returns?.length > 0 && (
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Returns</p>
+                      {customerContext.active_returns.map((ret) => (
+                        <div key={ret.id} className="flex items-center justify-between rounded border border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                          <span className="text-xs text-zinc-900 dark:text-zinc-50">{ret.name}</span>
+                          <span className="text-xs text-zinc-500 dark:text-zinc-400">{ret.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
