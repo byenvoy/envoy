@@ -59,6 +59,7 @@ export async function generateDraftForTicket(ticketId: string): Promise<void> {
     orgId: ticket.org_id,
     companyName,
     customerMessage,
+    customerEmail: ticket.from_email,
     conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
   });
 
@@ -74,6 +75,8 @@ export async function generateDraftForTicket(ticketId: string): Promise<void> {
       similarity: c.similarity,
       source_url: c.source_url,
     })),
+    customer_context: result.customerContext ?? null,
+    classification_result: result.classification ?? null,
   });
 
   if (draftError) throw draftError;

@@ -42,7 +42,29 @@ export interface EmailAddress {
   email_address: string;
   display_name: string | null;
   is_active: boolean;
+  connection_type: "webhook" | "oauth";
   created_at: string;
+}
+
+export interface EmailConnection {
+  id: string;
+  org_id: string;
+  provider: "google" | "microsoft";
+  email_address: string;
+  display_name: string | null;
+  access_token_encrypted: string;
+  refresh_token_encrypted: string;
+  token_expires_at: string;
+  imap_host: string;
+  imap_port: number;
+  smtp_host: string;
+  smtp_port: number;
+  last_polled_at: string | null;
+  last_uid: string | null;
+  status: "active" | "error" | "revoked";
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export type TicketStatus = "new" | "draft_generated" | "approved" | "sent" | "discarded";
@@ -60,6 +82,8 @@ export interface Ticket {
   in_reply_to: string | null;
   thread_id: string | null;
   inbound_email_id: string | null;
+  source: "webhook" | "imap";
+  connection_id: string | null;
   status: TicketStatus;
   created_at: string;
 }
@@ -73,5 +97,22 @@ export interface DraftReply {
   was_approved: boolean | null;
   model_used: string | null;
   chunks_used: { id: string; content: string; similarity: number; source_url?: string }[] | null;
+  customer_context: Record<string, unknown> | null;
+  classification_result: Record<string, unknown> | null;
   created_at: string;
+}
+
+export interface ShopifyConfig {
+  shop_domain: string;
+}
+
+export interface Integration {
+  id: string;
+  org_id: string;
+  provider: "shopify";
+  access_token_encrypted: string;
+  config: ShopifyConfig;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }

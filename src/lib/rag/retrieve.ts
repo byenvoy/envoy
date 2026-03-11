@@ -2,6 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { embedText } from "./embeddings";
 import { buildDraftPrompt } from "./prompt";
 import { createLLMProvider } from "./llm";
+import { classifyTicket } from "./classify";
+import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
+import type { ShopifyCustomerContext, ClassificationResult } from "@/lib/types/shopify";
 
 interface MatchedChunk {
   id: string;
@@ -13,28 +16,20 @@ interface MatchedChunk {
   source_url?: string;
 }
 
-interface RetrieveResult {
+export interface RetrieveResult {
   draft: string;
   chunks: MatchedChunk[];
+  customerContext: ShopifyCustomerContext | null;
+  classification: ClassificationResult | null;
 }
 
-export async function retrieveAndDraft({
-  supabase,
-  orgId,
-  companyName,
-  customerMessage,
-  conversationHistory,
-}: {
-  supabase: SupabaseClient;
-  orgId: string;
-  companyName: string;
-  customerMessage: string;
-  conversationHistory?: { role: "customer" | "agent"; content: string }[];
-}): Promise<RetrieveResult> {
-  // Embed the customer message
+async function doVectorSearch(
+  supabase: SupabaseClient,
+  orgId: string,
+  customerMessage: string
+): Promise<MatchedChunk[]> {
   const queryEmbedding = await embedText(customerMessage);
 
-  // Vector search for relevant chunks
   const { data: matches, error } = await supabase.rpc("match_chunks", {
     query_embedding: JSON.stringify(queryEmbedding),
     filter_org_id: orgId,
@@ -46,7 +41,6 @@ export async function retrieveAndDraft({
 
   const chunks: MatchedChunk[] = matches ?? [];
 
-  // Fetch source URLs for matched chunks
   if (chunks.length > 0) {
     const pageIds = [...new Set(chunks.map((c) => c.page_id))];
     const { data: pages } = await supabase
@@ -63,6 +57,48 @@ export async function retrieveAndDraft({
     }
   }
 
+  return chunks;
+}
+
+export async function retrieveAndDraft({
+  supabase,
+  orgId,
+  companyName,
+  customerMessage,
+  customerEmail,
+  conversationHistory,
+}: {
+  supabase: SupabaseClient;
+  orgId: string;
+  companyName: string;
+  customerMessage: string;
+  customerEmail?: string;
+  conversationHistory?: { role: "customer" | "agent"; content: string }[];
+}): Promise<RetrieveResult> {
+  // Check if Shopify is connected
+  const shopifyClient = await createShopifyClient(orgId);
+  const hasShopify = !!shopifyClient;
+
+  // Classify the ticket
+  const classification = await classifyTicket({
+    customerMessage,
+    customerEmail,
+    hasShopifyIntegration: hasShopify,
+  });
+
+  // Execute vector search and Shopify fetch in parallel
+  const [chunks, customerContext] = await Promise.all([
+    doVectorSearch(supabase, orgId, customerMessage),
+    classification.needs_customer_data && customerEmail && shopifyClient
+      ? shopifyClient
+          .getCustomerContext(customerEmail, classification.order_identifier)
+          .catch((err) => {
+            console.error("Shopify fetch failed, continuing with KB-only:", err);
+            return null;
+          })
+      : Promise.resolve(null),
+  ]);
+
   // Build prompt and generate draft
   const { system, user } = buildDraftPrompt({
     companyName,
@@ -72,10 +108,11 @@ export async function retrieveAndDraft({
     })),
     customerMessage,
     conversationHistory,
+    customerContext,
   });
 
   const llm = createLLMProvider();
   const draft = await llm.generateDraft(system, user);
 
-  return { draft, chunks };
+  return { draft, chunks, customerContext, classification };
 }
