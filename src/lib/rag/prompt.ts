@@ -11,12 +11,25 @@ interface PromptInput {
   customerMessage: string;
   conversationHistory?: ConversationMessage[];
   customerContext?: ShopifyCustomerContext | null;
+  tone?: string;
+  customInstructions?: string | null;
 }
 
 interface PromptOutput {
   system: string;
   user: string;
 }
+
+const TONE_DESCRIPTIONS: Record<string, string> = {
+  professional:
+    "Write in a professional, polished tone. Use clear and precise language. Be courteous but not overly familiar. Avoid slang, contractions, and casual phrasing.",
+  casual:
+    "Write in a casual, conversational tone. Use contractions freely, keep sentences short, and sound approachable — like a helpful colleague, not a corporate representative.",
+  technical:
+    "Write in a technical, detail-oriented tone. Be precise with terminology, include specifics where relevant, and assume the reader is comfortable with technical language. Stay clear but don't oversimplify.",
+  friendly:
+    "Write in a warm, friendly tone. Be empathetic and personable. Use the customer's name when available. Show genuine care about their issue while staying helpful and solution-focused.",
+};
 
 function formatCustomerContext(ctx: ShopifyCustomerContext): string {
   const lines: string[] = [];
@@ -73,7 +86,7 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
   return lines.join("\n");
 }
 
-export function buildDraftPrompt({ companyName, chunks, customerMessage, conversationHistory, customerContext }: PromptInput): PromptOutput {
+export function buildDraftPrompt({ companyName, chunks, customerMessage, conversationHistory, customerContext, tone, customInstructions }: PromptInput): PromptOutput {
   const hasCustomerContext = customerContext && (customerContext.customer || customerContext.recent_orders.length > 0);
 
   const customerDataRules = hasCustomerContext
@@ -87,9 +100,9 @@ export function buildDraftPrompt({ companyName, chunks, customerMessage, convers
 Rules:
 - Only use information from the provided knowledge base context${hasCustomerContext ? " and customer context" : ""} to answer questions.
 - If the knowledge base does not contain enough information to answer the question, say so honestly and suggest the customer contact support directly for further help.
-- Write in a friendly, professional tone.
+- ${TONE_DESCRIPTIONS[tone ?? "professional"] ?? `Write in a ${tone} tone.`}
 - Output only the email body text — no subject line, no greeting preamble like "Dear Customer", just the helpful response content ready to send.
-- Keep responses concise and to the point.${customerDataRules}`;
+- Keep responses concise and to the point.${customerDataRules}${customInstructions ? `\n\nAdditional instructions:\n${customInstructions}` : ""}`;
 
   const contextSection = chunks
     .map((chunk, i) => {

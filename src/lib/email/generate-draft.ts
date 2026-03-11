@@ -68,7 +68,7 @@ export async function generateDraftForTicket(ticketId: string): Promise<void> {
     ticket_id: ticketId,
     org_id: ticket.org_id,
     draft_content: result.draft,
-    model_used: "claude-haiku-4-5-20251001",
+    model_used: result.model,
     chunks_used: result.chunks.map((c) => ({
       id: c.id,
       content: c.content,

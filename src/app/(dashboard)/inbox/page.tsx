@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { TicketList } from "@/components/inbox/ticket-list";
+import { InboxFilters } from "@/components/inbox/inbox-filters";
+
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: "all", label: "All" },
   { value: "new", label: "New" },
@@ -13,9 +15,9 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 export default async function InboxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; search?: string; from?: string; to?: string }>;
 }) {
-  const { status: statusFilter } = await searchParams;
+  const { status: statusFilter, search, from, to } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -40,6 +42,20 @@ export default async function InboxPage({
 
   if (statusFilter && statusFilter !== "all") {
     query = query.eq("status", statusFilter);
+  }
+
+  if (search) {
+    query = query.or(
+      `from_email.ilike.%${search}%,from_name.ilike.%${search}%,subject.ilike.%${search}%`
+    );
+  }
+
+  if (from) {
+    query = query.gte("created_at", from);
+  }
+
+  if (to) {
+    query = query.lte("created_at", `${to}T23:59:59.999Z`);
   }
 
   const { data: tickets } = await query;
@@ -67,6 +83,8 @@ export default async function InboxPage({
           Review and respond to customer emails.
         </p>
       </div>
+
+      <InboxFilters />
 
       {/* Status filter tabs */}
       <div className="mb-6 flex flex-wrap gap-2">

@@ -28,6 +28,12 @@ export default async function DashboardLayout({
               Envoyer
             </Link>
             <Link
+              href="/dashboard"
+              className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Dashboard
+            </Link>
+            <Link
               href="/inbox"
               className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
             >

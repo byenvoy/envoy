@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getInboundClient } from "@/lib/email/inbound";
+import { sendReply } from "@/lib/email/send-reply";
 
 export async function POST(
   request: NextRequest,
@@ -75,20 +75,15 @@ export async function POST(
   const replyHtml = replyContent.replace(/\n/g, "<br>");
 
   try {
-    const inbound = getInboundClient();
-    await inbound.emails.reply(ticket.inbound_email_id, {
-      from: emailAddr.display_name
-        ? `${emailAddr.display_name} <${emailAddr.email_address}>`
-        : emailAddr.email_address,
-      html: replyHtml,
-      text: replyContent,
-    });
+    await sendReply(ticket, replyContent, replyHtml, emailAddr);
 
     // Update draft
     await supabase
       .from("draft_replies")
       .update({
         was_approved: true,
+        approved_at: new Date().toISOString(),
+        approved_by: user.id,
         ...(editedContent ? { edited_content: editedContent } : {}),
       })
       .eq("id", draft.id);

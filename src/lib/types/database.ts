@@ -2,21 +2,27 @@ export interface Organization {
   id: string;
   name: string;
   domain: string | null;
+  preferred_model: string;
+  tone: "professional" | "casual" | "technical" | "friendly";
+  custom_instructions: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Profile {
   id: string;
   org_id: string;
   full_name: string | null;
+  role: "owner" | "agent";
   created_at: string;
 }
 
 export interface KnowledgeBasePage {
   id: string;
   org_id: string;
-  url: string;
+  url: string | null;
   title: string | null;
+  source: "crawled" | "manual";
   markdown_content: string | null;
   content_hash: string | null;
   is_active: boolean;
@@ -99,11 +105,37 @@ export interface DraftReply {
   chunks_used: { id: string; content: string; similarity: number; source_url?: string }[] | null;
   customer_context: Record<string, unknown> | null;
   classification_result: Record<string, unknown> | null;
+  approved_at: string | null;
+  approved_by: string | null;
   created_at: string;
 }
 
 export interface ShopifyConfig {
   shop_domain: string;
+}
+
+export interface UsageLog {
+  id: string;
+  org_id: string;
+  draft_reply_id: string | null;
+  call_type: "draft" | "classification";
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost_usd: number;
+  created_at: string;
+}
+
+export interface TeamInvite {
+  id: string;
+  org_id: string;
+  email: string;
+  role: "owner" | "agent";
+  invited_by: string;
+  token: string;
+  accepted_at: string | null;
+  expires_at: string;
+  created_at: string;
 }
 
 export interface Integration {

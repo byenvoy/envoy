@@ -3,6 +3,7 @@ import { embedText } from "./embeddings";
 import { buildDraftPrompt } from "./prompt";
 import { createLLMProvider } from "./llm";
 import { classifyTicket } from "./classify";
+import { logUsage } from "@/lib/usage/log";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
 import type { ShopifyCustomerContext, ClassificationResult } from "@/lib/types/shopify";
 
@@ -21,6 +22,9 @@ export interface RetrieveResult {
   chunks: MatchedChunk[];
   customerContext: ShopifyCustomerContext | null;
   classification: ClassificationResult | null;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 async function doVectorSearch(
@@ -75,6 +79,17 @@ export async function retrieveAndDraft({
   customerEmail?: string;
   conversationHistory?: { role: "customer" | "agent"; content: string }[];
 }): Promise<RetrieveResult> {
+  // Fetch org settings
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("preferred_model, tone, custom_instructions")
+    .eq("id", orgId)
+    .single();
+
+  const model = org?.preferred_model ?? "claude-haiku-4-5-20251001";
+  const tone = org?.tone ?? "professional";
+  const customInstructions = org?.custom_instructions ?? null;
+
   // Check if Shopify is connected
   const shopifyClient = await createShopifyClient(orgId);
   const hasShopify = !!shopifyClient;
@@ -84,6 +99,8 @@ export async function retrieveAndDraft({
     customerMessage,
     customerEmail,
     hasShopifyIntegration: hasShopify,
+    model,
+    orgId,
   });
 
   // Execute vector search and Shopify fetch in parallel
@@ -109,10 +126,29 @@ export async function retrieveAndDraft({
     customerMessage,
     conversationHistory,
     customerContext,
+    tone,
+    customInstructions,
   });
 
-  const llm = createLLMProvider();
-  const draft = await llm.generateDraft(system, user);
+  const llm = await createLLMProvider(model, orgId);
+  const response = await llm.generateDraft(system, user);
 
-  return { draft, chunks, customerContext, classification };
+  // Log draft usage
+  await logUsage({
+    orgId,
+    callType: "draft",
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
+  });
+
+  return {
+    draft: response.text,
+    chunks,
+    customerContext,
+    classification,
+    model: response.model,
+    inputTokens: response.inputTokens,
+    outputTokens: response.outputTokens,
+  };
 }

@@ -1,14 +1,19 @@
 import { createLLMProvider } from "./llm";
+import { logUsage } from "@/lib/usage/log";
 import type { ClassificationResult } from "@/lib/types/shopify";
 
 export async function classifyTicket({
   customerMessage,
   customerEmail,
   hasShopifyIntegration,
+  model,
+  orgId,
 }: {
   customerMessage: string;
   customerEmail?: string;
   hasShopifyIntegration: boolean;
+  model?: string;
+  orgId?: string;
 }): Promise<ClassificationResult> {
   if (!hasShopifyIntegration) {
     return {
@@ -37,10 +42,21 @@ Customer message:
 ${customerMessage}`;
 
   try {
-    const llm = createLLMProvider();
-    const raw = await llm.generateDraft(system, user);
+    const llm = await createLLMProvider(model, orgId);
+    const response = await llm.generateDraft(system, user);
 
-    const cleaned = raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+    // Log classification usage
+    if (orgId) {
+      await logUsage({
+        orgId,
+        callType: "classification",
+        model: response.model,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
+      });
+    }
+
+    const cleaned = response.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned) as ClassificationResult;
 
     return {
