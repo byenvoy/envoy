@@ -1,11 +1,59 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface UrlSelectorProps {
   urls: { url: string; suggested: boolean }[];
   onBack: () => void;
+}
+
+interface UrlGroup {
+  key: string;
+  urls: { url: string; path: string; suggested: boolean }[];
+}
+
+function Checkbox({
+  checked,
+  indeterminate,
+  onChange,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: () => void;
+}) {
+  const active = checked || indeterminate;
+  return (
+    <label className="relative cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        ref={(el) => {
+          if (el) el.indeterminate = !!indeterminate;
+        }}
+        onChange={onChange}
+        className="sr-only"
+      />
+      <div
+        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+          active
+            ? "border-zinc-900 bg-zinc-900 dark:border-zinc-50 dark:bg-zinc-50"
+            : "border-zinc-300 bg-white dark:border-zinc-600 dark:bg-zinc-800"
+        }`}
+      >
+        {indeterminate && (
+          <svg className="h-2.5 w-2.5 text-white dark:text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path d="M5 12h14" />
+          </svg>
+        )}
+        {checked && !indeterminate && (
+          <svg className="h-2.5 w-2.5 text-white dark:text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </div>
+    </label>
+  );
 }
 
 export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
@@ -16,6 +64,17 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+
+  const domain = useMemo(() => {
+    if (urls.length === 0) return "";
+    try {
+      const u = new URL(urls[0].url);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return "";
+    }
+  }, [urls]);
 
   const filtered = useMemo(() => {
     if (!filter) return urls;
@@ -23,7 +82,49 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
     return urls.filter((u) => u.url.toLowerCase().includes(lower));
   }, [urls, filter]);
 
-  const allFilteredSelected = filtered.every((u) => selected.has(u.url));
+  const groups = useMemo<UrlGroup[]>(() => {
+    const map = new Map<string, { url: string; path: string; suggested: boolean }[]>();
+
+    for (const item of filtered) {
+      let path: string;
+      try {
+        path = new URL(item.url).pathname;
+      } catch {
+        path = item.url;
+      }
+
+      const segments = path.split("/").filter(Boolean);
+      const groupKey = segments.length > 0 ? `/${segments[0]}` : "/";
+
+      if (!map.has(groupKey)) map.set(groupKey, []);
+      map.get(groupKey)!.push({ url: item.url, path, suggested: item.suggested });
+    }
+
+    // Sort URLs within each group: suggested first, then alphabetically
+    for (const items of map.values()) {
+      items.sort((a, b) => {
+        if (a.suggested !== b.suggested) return a.suggested ? -1 : 1;
+        return a.path.localeCompare(b.path);
+      });
+    }
+
+    // Sort groups: more suggested URLs first, then alphabetically
+    const entries = Array.from(map.entries()).map(([key, items]) => ({
+      key,
+      urls: items,
+    }));
+
+    entries.sort((a, b) => {
+      const aSuggested = a.urls.filter((u) => u.suggested).length;
+      const bSuggested = b.urls.filter((u) => u.suggested).length;
+      if (aSuggested !== bSuggested) return bSuggested - aSuggested;
+      return a.key.localeCompare(b.key);
+    });
+
+    return entries;
+  }, [filtered]);
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((u) => selected.has(u.url));
 
   function toggleAll() {
     setSelected((prev) => {
@@ -48,6 +149,36 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
       return next;
     });
   }
+
+  const toggleGroup = useCallback(
+    (groupKey: string) => {
+      const group = groups.find((g) => g.key === groupKey);
+      if (!group) return;
+      setSelected((prev) => {
+        const next = new Set(prev);
+        const allSelected = group.urls.every((u) => next.has(u.url));
+        if (allSelected) {
+          group.urls.forEach((u) => next.delete(u.url));
+        } else {
+          group.urls.forEach((u) => next.add(u.url));
+        }
+        return next;
+      });
+    },
+    [groups]
+  );
+
+  const toggleCollapse = useCallback((groupKey: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      return next;
+    });
+  }, []);
 
   async function handleSubmit() {
     if (selected.size === 0) return;
@@ -105,23 +236,69 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
           {allFilteredSelected ? "Deselect all" : "Select all"}
         </button>
       </div>
-      <div className="max-h-96 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900">
-        {filtered.map(({ url }) => (
-          <label
-            key={url}
-            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
-          >
-            <input
-              type="checkbox"
-              checked={selected.has(url)}
-              onChange={() => toggle(url)}
-              className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600"
-            />
-            <span className="truncate text-zinc-700 dark:text-zinc-300">
-              {url}
-            </span>
-          </label>
-        ))}
+      <div className="max-h-96 overflow-y-auto rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+        {groups.map((group) => {
+          const groupSelectedCount = group.urls.filter((u) => selected.has(u.url)).length;
+          const allGroupSelected = groupSelectedCount === group.urls.length;
+          const someGroupSelected = groupSelectedCount > 0 && !allGroupSelected;
+          const isCollapsed = collapsed.has(group.key);
+
+          return (
+            <div key={group.key}>
+              <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-zinc-100 bg-zinc-50 px-2 py-1.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+                <Checkbox
+                  checked={allGroupSelected}
+                  indeterminate={someGroupSelected}
+                  onChange={() => toggleGroup(group.key)}
+                />
+                <button
+                  onClick={() => toggleCollapse(group.key)}
+                  className="flex flex-1 items-center gap-1.5"
+                >
+                  <svg
+                    className={`h-3.5 w-3.5 text-zinc-400 transition-transform ${isCollapsed ? "" : "rotate-90"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                    {group.key}
+                  </span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    {groupSelectedCount}/{group.urls.length}
+                  </span>
+                </button>
+              </div>
+              {!isCollapsed && (
+                <div>
+                  {group.urls.map(({ url, path, suggested }) => (
+                    <label
+                      key={url}
+                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 pl-9 text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    >
+                      <Checkbox
+                        checked={selected.has(url)}
+                        onChange={() => toggle(url)}
+                      />
+                      <span className="truncate">
+                        <span className="text-zinc-400 dark:text-zinc-500">{domain}</span>
+                        <span className="text-zinc-700 dark:text-zinc-300">{path}</span>
+                      </span>
+                      {suggested && (
+                        <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                          Suggested
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>

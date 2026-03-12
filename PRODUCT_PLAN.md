@@ -247,6 +247,10 @@ create table draft_replies (
 - `sendReply()` abstraction that checks ticket source and sends via the appropriate method
 - OAuth buttons hidden when Google/Microsoft client IDs are not configured (self-hosted compatibility)
 
+**Deployment considerations:**
+- **Hosted version:** Envoyer provides its own Google/Microsoft OAuth apps. Users click "Connect with Google/Microsoft" and authorize — no setup required on their end. OAuth credentials and redirect URLs are managed by us.
+- **Self-hosted version:** Operators must register their own Google Cloud project and Azure AD app, configure OAuth consent screens, and provide their own client IDs/secrets via environment variables. This is necessary because OAuth redirect URLs must point to the operator's domain, not ours. The same pattern used by self-hosted GitLab, Supabase, etc. If operators don't configure OAuth, they fall back to Inbound.new (webhook-based) or email forwarding.
+
 **Database additions:**
 
 ```sql
