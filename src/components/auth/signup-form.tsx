@@ -28,6 +28,7 @@ export function SignupForm() {
           company_name: companyName,
           full_name: fullName,
         },
+        emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/onboarding`,
       },
     });
 
@@ -37,8 +38,7 @@ export function SignupForm() {
       return;
     }
 
-    router.push("/onboarding");
-    router.refresh();
+    router.push(`/check-email?email=${encodeURIComponent(email)}`);
   }
 
   return (

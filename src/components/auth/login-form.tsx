@@ -24,7 +24,11 @@ export function LoginForm() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(
+        error.message === "Email not confirmed"
+          ? "Please confirm your email address first. Check your inbox for a confirmation link."
+          : error.message
+      );
       setLoading(false);
       return;
     }
