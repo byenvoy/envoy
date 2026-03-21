@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UrlSelectorProps {
   urls: { url: string; suggested: boolean }[];
@@ -11,49 +12,6 @@ interface UrlSelectorProps {
 interface UrlGroup {
   key: string;
   urls: { url: string; path: string; suggested: boolean }[];
-}
-
-function Checkbox({
-  checked,
-  indeterminate,
-  onChange,
-}: {
-  checked: boolean;
-  indeterminate?: boolean;
-  onChange: () => void;
-}) {
-  const active = checked || indeterminate;
-  return (
-    <label className="relative cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        ref={(el) => {
-          if (el) el.indeterminate = !!indeterminate;
-        }}
-        onChange={onChange}
-        className="sr-only"
-      />
-      <div
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-          active
-            ? "border-zinc-900 bg-zinc-900 dark:border-zinc-50 dark:bg-zinc-50"
-            : "border-zinc-300 bg-white dark:border-zinc-600 dark:bg-zinc-800"
-        }`}
-      >
-        {indeterminate && (
-          <svg className="h-2.5 w-2.5 text-white dark:text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-            <path d="M5 12h14" />
-          </svg>
-        )}
-        {checked && !indeterminate && (
-          <svg className="h-2.5 w-2.5 text-white dark:text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-            <path d="M5 13l4 4L19 7" />
-          </svg>
-        )}
-      </div>
-    </label>
-  );
 }
 
 export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
@@ -245,11 +203,11 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
 
           return (
             <div key={group.key}>
-              <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-zinc-100 bg-zinc-50 px-2 py-1.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+              <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-zinc-100 bg-zinc-50 px-2 py-2 dark:border-zinc-800 dark:bg-zinc-800/50">
                 <Checkbox
                   checked={allGroupSelected}
                   indeterminate={someGroupSelected}
-                  onChange={() => toggleGroup(group.key)}
+                  onCheckedChange={() => toggleGroup(group.key)}
                 />
                 <button
                   onClick={() => toggleCollapse(group.key)}
@@ -275,24 +233,24 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
               {!isCollapsed && (
                 <div>
                   {group.urls.map(({ url, path, suggested }) => (
-                    <label
+                    <div
                       key={url}
-                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 pl-9 text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-2.5 pl-9 text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                     >
                       <Checkbox
                         checked={selected.has(url)}
-                        onChange={() => toggle(url)}
+                        onCheckedChange={() => toggle(url)}
                       />
-                      <span className="truncate">
+                      <span className="min-w-0 flex-1 truncate">
                         <span className="text-zinc-400 dark:text-zinc-500">{domain}</span>
                         <span className="text-zinc-700 dark:text-zinc-300">{path}</span>
                       </span>
                       {suggested && (
-                        <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        <span className="ml-auto shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                           Suggested
                         </span>
                       )}
-                    </label>
+                    </div>
                   ))}
                 </div>
               )}
