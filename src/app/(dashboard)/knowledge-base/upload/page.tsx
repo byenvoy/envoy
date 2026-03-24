@@ -71,10 +71,10 @@ export default function UploadPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold font-display tracking-tight text-text-primary">
           Upload File
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-text-secondary">
           Upload a PDF or DOCX file to add to your knowledge base.
         </p>
       </div>
@@ -90,12 +90,12 @@ export default function UploadPage() {
           onClick={() => fileInputRef.current?.click()}
           className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-12 transition-colors ${
             dragOver
-              ? "border-zinc-500 bg-zinc-50 dark:border-zinc-400 dark:bg-zinc-800/50"
-              : "border-zinc-300 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-600"
+              ? "border-primary bg-surface"
+              : "border-border hover:border-primary"
           }`}
         >
           <svg
-            className="mb-3 h-8 w-8 text-zinc-400 dark:text-zinc-500"
+            className="mb-3 h-8 w-8 text-text-secondary"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -108,18 +108,18 @@ export default function UploadPage() {
             />
           </svg>
           {file ? (
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <p className="text-sm font-medium font-display text-text-primary">
               {file.name}{" "}
-              <span className="font-normal text-zinc-500">
+              <span className="font-normal font-mono text-text-secondary">
                 ({(file.size / 1024).toFixed(0)} KB)
               </span>
             </p>
           ) : (
             <>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <p className="text-sm font-medium font-display text-text-primary">
                 Drop a file here or click to browse
               </p>
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+              <p className="mt-1 text-xs text-text-secondary">
                 PDF or DOCX, up to 10 MB
               </p>
             </>
@@ -137,21 +137,21 @@ export default function UploadPage() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-error">{error}</p>
         )}
 
         <div className="flex gap-3">
           <button
             type="submit"
             disabled={uploading || !file}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium font-display text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
           >
             {uploading ? "Uploading..." : "Upload & Import"}
           </button>
           <button
             type="button"
             onClick={() => router.push("/knowledge-base")}
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Cancel
           </button>

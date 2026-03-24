@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { StatusBadge } from "./status-badge";
 import type { Ticket } from "@/lib/types/database";
 
@@ -9,48 +8,66 @@ function timeAgo(dateStr: string): string {
 
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return `${days}d`;
 }
 
-export function TicketList({ tickets }: { tickets: Ticket[] }) {
+interface TicketListSidebarProps {
+  tickets: Ticket[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}
+
+export function TicketListSidebar({ tickets, selectedId, onSelect }: TicketListSidebarProps) {
   if (tickets.length === 0) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-800">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          No tickets yet. Emails sent to your configured address will appear here.
+      <div className="p-6 text-center">
+        <p className="text-sm text-text-secondary">
+          No tickets yet.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white dark:divide-zinc-700 dark:border-zinc-700 dark:bg-zinc-800">
-      {tickets.map((ticket) => (
-        <Link
-          key={ticket.id}
-          href={`/inbox/${ticket.id}`}
-          className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-750 sm:px-6"
-        >
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+    <div className="divide-y divide-border">
+      {tickets.map((ticket) => {
+        const isSelected = ticket.id === selectedId;
+        const isUnread = ticket.status === "new";
+
+        return (
+          <button
+            key={ticket.id}
+            onClick={() => onSelect(ticket.id)}
+            className={`w-full px-4 py-3 text-left transition-colors ${
+              isSelected
+                ? "bg-success-light"
+                : "hover:bg-surface-alt"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 truncate font-display text-sm font-semibold text-text-primary">
+                {isUnread && (
+                  <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
+                )}
                 {ticket.from_name || ticket.from_email}
               </span>
-              <StatusBadge status={ticket.status} />
+              <span className="flex-shrink-0 font-mono text-xs text-text-secondary">
+                {timeAgo(ticket.created_at)}
+              </span>
             </div>
-            <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-0.5 truncate text-sm text-text-primary">
               {ticket.subject || "(no subject)"}
             </p>
-          </div>
-          <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
-            {timeAgo(ticket.created_at)}
-          </span>
-        </Link>
-      ))}
+            <p className="mt-0.5 truncate text-xs text-text-secondary">
+              {ticket.body_text?.slice(0, 80) || ""}
+            </p>
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -44,8 +44,8 @@ export function PageCard({ page }: PageCardProps) {
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
-      <h3 className="mb-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+    <div className="rounded-lg border border-border bg-surface-alt p-4 transition-colors hover:border-border">
+      <h3 className="mb-1 truncate text-sm font-medium font-display text-text-primary">
         {page.title || "Untitled"}
       </h3>
       {page.url ? (
@@ -53,26 +53,26 @@ export function PageCard({ page }: PageCardProps) {
           href={page.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-2 block truncate text-xs text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+          className="mb-2 block truncate text-xs text-text-secondary hover:text-text-primary"
         >
           {page.url}
         </a>
       ) : (
-        <p className="mb-2 text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="mb-2 text-xs text-text-secondary">
           {page.source === "upload" ? "File upload" : "Manual entry"}
         </p>
       )}
-      <p className="mb-3 line-clamp-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+      <p className="mb-3 line-clamp-3 text-xs leading-relaxed text-text-secondary">
         {preview}
       </p>
       <div className="flex items-center justify-between">
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="text-xs font-mono text-text-secondary">
           Updated {updatedAt}
         </p>
         <div className="flex items-center gap-2">
           <Link
             href={`/knowledge-base/${page.id}/edit`}
-            className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="text-xs text-text-secondary hover:text-text-primary"
           >
             Edit
           </Link>
@@ -81,7 +81,7 @@ export function PageCard({ page }: PageCardProps) {
               type="button"
               onClick={handleResync}
               disabled={syncing}
-              className="text-xs text-zinc-500 hover:text-zinc-700 disabled:opacity-50 dark:text-zinc-400 dark:hover:text-zinc-200"
+              className="text-xs text-text-secondary hover:text-text-primary disabled:opacity-50"
             >
               {syncing ? "Syncing..." : "Re-sync"}
             </button>
@@ -90,7 +90,7 @@ export function PageCard({ page }: PageCardProps) {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+            className="text-xs text-error hover:text-error disabled:opacity-50"
           >
             {deleting ? "Deleting..." : "Delete"}
           </button>

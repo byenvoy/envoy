@@ -27,16 +27,16 @@ export default async function KnowledgeBasePage() {
       <ProcessingBanner />
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-semibold font-display tracking-tight text-text-primary">
             Knowledge Base
           </h1>
           {hasPages && (
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              {pages.length} page{pages.length === 1 ? "" : "s"} indexed
+            <p className="mt-1 text-sm text-text-secondary">
+              <span className="font-mono">{pages.length}</span> page{pages.length === 1 ? "" : "s"} indexed
               {chunkCount != null && chunkCount > 0 && (
                 <span>
                   {" "}
-                  &middot; {chunkCount} chunk{chunkCount === 1 ? "" : "s"}{" "}
+                  &middot; <span className="font-mono">{chunkCount}</span> chunk{chunkCount === 1 ? "" : "s"}{" "}
                   embedded
                 </span>
               )}
@@ -46,25 +46,25 @@ export default async function KnowledgeBasePage() {
         <div className="flex items-center gap-3">
           <Link
             href="/knowledge-base/upload"
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Upload File
           </Link>
           <Link
             href="/knowledge-base/new-url"
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Add URL
           </Link>
           <Link
             href="/knowledge-base/new"
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Manual Entry
           </Link>
           <Link
             href="/knowledge-base/crawl"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium font-display text-white transition-colors hover:bg-primary-dark"
           >
             Crawl Website
           </Link>
@@ -82,11 +82,11 @@ export default async function KnowledgeBasePage() {
         <PageList pages={pages} />
       ) : (
         !sources.size && (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 py-16 dark:border-zinc-700">
-            <p className="mb-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16">
+            <p className="mb-1 text-sm font-medium font-display text-text-primary">
               No pages yet
             </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-text-secondary">
               Use the checklist above to start adding content.
             </p>
           </div>

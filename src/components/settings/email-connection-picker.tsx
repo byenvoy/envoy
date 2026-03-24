@@ -33,28 +33,28 @@ export function EmailConnectionPicker({
 
   if (!hasGoogleClientId && !hasMicrosoftClientId) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        No email providers configured. Set <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-700">GOOGLE_CLIENT_ID</code> or{" "}
-        <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-700">MICROSOFT_CLIENT_ID</code> environment variables to enable email connections.
+      <p className="text-sm text-text-secondary">
+        No email providers configured. Set <code className="rounded bg-surface px-1 py-0.5 text-xs font-mono">GOOGLE_CLIENT_ID</code> or{" "}
+        <code className="rounded bg-surface px-1 py-0.5 text-xs font-mono">MICROSOFT_CLIENT_ID</code> environment variables to enable email connections.
       </p>
     );
   }
 
   if (activeConnection) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+      <div className="rounded-lg border border-border bg-surface p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <p className="text-sm font-medium text-text-primary">
               {activeConnection.provider === "google" ? "Google" : "Microsoft"} — {activeConnection.email_address}
             </p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-xs text-text-secondary">
               Status:{" "}
               <span
                 className={
                   activeConnection.status === "active"
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-red-600 dark:text-red-400"
+                    ? "text-primary"
+                    : "text-error"
                 }
               >
                 {activeConnection.status}
@@ -64,7 +64,7 @@ export function EmailConnectionPicker({
               )}
             </p>
             {activeConnection.error_message && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-1 text-xs text-error">
                 {activeConnection.error_message}
               </p>
             )}
@@ -72,7 +72,7 @@ export function EmailConnectionPicker({
           <button
             onClick={() => handleDisconnect(activeConnection.provider)}
             disabled={disconnecting}
-            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+            className="rounded-lg border border-error px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error-light disabled:opacity-50"
           >
             {disconnecting ? "Disconnecting..." : "Disconnect"}
           </button>
@@ -83,7 +83,7 @@ export function EmailConnectionPicker({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-text-secondary">
         Connect your email account to receive and send emails directly through Envoyer.
       </p>
       <div className="flex gap-3">
@@ -91,7 +91,7 @@ export function EmailConnectionPicker({
           // eslint-disable-next-line @next/next/no-html-link-for-pages
           <a
             href="/api/email/oauth/google"
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-alt px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path
@@ -118,7 +118,7 @@ export function EmailConnectionPicker({
           // eslint-disable-next-line @next/next/no-html-link-for-pages
           <a
             href="/api/email/oauth/microsoft"
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-alt px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface"
           >
             <svg className="h-4 w-4" viewBox="0 0 21 21">
               <rect fill="#F25022" x="1" y="1" width="9" height="9" />

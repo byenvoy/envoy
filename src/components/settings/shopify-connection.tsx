@@ -53,15 +53,15 @@ export function ShopifyConnection({
 
   if (integration) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+      <div className="rounded-lg border border-border bg-surface p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <p className="text-sm font-medium text-text-primary">
               Shopify — {integration.config.shop_domain}
             </p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-xs text-text-secondary">
               Status:{" "}
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-primary">
                 Connected
               </span>
             </p>
@@ -69,7 +69,7 @@ export function ShopifyConnection({
           <button
             onClick={handleDisconnect}
             disabled={loading}
-            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+            className="rounded-lg border border-error px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error-light disabled:opacity-50"
           >
             {loading ? "Disconnecting..." : "Disconnect"}
           </button>
@@ -80,7 +80,7 @@ export function ShopifyConnection({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-text-secondary">
         Connect your Shopify store to enrich support drafts with customer order
         data.
       </p>
@@ -90,7 +90,7 @@ export function ShopifyConnection({
           <div>
             <label
               htmlFor="shop-domain-oauth"
-              className="mb-1 block text-sm font-medium text-zinc-900 dark:text-zinc-50"
+              className="mb-1 block text-sm font-display font-medium text-text-primary"
             >
               Shop domain
             </label>
@@ -100,19 +100,19 @@ export function ShopifyConnection({
               placeholder="your-store.myshopify.com"
               value={shopDomain}
               onChange={(e) => setShopDomain(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
             />
           </div>
           <a
             href={`/api/integrations/shopify/authorize?shop=${encodeURIComponent(shopDomain)}`}
-            className={`inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
+            className={`inline-flex items-center gap-2 rounded-lg border border-border bg-surface-alt px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
           >
             Connect with Shopify
           </a>
           <button
             type="button"
             onClick={() => setShowManual(true)}
-            className="block text-xs text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+            className="block text-xs text-text-secondary underline hover:text-text-primary"
           >
             Or enter access token manually
           </button>
@@ -124,7 +124,7 @@ export function ShopifyConnection({
           <div>
             <label
               htmlFor="shop-domain"
-              className="mb-1 block text-sm font-medium text-zinc-900 dark:text-zinc-50"
+              className="mb-1 block text-sm font-display font-medium text-text-primary"
             >
               Shop domain
             </label>
@@ -134,13 +134,13 @@ export function ShopifyConnection({
               placeholder="your-store.myshopify.com"
               value={shopDomain}
               onChange={(e) => setShopDomain(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
             />
           </div>
           <div>
             <label
               htmlFor="access-token"
-              className="mb-1 block text-sm font-medium text-zinc-900 dark:text-zinc-50"
+              className="mb-1 block text-sm font-display font-medium text-text-primary"
             >
               Access token
             </label>
@@ -150,16 +150,16 @@ export function ShopifyConnection({
               placeholder="shpat_..."
               value={accessToken}
               onChange={(e) => setAccessToken(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-error">{error}</p>
           )}
           <button
             type="submit"
             disabled={loading || !shopDomain || !accessToken}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
           >
             {loading ? "Connecting..." : "Connect"}
           </button>
@@ -167,7 +167,7 @@ export function ShopifyConnection({
             <button
               type="button"
               onClick={() => setShowManual(false)}
-              className="ml-3 text-xs text-zinc-500 underline hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+              className="ml-3 text-xs text-text-secondary underline hover:text-text-primary"
             >
               Use OAuth instead
             </button>

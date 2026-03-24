@@ -30,32 +30,32 @@ export function EmailStep({
 
   return (
     <div>
-      <h2 className="mb-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <h2 className="mb-2 text-xl font-semibold font-display tracking-tight text-text-primary">
         Connect your email
       </h2>
-      <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mb-6 text-sm text-text-secondary">
         Connect your email account so Envoyer can receive customer emails and
         send approved replies.
       </p>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800/50">
+      <div className="rounded-lg border border-border bg-surface-alt p-6">
         {activeConnection ? (
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
+          <div className="rounded-lg border border-border bg-surface p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                <p className="text-sm font-medium font-display text-text-primary">
                   {activeConnection.provider === "google"
                     ? "Google"
                     : "Microsoft"}{" "}
                   — {activeConnection.email_address}
                 </p>
-                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <p className="mt-1 text-xs text-primary">
                   Connected
                 </p>
               </div>
               <button
                 onClick={() => handleDisconnect(activeConnection.provider)}
-                className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                className="rounded-lg border border-error/20 px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error-light"
               >
                 Disconnect
               </button>
@@ -63,7 +63,7 @@ export function EmailStep({
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-text-secondary">
               Connect your email account to receive and send emails directly
               through Envoyer.
             </p>
@@ -72,7 +72,7 @@ export function EmailStep({
                 // eslint-disable-next-line @next/next/no-html-link-for-pages
                 <a
                   href="/api/email/oauth/google"
-                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-alt px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24">
                     <path
@@ -99,7 +99,7 @@ export function EmailStep({
                 // eslint-disable-next-line @next/next/no-html-link-for-pages
                 <a
                   href="/api/email/oauth/microsoft"
-                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-alt px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 21 21">
                     <rect fill="#F25022" x="1" y="1" width="9" height="9" />
@@ -112,7 +112,7 @@ export function EmailStep({
               )}
             </div>
             {!hasGoogleClientId && !hasMicrosoftClientId && (
-              <p className="text-sm text-amber-600 dark:text-amber-400">
+              <p className="text-sm text-ai-accent">
                 No email OAuth providers are configured. Set up Google or
                 Microsoft OAuth credentials in your environment variables.
               </p>
@@ -125,7 +125,7 @@ export function EmailStep({
         {onBack ? (
           <button
             onClick={onBack}
-            className="text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            className="text-sm text-text-secondary transition-colors hover:text-text-primary"
           >
             &larr; Back
           </button>
@@ -135,7 +135,7 @@ export function EmailStep({
         <button
           onClick={onNext}
           disabled={!activeConnection}
-          className="rounded-lg bg-zinc-900 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
         >
           Continue
         </button>

@@ -72,20 +72,20 @@ export function TeamManagement({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        <h3 className="mb-3 text-sm font-display font-medium text-text-primary">
           Team Members
         </h3>
-        <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+        <div className="divide-y divide-border rounded-lg border border-border">
           {members.map((member) => (
             <div
               key={member.id}
               className="flex items-center justify-between px-4 py-3"
             >
               <div>
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                <p className="text-sm font-medium text-text-primary">
                   {member.full_name || "Unnamed"}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-text-secondary">
                   {member.role}
                 </p>
               </div>
@@ -93,7 +93,7 @@ export function TeamManagement({
                 <button
                   type="button"
                   onClick={() => handleRemove(member.id)}
-                  className="text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+                  className="text-xs text-error hover:text-error"
                 >
                   Remove
                 </button>
@@ -104,7 +104,7 @@ export function TeamManagement({
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        <h3 className="mb-3 text-sm font-display font-medium text-text-primary">
           Invite Agent
         </h3>
         <form onSubmit={handleInvite} className="flex gap-2">
@@ -113,12 +113,12 @@ export function TeamManagement({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="agent@example.com"
-            className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+            className="flex-1 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
           />
           <button
             type="submit"
             disabled={inviting || !email}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
           >
             {inviting ? "Inviting..." : "Generate Link"}
           </button>
@@ -127,7 +127,7 @@ export function TeamManagement({
 
       {invites.filter((i) => !i.accepted_at).length > 0 && (
         <div>
-          <h3 className="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          <h3 className="mb-3 text-sm font-display font-medium text-text-primary">
             Pending Invites
           </h3>
           <div className="space-y-2">
@@ -136,13 +136,13 @@ export function TeamManagement({
               .map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700"
+                  className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm text-zinc-900 dark:text-zinc-50">
+                    <p className="text-sm text-text-primary">
                       {invite.email}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    <p className="text-xs text-text-secondary">
                       Expires{" "}
                       {new Date(invite.expires_at).toLocaleDateString()}
                     </p>
@@ -150,7 +150,7 @@ export function TeamManagement({
                   <button
                     type="button"
                     onClick={() => copyInviteLink(invite.token)}
-                    className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+                    className="text-xs text-text-secondary hover:text-text-primary"
                   >
                     {copiedToken === invite.token ? "Copied!" : "Copy Link"}
                   </button>

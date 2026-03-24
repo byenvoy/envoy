@@ -49,11 +49,11 @@ export function GettingStartedChecklist({
   if (allDone) return null;
 
   return (
-    <div className="mb-8 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="mb-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="mb-8 rounded-lg border border-border bg-surface-alt p-6">
+      <h2 className="mb-1 text-lg font-semibold font-display text-text-primary">
         Get started with your knowledge base
       </h2>
-      <p className="mb-5 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mb-5 text-sm text-text-secondary">
         Add content so Envoyer can draft accurate replies.
       </p>
       <div className="space-y-3">
@@ -63,12 +63,12 @@ export function GettingStartedChecklist({
             <Link
               key={item.key}
               href={item.href}
-              className="flex items-start gap-3 rounded-lg border border-zinc-100 p-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
+              className="flex items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-surface"
             >
               {done ? (
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success-light">
                   <svg
-                    className="h-3 w-3 text-emerald-600 dark:text-emerald-400"
+                    className="h-3 w-3 text-primary"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -82,19 +82,19 @@ export function GettingStartedChecklist({
                   </svg>
                 </div>
               ) : (
-                <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 border-zinc-300 dark:border-zinc-600" />
+                <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 border-border" />
               )}
               <div>
                 <p
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-medium font-display ${
                     done
-                      ? "text-zinc-400 line-through dark:text-zinc-500"
-                      : "text-zinc-900 dark:text-zinc-50"
+                      ? "text-text-secondary line-through"
+                      : "text-text-primary"
                   }`}
                 >
                   {item.label}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-text-secondary">
                   {item.description}
                 </p>
               </div>

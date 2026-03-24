@@ -26,7 +26,7 @@ export default async function EditKnowledgeBasePage({
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold font-display tracking-tight text-text-primary">
           Edit Page
         </h1>
       </div>

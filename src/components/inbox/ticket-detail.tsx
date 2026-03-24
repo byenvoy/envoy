@@ -3,25 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "./status-badge";
-import { ThreadView, type ThreadMessage } from "./thread-view";
 import type { Ticket, DraftReply } from "@/lib/types/database";
 import type { ShopifyCustomerContext, ShopifyOrder } from "@/lib/types/shopify";
 
-interface TicketDetailProps {
+interface DraftPanelProps {
   ticket: Ticket;
   draft: DraftReply | null;
-  threadMessages: ThreadMessage[];
+  onRefresh: () => void;
 }
 
-export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProps) {
+export function DraftPanel({ ticket, draft, onRefresh }: DraftPanelProps) {
   const router = useRouter();
   const [editedContent, setEditedContent] = useState(
     draft?.edited_content ?? draft?.draft_content ?? ""
   );
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [customerContextOpen, setCustomerContextOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function handleAction(action: "approve" | "discard" | "regenerate") {
@@ -30,14 +27,13 @@ export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProp
 
     try {
       const url = `/api/tickets/${ticket.id}/${action}`;
-      const method = action === "approve" ? "POST" : action === "discard" ? "POST" : "POST";
       const body =
         action === "approve"
           ? JSON.stringify({ edited_content: editedContent })
           : undefined;
 
       const res = await fetch(url, {
-        method,
+        method: "POST",
         headers: body ? { "Content-Type": "application/json" } : undefined,
         body,
       });
@@ -47,6 +43,7 @@ export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProp
         throw new Error(data.error || "Action failed");
       }
 
+      onRefresh();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Action failed");
@@ -67,6 +64,7 @@ export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProp
       });
 
       if (!res.ok) throw new Error("Failed to save");
+      onRefresh();
       router.refresh();
     } catch {
       setError("Failed to save edit");
@@ -86,237 +84,190 @@ export function TicketDetail({ ticket, draft, threadMessages }: TicketDetailProp
   const customerContext = draft?.customer_context as ShopifyCustomerContext | null;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            {ticket.subject || "(no subject)"}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            From: {ticket.from_name ? `${ticket.from_name} <${ticket.from_email}>` : ticket.from_email}
-          </p>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500">
-            {new Date(ticket.created_at).toLocaleString()}
-          </p>
-        </div>
-        <StatusBadge status={ticket.status} />
-      </div>
-
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+    <div className="flex h-full flex-col bg-surface-alt">
+      {/* Customer context card — always visible */}
+      {customerContext && (customerContext.customer || customerContext.recent_orders?.length > 0) && (
+        <CustomerContextCard customerContext={customerContext} />
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Left: Customer email + thread */}
-        <div className="space-y-4">
-          {threadMessages.length > 0 && (
-            <ThreadView messages={threadMessages} />
-          )}
-
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-zinc-900 dark:text-zinc-50">
-              Customer Email
-            </h3>
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                {ticket.body_text || "(empty body)"}
-              </p>
-            </div>
+      {/* Draft section */}
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        {/* Draft header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 font-display text-sm font-semibold">
+            {ticket.status === "draft_generated" && (
+              <span className="inline-block h-2 w-2 rounded-full bg-ai-accent" />
+            )}
+            {ticket.status === "approved" || ticket.status === "sent" ? (
+              <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+            ) : null}
+            <span className="text-text-primary">AI Draft</span>
+            <StatusBadge status={ticket.status} />
           </div>
+          <button
+            onClick={handleCopy}
+            className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface"
+          >
+            {copied ? "Copied!" : "Copy"}
+          </button>
         </div>
 
-        {/* Right: Draft + actions */}
-        <div className="space-y-4">
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                Draft Reply
-              </h3>
-              <button
-                onClick={handleCopy}
-                className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-700"
+        {error && (
+          <p className="text-xs text-error">{error}</p>
+        )}
+
+        {/* Draft body */}
+        {draft ? (
+          <textarea
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            disabled={isSentOrDiscarded}
+            rows={10}
+            className={`flex-1 resize-none rounded-lg border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60 ${
+              ticket.status === "draft_generated"
+                ? "border-l-[3px] border-l-ai-accent border-t-border border-r-border border-b-border"
+                : ticket.status === "approved" || ticket.status === "sent"
+                  ? "border-l-[3px] border-l-primary border-t-border border-r-border border-b-border"
+                  : "border-border"
+            }`}
+          />
+        ) : (
+          <div className="flex flex-1 items-center justify-center rounded-lg border border-border bg-surface p-4">
+            <p className="text-sm text-text-secondary">
+              {ticket.status === "new"
+                ? "Draft is being generated..."
+                : "No draft available"}
+            </p>
+          </div>
+        )}
+
+        {/* Sources bar */}
+        {chunks.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2">
+            <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
+              Sources
+            </span>
+            {chunks.map((chunk) => (
+              <span
+                key={chunk.id}
+                className="inline-flex items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent"
               >
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            {draft ? (
-              <textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                disabled={isSentOrDiscarded}
-                rows={12}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:border-zinc-500"
-              />
-            ) : (
-              <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {ticket.status === "new"
-                    ? "Draft is being generated..."
-                    : "No draft available"}
-                </p>
-              </div>
+                {chunk.source_url
+                  ? new URL(chunk.source_url).pathname.split("/").pop() || "KB"
+                  : "KB"}
+                <span className="opacity-60">
+                  {(chunk.similarity * 100).toFixed(0)}%
+                </span>
+              </span>
+            ))}
+            {customerContext && (
+              <span className="inline-flex items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
+                Customer Data
+              </span>
             )}
           </div>
+        )}
 
-          {/* Actions */}
-          {!isSentOrDiscarded && draft && (
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleAction("approve")}
-                disabled={loading !== null}
-                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              >
-                {loading === "approve" ? "Sending..." : "Approve & Send"}
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={loading !== null}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-              >
-                {loading === "save" ? "Saving..." : "Save Edit"}
-              </button>
-              <button
-                onClick={() => handleAction("regenerate")}
-                disabled={loading !== null}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-              >
-                {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
-              </button>
-              <button
-                onClick={() => handleAction("discard")}
-                disabled={loading !== null}
-                className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-              >
-                {loading === "discard" ? "Discarding..." : "Discard"}
-              </button>
-            </div>
-          )}
-
-          {/* Sources */}
-          {chunks.length > 0 && (
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
-              <button
-                onClick={() => setSourcesOpen(!sourcesOpen)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-zinc-900 dark:text-zinc-50"
-              >
-                <span>Sources ({chunks.length})</span>
-                <span className="text-zinc-400">{sourcesOpen ? "−" : "+"}</span>
-              </button>
-              {sourcesOpen && (
-                <div className="border-t border-zinc-200 dark:border-zinc-700">
-                  {chunks.map((chunk, i) => (
-                    <div
-                      key={chunk.id}
-                      className={`px-4 py-3 ${i > 0 ? "border-t border-zinc-100 dark:border-zinc-800" : ""}`}
-                    >
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                          Similarity: {(chunk.similarity * 100).toFixed(1)}%
-                        </span>
-                        {chunk.source_url && (
-                          <a
-                            href={chunk.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {chunk.source_url}
-                          </a>
-                        )}
-                      </div>
-                      <p className="line-clamp-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        {chunk.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Customer Context (Shopify) */}
-          {customerContext && (customerContext.customer || customerContext.recent_orders?.length > 0 || customerContext.active_returns?.length > 0) && (
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
-              <button
-                onClick={() => setCustomerContextOpen(!customerContextOpen)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-zinc-900 dark:text-zinc-50"
-              >
-                <span>Customer Context</span>
-                <span className="text-zinc-400">{customerContextOpen ? "−" : "+"}</span>
-              </button>
-              {customerContextOpen && (
-                <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
-                  {customerContext.customer && (
-                    <div className="mb-3">
-                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Customer</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-50">
-                        {[customerContext.customer.first_name, customerContext.customer.last_name].filter(Boolean).join(" ") || "Unknown"}
-                      </p>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {customerContext.customer.email}
-                      </p>
-                      <div className="mt-1 flex gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                        <span>Orders: {customerContext.customer.orders_count}</span>
-                        <span>Total spent: ${customerContext.customer.total_spent}</span>
-                        <span>Since: {new Date(customerContext.customer.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {customerContext.recent_orders?.length > 0 && (
-                    <div className="mb-3">
-                      <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Recent Orders</p>
-                      {customerContext.recent_orders.map((order: ShopifyOrder) => (
-                        <div key={order.id} className="mb-2 rounded border border-zinc-100 px-3 py-2 dark:border-zinc-800">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-zinc-900 dark:text-zinc-50">{order.name}</span>
-                            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                              {new Date(order.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="mt-0.5 flex gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            <span>{order.financial_status}</span>
-                            <span>{order.fulfillment_status ?? "Unfulfilled"}</span>
-                            <span>{order.total_price} {order.currency}</span>
-                          </div>
-                          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                            {order.line_items.map((li) => `${li.title}${li.variant_title ? ` (${li.variant_title})` : ""} x${li.quantity}`).join(", ")}
-                          </p>
-                          {order.fulfillments.map((f, fi) =>
-                            f.tracking_number ? (
-                              <p key={fi} className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                Tracking: {f.tracking_url ? (
-                                  <a href={f.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">
-                                    {f.tracking_number}
-                                  </a>
-                                ) : f.tracking_number}
-                                {f.estimated_delivery_at && ` — Est. delivery: ${new Date(f.estimated_delivery_at).toLocaleDateString()}`}
-                              </p>
-                            ) : null
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {customerContext.active_returns?.length > 0 && (
-                    <div>
-                      <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Returns</p>
-                      {customerContext.active_returns.map((ret) => (
-                        <div key={ret.id} className="flex items-center justify-between rounded border border-zinc-100 px-3 py-2 dark:border-zinc-800">
-                          <span className="text-xs text-zinc-900 dark:text-zinc-50">{ret.name}</span>
-                          <span className="text-xs text-zinc-500 dark:text-zinc-400">{ret.status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Actions */}
+        {!isSentOrDiscarded && draft && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleAction("approve")}
+              disabled={loading !== null}
+              className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+            >
+              {loading === "approve" ? "Sending..." : "Approve & Send"}
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={loading !== null}
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface disabled:opacity-50"
+            >
+              {loading === "save" ? "..." : "Edit"}
+            </button>
+            <button
+              onClick={() => handleAction("discard")}
+              disabled={loading !== null}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-error transition-colors hover:bg-error-light disabled:opacity-50"
+            >
+              {loading === "discard" ? "..." : "Reject"}
+            </button>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function CustomerContextCard({ customerContext }: { customerContext: ShopifyCustomerContext }) {
+  const customer = customerContext.customer;
+  const orders = customerContext.recent_orders ?? [];
+
+  return (
+    <div className="border-b border-border bg-surface p-4">
+      <p className="mb-2 font-display text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+        Customer Context
+      </p>
+
+      {customer && (
+        <>
+          <p className="font-display text-sm font-semibold text-text-primary">
+            {[customer.first_name, customer.last_name].filter(Boolean).join(" ") || "Unknown"}
+          </p>
+          <p className="font-mono text-[11px] text-text-secondary">{customer.email}</p>
+
+          <div className="mt-2 flex gap-4">
+            <div>
+              <p className="font-display text-base font-bold text-text-primary">
+                {customer.orders_count}
+              </p>
+              <p className="font-mono text-[10px] text-text-secondary">orders</p>
+            </div>
+            <div>
+              <p className="font-display text-base font-bold text-text-primary">
+                ${customer.total_spent}
+              </p>
+              <p className="font-mono text-[10px] text-text-secondary">total spent</p>
+            </div>
+            <div>
+              <p className="font-display text-base font-bold text-text-primary">
+                {new Date(customer.created_at).getFullYear()}
+              </p>
+              <p className="font-mono text-[10px] text-text-secondary">since</p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Most relevant order */}
+      {orders.length > 0 && (
+        <div className="mt-3 rounded-lg border border-border bg-surface-alt p-2.5">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs font-bold text-text-primary">
+              {orders[0].name}
+            </span>
+            <span className="rounded-full bg-warning-light px-2 py-0.5 font-display text-[10px] font-medium text-ai-accent">
+              {orders[0].fulfillment_status ?? "Unfulfilled"}
+            </span>
+          </div>
+          <div className="mt-1 font-mono text-[11px] leading-relaxed text-text-secondary">
+            {orders[0].line_items
+              .map(
+                (li: { title: string; quantity: number }) =>
+                  `${li.title} x${li.quantity}`
+              )
+              .join(", ")}
+            <br />
+            {orders[0].total_price} {orders[0].currency}
+            {orders[0].fulfillments?.[0]?.tracking_number && (
+              <>
+                <br />
+                Tracking: {orders[0].fulfillments[0].tracking_number}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

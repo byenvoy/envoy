@@ -9,14 +9,14 @@ export default async function CheckEmailPage({
 
   return (
     <div className="text-center">
-      <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+      <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-success-light">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="h-6 w-6 text-zinc-600 dark:text-zinc-300"
+          className="h-6 w-6 text-primary"
         >
           <path
             strokeLinecap="round"
@@ -25,13 +25,13 @@ export default async function CheckEmailPage({
           />
         </svg>
       </div>
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <h1 className="mb-2 font-display text-2xl font-bold tracking-tight text-text-primary">
         Check your email
       </h1>
-      <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mb-6 text-sm text-text-secondary">
         We sent a confirmation link to{" "}
         {email ? (
-          <span className="font-medium text-zinc-900 dark:text-zinc-50">
+          <span className="font-medium text-text-primary">
             {email}
           </span>
         ) : (
@@ -39,11 +39,11 @@ export default async function CheckEmailPage({
         )}
         . Click the link to verify your account and get started.
       </p>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-text-secondary">
         Didn&apos;t receive it? Check your spam folder, or{" "}
         <Link
           href="/signup"
-          className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
+          className="font-medium text-primary hover:underline"
         >
           try again
         </Link>

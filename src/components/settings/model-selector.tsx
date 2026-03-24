@@ -102,7 +102,7 @@ export function ModelSelector({
 
   return (
     <div>
-      <label className="mb-3 block text-sm font-medium text-zinc-900 dark:text-zinc-50">
+      <label className="mb-3 block text-sm font-display font-medium text-text-primary">
         AI Model
       </label>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -118,8 +118,8 @@ export function ModelSelector({
               disabled={saving || savingKey}
               className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-left text-sm transition-colors ${
                 isActive
-                  ? "border-zinc-900 bg-zinc-50 ring-1 ring-zinc-900 dark:border-zinc-100 dark:bg-zinc-800 dark:ring-zinc-100"
-                  : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                  ? "border-primary bg-surface ring-1 ring-primary"
+                  : "border-border bg-surface-alt hover:border-primary hover:bg-surface"
               } ${(saving || savingKey) ? "cursor-not-allowed opacity-50" : ""}`}
             >
               <Image
@@ -132,15 +132,15 @@ export function ModelSelector({
               <div className="min-w-0 flex-1">
                 <span className={`block font-medium ${
                   isActive
-                    ? "text-zinc-900 dark:text-zinc-50"
-                    : "text-zinc-700 dark:text-zinc-300"
+                    ? "text-text-primary"
+                    : "text-text-secondary"
                 }`}>
                   {m.label}
                 </span>
               </div>
               {isActive && (
                 <div className="shrink-0">
-                  <div className="h-2 w-2 rounded-full bg-zinc-900 dark:bg-zinc-100" />
+                  <div className="h-2 w-2 rounded-full bg-primary" />
                 </div>
               )}
             </button>
@@ -149,12 +149,12 @@ export function ModelSelector({
       </div>
 
       {saving && (
-        <p className="mt-2 text-xs text-zinc-500">Saving...</p>
+        <p className="mt-2 text-xs text-text-secondary">Saving...</p>
       )}
 
       {pendingModel && (
-        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
-          <p className="mb-3 text-sm text-amber-800 dark:text-amber-200">
+        <div className="mt-3 rounded-lg border border-ai-accent bg-ai-accent-light p-4">
+          <p className="mb-3 text-sm text-ai-accent">
             Enter your {pendingModel.providerLabel} API key to use{" "}
             {pendingModel.label}.
           </p>
@@ -164,26 +164,26 @@ export function ModelSelector({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={`${pendingModel.providerLabel} API key...`}
-              className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+              className="flex-1 rounded-lg border border-border bg-surface-alt px-3 py-1.5 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
             />
             <button
               type="button"
               onClick={handleSaveKeyAndSwitch}
               disabled={savingKey || !apiKey.trim()}
-              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
               {savingKey ? "Saving..." : "Save & Switch"}
             </button>
             <button
               type="button"
               onClick={handleCancel}
-              className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
+              className="text-xs text-text-secondary hover:text-text-primary"
             >
               Cancel
             </button>
           </div>
           {error && (
-            <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+            <p className="mt-2 text-xs text-error">
               {error}
             </p>
           )}

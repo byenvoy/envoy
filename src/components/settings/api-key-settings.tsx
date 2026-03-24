@@ -17,7 +17,7 @@ export function ApiKeySettings({
 }) {
   return (
     <div className="space-y-4">
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-xs text-text-secondary">
         Add API keys for each provider you want to use. Keys are encrypted at
         rest. Server-level keys (set by the administrator) are used as fallback.
       </p>
@@ -76,19 +76,19 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
   const isConfigured = status.hasOrgKey || provider.hasEnvKey;
 
   return (
-    <div className="rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-700">
+    <div className="rounded-lg border border-border px-4 py-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          <p className="text-sm font-medium text-text-primary">
             {provider.label}
           </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-text-secondary">
             {status.hasOrgKey ? (
-              <span className="text-green-600 dark:text-green-400">
+              <span className="text-primary font-mono">
                 Configured (...{status.lastFour})
               </span>
             ) : provider.hasEnvKey ? (
-              <span className="text-green-600 dark:text-green-400">
+              <span className="text-primary">
                 Using server key
               </span>
             ) : (
@@ -101,7 +101,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+              className="text-xs text-text-secondary hover:text-text-primary"
             >
               {isConfigured ? "Update" : "Add Key"}
             </button>
@@ -111,7 +111,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
               type="button"
               onClick={handleRemove}
               disabled={removing}
-              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400"
+              className="text-xs text-error hover:text-error disabled:opacity-50"
             >
               {removing ? "Removing..." : "Remove"}
             </button>
@@ -126,13 +126,13 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder={`Enter ${provider.label} API key...`}
-            className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+            className="flex-1 rounded-lg border border-border bg-surface-alt px-3 py-1.5 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
           />
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || !key.trim()}
-            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
           </button>
@@ -142,7 +142,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
               setEditing(false);
               setKey("");
             }}
-            className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400"
+            className="text-xs text-text-secondary hover:text-text-primary"
           >
             Cancel
           </button>

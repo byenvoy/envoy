@@ -122,17 +122,17 @@ export default async function SettingsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-display font-semibold tracking-tight text-text-primary">
           Settings
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-text-secondary">
           Configure your email, AI model, and team.
         </p>
       </div>
 
       <div className="max-w-lg space-y-6">
-        <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
-          <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+        <div className="rounded-lg border border-border bg-surface-alt p-6">
+          <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
             Email Address
           </h2>
           <EmailConnectionPicker
@@ -142,8 +142,8 @@ export default async function SettingsPage() {
           />
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
-          <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+        <div className="rounded-lg border border-border bg-surface-alt p-6">
+          <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
             Integrations
           </h2>
           <ShopifyConnection
@@ -153,8 +153,8 @@ export default async function SettingsPage() {
         </div>
 
         {isOwner && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
-            <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+          <div className="rounded-lg border border-border bg-surface-alt p-6">
+            <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
               API Keys
             </h2>
             <ApiKeySettings providers={apiKeyProviders} />
@@ -162,8 +162,8 @@ export default async function SettingsPage() {
         )}
 
         {isOwner && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
-            <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+          <div className="rounded-lg border border-border bg-surface-alt p-6">
+            <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
               AI Model
             </h2>
             <ModelSelector
@@ -174,8 +174,8 @@ export default async function SettingsPage() {
         )}
 
         {isOwner && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
-            <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+          <div className="rounded-lg border border-border bg-surface-alt p-6">
+            <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
               Response Style
             </h2>
             <ToneSettings
@@ -186,8 +186,8 @@ export default async function SettingsPage() {
         )}
 
         {isOwner && (
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
-            <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+          <div className="rounded-lg border border-border bg-surface-alt p-6">
+            <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
               Team
             </h2>
             <TeamManagement

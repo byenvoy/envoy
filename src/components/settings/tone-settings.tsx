@@ -63,7 +63,7 @@ export function ToneSettings({
   return (
     <div className="space-y-4">
       <div>
-        <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        <label className="mb-2 block text-sm font-display font-medium text-text-primary">
           Response Tone
         </label>
         <div className="flex flex-wrap gap-2">
@@ -74,8 +74,8 @@ export function ToneSettings({
               onClick={() => setTone(t.value)}
               className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                 tone === t.value
-                  ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                  ? "bg-primary text-white"
+                  : "bg-surface text-text-secondary hover:bg-surface-alt"
               }`}
             >
               {t.label}
@@ -83,14 +83,14 @@ export function ToneSettings({
           ))}
         </div>
         {TONES.find((t) => t.value === tone) && (
-          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-xs text-text-secondary">
             {TONES.find((t) => t.value === tone)!.description}
           </p>
         )}
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        <label className="mb-2 block text-sm font-display font-medium text-text-primary">
           Custom Instructions
         </label>
         <textarea
@@ -99,7 +99,7 @@ export function ToneSettings({
           // placeholder="Add any specific instructions for how the AI should respond..."
           placeholder="Add any specific instructions such as prefered sign off method, etc."
           rows={3}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500"
+          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
         />
       </div>
 
@@ -107,7 +107,7 @@ export function ToneSettings({
         type="button"
         onClick={handleSave}
         disabled={saving}
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
       >
         {saving ? "Saving..." : saved ? "Saved" : "Save"}
       </button>

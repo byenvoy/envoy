@@ -44,11 +44,11 @@ export function ProcessingBanner() {
       : 0;
 
   return (
-    <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+    <div className="mb-6 rounded-lg border border-info bg-info-light p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <svg
-            className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400"
+            className="h-4 w-4 animate-spin text-info"
             fill="none"
             viewBox="0 0 24 24"
           >
@@ -66,17 +66,17 @@ export function ProcessingBanner() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+          <p className="text-sm font-medium font-display text-info">
             Processing knowledge base...
           </p>
         </div>
-        <p className="text-sm text-blue-600 dark:text-blue-400">
+        <p className="text-sm font-mono text-info">
           {status.embeddedPages}/{status.totalPages} pages embedded
         </p>
       </div>
-      <div className="mt-2 h-1.5 w-full rounded-full bg-blue-200 dark:bg-blue-800">
+      <div className="mt-2 h-1.5 w-full rounded-full bg-info-light">
         <div
-          className="h-1.5 rounded-full bg-blue-600 transition-all dark:bg-blue-400"
+          className="h-1.5 rounded-full bg-info transition-all"
           style={{ width: `${percent}%` }}
         />
       </div>

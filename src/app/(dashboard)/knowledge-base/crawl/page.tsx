@@ -23,15 +23,15 @@ export default function CrawlPage() {
       <div className="mb-6">
         <Link
           href="/knowledge-base"
-          className="text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+          className="text-sm text-text-secondary transition-colors hover:text-text-primary"
         >
           &larr; Back to Knowledge Base
         </Link>
       </div>
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <h1 className="mb-2 text-2xl font-semibold font-display tracking-tight text-text-primary">
         {urls ? "Select pages to import" : "Crawl your website"}
       </h1>
-      <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mb-8 text-sm text-text-secondary">
         {urls
           ? "Choose which pages to add to your knowledge base. Support-related pages are pre-selected."
           : "Enter your website URL and we'll discover pages to build your knowledge base from."}

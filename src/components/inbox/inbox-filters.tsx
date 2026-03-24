@@ -3,87 +3,84 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-export function InboxFilters() {
+const STATUS_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "new", label: "New" },
+  { value: "draft_generated", label: "Draft" },
+  { value: "sent", label: "Sent" },
+  { value: "discarded", label: "Discarded" },
+];
+
+interface InboxFiltersProps {
+  statusCounts: Record<string, number>;
+}
+
+export function InboxFilters({ statusCounts }: InboxFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [from, setFrom] = useState(searchParams.get("from") ?? "");
-  const [to, setTo] = useState(searchParams.get("to") ?? "");
+  const activeFilter = searchParams.get("status") ?? "all";
 
-  function applyFilters() {
-    const params = new URLSearchParams();
-    const status = searchParams.get("status");
-    if (status) params.set("status", status);
-    if (search) params.set("search", search);
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
-    const qs = params.toString();
-    router.push(qs ? `/inbox?${qs}` : "/inbox");
+  function applySearch() {
+    const params = new URLSearchParams(searchParams.toString());
+    if (search) {
+      params.set("search", search);
+    } else {
+      params.delete("search");
+    }
+    params.delete("id");
+    router.push(`/inbox?${params.toString()}`);
   }
 
-  function clearFilters() {
-    setSearch("");
-    setFrom("");
-    setTo("");
-    const status = searchParams.get("status");
-    router.push(status ? `/inbox?status=${status}` : "/inbox");
+  function setStatus(status: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (status === "all") {
+      params.delete("status");
+    } else {
+      params.set("status", status);
+    }
+    params.delete("id");
+    router.push(`/inbox?${params.toString()}`);
   }
-
-  const hasFilters = search || from || to;
 
   return (
-    <div className="mb-4 flex flex-wrap items-end gap-3">
-      <div className="flex-1">
-        <label className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">
-          Search
-        </label>
+    <div className="space-y-3">
+      {/* Search */}
+      <div className="flex gap-1.5">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && applyFilters()}
-          placeholder="Email, name, or subject..."
-          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+          onKeyDown={(e) => e.key === "Enter" && applySearch()}
+          placeholder="Search..."
+          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
         />
       </div>
-      <div>
-        <label className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">
-          From
-        </label>
-        <input
-          type="date"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
-        />
+
+      {/* Status filter pills */}
+      <div className="flex flex-wrap gap-1">
+        {STATUS_FILTERS.map((filter) => {
+          const count = statusCounts[filter.value] ?? 0;
+          const isActive = activeFilter === filter.value;
+
+          return (
+            <button
+              key={filter.value}
+              onClick={() => setStatus(filter.value)}
+              className={`rounded-full px-2 py-0.5 font-display text-xs font-medium transition-colors ${
+                isActive
+                  ? "bg-primary text-white"
+                  : "bg-surface text-text-secondary hover:bg-border"
+              }`}
+            >
+              {filter.label}
+              {count > 0 && (
+                <span className="ml-1 opacity-70">{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
-      <div>
-        <label className="mb-1 block text-xs text-zinc-500 dark:text-zinc-400">
-          To
-        </label>
-        <input
-          type="date"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
-        />
-      </div>
-      <button
-        type="button"
-        onClick={applyFilters}
-        className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-      >
-        Search
-      </button>
-      {hasFilters && (
-        <button
-          type="button"
-          onClick={clearFilters}
-          className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-        >
-          Clear
-        </button>
-      )}
     </div>
   );
 }

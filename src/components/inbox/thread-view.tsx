@@ -1,4 +1,7 @@
-interface ThreadMessage {
+import { StatusBadge } from "./status-badge";
+import type { Ticket } from "@/lib/types/database";
+
+export interface ThreadMessage {
   id: string;
   from_email: string;
   from_name: string | null;
@@ -8,45 +11,116 @@ interface ThreadMessage {
   reply_content?: string;
 }
 
-export function ThreadView({ messages }: { messages: ThreadMessage[] }) {
-  if (messages.length === 0) return null;
+function getInitials(name: string | null, email: string): string {
+  if (name) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return email[0]?.toUpperCase() ?? "?";
+}
 
+interface ThreadPanelProps {
+  ticket: Ticket;
+  threadMessages: ThreadMessage[];
+}
+
+export function ThreadPanel({ ticket, threadMessages }: ThreadPanelProps) {
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-        Thread History
-      </h3>
-      <div className="space-y-2">
-        {messages.map((msg) => (
-          <div key={msg.id}>
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
-              <div className="mb-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                <span className="font-medium">
-                  {msg.from_name || msg.from_email}
-                </span>
-                <span>
-                  {new Date(msg.created_at).toLocaleString()}
-                </span>
-              </div>
-              <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
-                {msg.body_text}
-              </p>
-            </div>
-            {msg.is_agent_reply && msg.reply_content && (
-              <div className="ml-4 mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
-                <div className="mb-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  Agent Reply
-                </div>
-                <p className="whitespace-pre-wrap text-sm text-emerald-800 dark:text-emerald-200">
-                  {msg.reply_content}
-                </p>
-              </div>
-            )}
-          </div>
-        ))}
+    <div>
+      {/* Thread header */}
+      <div className="mb-6">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-display text-lg font-bold tracking-tight text-text-primary">
+            {ticket.subject || "(no subject)"}
+          </h2>
+          <StatusBadge status={ticket.status} />
+        </div>
+        <p className="mt-1 font-mono text-xs text-text-secondary">
+          {ticket.from_name ? `${ticket.from_name} <${ticket.from_email}>` : ticket.from_email}
+          {" \u00B7 "}
+          {new Date(ticket.created_at).toLocaleString()}
+        </p>
       </div>
+
+      {/* Thread history */}
+      {threadMessages.length > 0 && (
+        <div className="mb-6 space-y-4">
+          {threadMessages.map((msg) => (
+            <div key={msg.id}>
+              <MessageBubble
+                initials={getInitials(msg.from_name, msg.from_email)}
+                name={msg.from_name || msg.from_email}
+                time={new Date(msg.created_at).toLocaleString()}
+                body={msg.body_text}
+                avatarColor="#7C6F64"
+              />
+              {msg.is_agent_reply && msg.reply_content && (
+                <div className="ml-9 mt-2">
+                  <div className="rounded-lg border-l-3 border-primary bg-success-light px-4 py-3">
+                    <div className="mb-1 font-display text-xs font-semibold text-primary">
+                      Agent Reply
+                    </div>
+                    <p className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-text-primary">
+                      {msg.reply_content}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Current message */}
+      <MessageBubble
+        initials={getInitials(ticket.from_name, ticket.from_email)}
+        name={ticket.from_name || ticket.from_email}
+        time={new Date(ticket.created_at).toLocaleString()}
+        body={ticket.body_text}
+        avatarColor="#7C6F64"
+      />
     </div>
   );
 }
 
-export type { ThreadMessage };
+function MessageBubble({
+  initials,
+  name,
+  time,
+  body,
+  avatarColor,
+}: {
+  initials: string;
+  name: string;
+  time: string;
+  body: string | null;
+  avatarColor: string;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div
+        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-display text-[10px] font-bold text-white"
+        style={{ backgroundColor: avatarColor }}
+      >
+        {initials}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-display text-sm font-semibold text-text-primary">
+            {name}
+          </span>
+          <span className="font-mono text-xs text-text-secondary">{time}</span>
+        </div>
+        <div className="mt-1">
+          <p className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-text-primary">
+            {body || "(empty)"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

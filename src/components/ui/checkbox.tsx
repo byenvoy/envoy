@@ -30,10 +30,10 @@ function Checkbox({
       disabled={disabled}
       onClick={onCheckedChange}
       className={cn(
-        "inline-flex h-4 min-h-4 w-4 min-w-4 shrink-0 items-center justify-center rounded-[4px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-4 min-h-4 w-4 min-w-4 shrink-0 items-center justify-center rounded-[4px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50",
         active
-          ? "bg-zinc-900 text-white ring-[1.5px] ring-zinc-900 ring-inset dark:bg-zinc-50 dark:text-zinc-900 dark:ring-zinc-50"
-          : "bg-white ring-[1.5px] ring-zinc-300 ring-inset dark:bg-zinc-800 dark:ring-zinc-600",
+          ? "bg-primary text-white ring-[1.5px] ring-primary ring-inset"
+          : "bg-surface-alt ring-[1.5px] ring-border ring-inset",
         className
       )}
       {...props}

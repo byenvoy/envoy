@@ -107,10 +107,10 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">
           Dashboard
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-text-secondary">
           Overview of your support metrics.
         </p>
       </div>
@@ -118,13 +118,13 @@ export default async function DashboardPage() {
       <WelcomeBanner />
 
       {(kbPageCount ?? 0) === 0 && (
-        <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
-          <p className="text-sm text-amber-800 dark:text-amber-200">
+        <div className="mb-8 rounded-lg border border-ai-accent bg-ai-accent-light p-4">
+          <p className="text-sm text-text-primary">
             Your knowledge base is empty. Add content so Envoyer can start
             drafting replies.{" "}
             <Link
               href="/knowledge-base"
-              className="font-medium underline hover:no-underline"
+              className="font-medium text-primary underline hover:no-underline"
             >
               Go to Knowledge Base
             </Link>
@@ -136,12 +136,12 @@ export default async function DashboardPage() {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+            className="rounded-lg border border-border bg-surface-alt p-4"
           >
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="font-display text-xs font-medium text-text-secondary">
               {stat.label}
             </p>
-            <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+            <p className="mt-1 font-display text-2xl font-bold text-text-primary">
               {stat.value}
             </p>
           </div>
@@ -149,44 +149,44 @@ export default async function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
+        <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">
           Recent Tickets
         </h2>
         {tickets.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-text-secondary">
             No tickets yet.
           </p>
         ) : (
-          <div className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="divide-y divide-border rounded-lg border border-border bg-surface-alt">
             {tickets.map((ticket) => (
               <Link
                 key={ticket.id}
                 href={`/inbox/${ticket.id}`}
-                className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-surface"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                  <p className="truncate font-display text-sm font-semibold text-text-primary">
                     {ticket.subject || "(No subject)"}
                   </p>
-                  <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="truncate text-xs text-text-secondary">
                     {ticket.from_name || ticket.from_email}
                   </p>
                 </div>
                 <div className="ml-4 flex items-center gap-3">
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`rounded-full px-2 py-0.5 font-display text-xs font-semibold ${
                       ticket.status === "new"
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                        ? "bg-info-light text-info"
                         : ticket.status === "draft_generated"
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                          ? "bg-ai-accent-light text-ai-accent"
                           : ticket.status === "sent"
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                            ? "bg-success-light text-primary"
+                            : "bg-surface-alt text-text-secondary"
                     }`}
                   >
                     {ticket.status.replace("_", " ")}
                   </span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  <span className="font-mono text-xs text-text-secondary">
                     {new Date(ticket.created_at).toLocaleDateString()}
                   </span>
                 </div>
