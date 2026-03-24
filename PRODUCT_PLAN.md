@@ -10,13 +10,13 @@ A Ghost-like, self-hosted customer support platform with a human-in-the-loop RAG
 
 | Layer | Tool | Rationale |
 |---|---|---|
-| Framework | Next.js (TypeScript) | Single codebase for frontend + API routes. Backend is thin since Supabase handles auth, database, and vectors. Server-side code is mostly API routes proxying calls to external services (OpenAI, Inbound.new, Shopify). Avoid Vercel-specific features (Edge Middleware, Vercel KV, Vercel Blob) to stay portable. |
+| Framework | Next.js (TypeScript) | Single codebase for frontend + API routes. Backend is thin since Supabase handles auth, database, and vectors. Server-side code is mostly API routes proxying calls to external services (OpenAI, Shopify). Avoid Vercel-specific features (Edge Middleware, Vercel KV, Vercel Blob) to stay portable. |
 | Auth | Supabase Auth (both hosted and self-hosted) | One auth system across both deployment modes. Self-hosted users run Supabase via Docker Compose. Eliminates the need for an abstraction layer or maintaining two auth implementations. |
 | Database | Supabase (Postgres) for both hosted and self-hosted | Single codebase, single database client, single set of queries for both versions. Self-hosted users run Supabase via its official Docker Compose setup. Avoids the complexity of maintaining a provider abstraction layer. |
 | Vector Store | Supabase pgvector | Keeps vectors in the same database, avoids a separate Pinecone dependency |
 | Embeddings | OpenAI `text-embedding-3-small` | $0.02 per 1M tokens, strong retrieval performance, 1536 dimensions. Cost is negligible even during development (embedding a few hundred documents costs fractions of a penny). Using one embedding model from development through production avoids vector space compatibility issues. Embedding model is an infrastructure decision, not user-facing. Fixed for the hosted version; configurable via environment variable for self-hosted but defaults to OpenAI. |
 | LLM | Anthropic Claude Haiku (default), swappable in Phase 5 | Strong instruction-following and grounding in provided context. Deep familiarity with Claude's prompting behavior accelerates iteration on draft quality. Cost-efficient for high-volume drafting. LLM call abstracted behind a provider interface from Phase 1 so swapping models is trivial. |
-| Email Infrastructure | Gmail/Outlook OAuth (IMAP/SMTP), Inbound.new as fallback | OAuth for zero-friction onboarding with Gmail/Microsoft; IMAP for receiving, SMTP for sending through the user's own account. Inbound.new retained as webhook-based fallback for non-Gmail/Outlook users. |
+| Email Infrastructure | Gmail/Outlook OAuth (IMAP/SMTP) | OAuth for zero-friction onboarding with Gmail/Microsoft; IMAP for receiving, SMTP for sending through the user's own account. |
 | Web Scraping / Markdown Extraction | Mozilla Readability + Turndown | Readability isolates main content (strips nav, headers, footers, ads), then Turndown converts clean HTML to markdown. Fully local, no external API keys, works for self-hosted without dependencies. Jina Reader available as an optional fallback for sites with aggressive bot detection (requires user-provided API key). |
 | RAG Framework | None (custom pipeline) | The RAG pipeline is four operations: chunk text, call embedding API, query pgvector, construct prompt. Does not justify a framework dependency. LlamaIndex can be reconsidered if integration count grows to the point where dynamic tool routing is needed. |
 | Deployment | Render/Railway/Fly.io (hosted) / Docker Compose (self-hosted) | Significantly cheaper than Vercel at scale. All support Docker containers natively. Self-hosted version ships the same Docker image alongside Supabase's Docker Compose. |
@@ -182,11 +182,10 @@ create index on knowledge_base_chunks
 **Goal:** Connect to a real email inbox so the system receives actual customer emails and drafts replies.
 
 **Features:**
-- Integrate Inbound.new (or Resend Inbound): configure a webhook endpoint that receives parsed emails
 - Store incoming emails in a `tickets` table with status tracking (new, draft_generated, approved, sent, discarded)
-- When a new email arrives via webhook: run the RAG pipeline automatically, store the draft
+- When a new email arrives via IMAP polling: run the RAG pipeline automatically, store the draft
 - UI: inbox view showing incoming emails with their generated drafts side by side
-- Approve button sends the reply via Inbound.new's send API
+- Approve button sends the reply via SMTP through the user's connected account
 - Edit button allows modifying the draft before approving
 - Discard button marks the ticket for manual handling
 - Thread support: include prior messages in the prompt context
@@ -221,9 +220,9 @@ create table draft_replies (
 
 ---
 
-### Phase 3.5: Replace Inbound.new with Gmail/Outlook OAuth
+### Phase 3.5: Gmail/Outlook OAuth Email Integration
 
-**Goal:** Replace the webhook-based email integration (Inbound.new) with direct OAuth connections to Gmail and Microsoft, eliminating DNS configuration and enabling zero-friction onboarding. Users click "Connect with Google" or "Connect with Microsoft" and Envoyer reads from and sends through their existing email account.
+**Goal:** Direct OAuth connections to Gmail and Microsoft for zero-friction onboarding. Users click "Connect with Google" or "Connect with Microsoft" and Envoyer reads from and sends through their existing email account.
 
 **Why:** DNS configuration (MX records, domain verification, email forwarding) is the primary onboarding friction. OAuth lets users connect their existing `support@company.com` inbox with a single click. Replies are sent through the user's own mail server, so they come from their real address with no domain setup. The user's existing inbox (Gmail/Outlook) continues to work alongside Envoyer — Envoyer is just another client reading the same mailbox. This is the approach used by Front and Freshdesk.
 
@@ -234,8 +233,7 @@ create table draft_replies (
 - Approved replies sent via SMTP through the user's own account using OAuth tokens
 - Encrypted token storage (AES-256-GCM at application layer)
 - Connection health monitoring (token refresh, error tracking, auto-deactivation after repeated failures)
-- Inbound.new retained as fallback for users not on Gmail/Outlook
-- Settings UI updated with connection method picker: "Connect your email" (OAuth) vs "Webhook" (Inbound.new)
+- Settings UI with OAuth connection buttons for Google and Microsoft
 
 **Technical details:**
 - Google OAuth scopes: `https://mail.google.com/` (or Gmail API with `gmail.readonly` + `gmail.send`)
@@ -243,13 +241,13 @@ create table draft_replies (
 - NPM packages: `imapflow` (IMAP client), `nodemailer` (SMTP sending), `mailparser` (email parsing)
 - Cron-triggered polling route (`/api/email/poll`) with Postgres advisory locks to prevent concurrent runs
 - New `email_connections` table for OAuth tokens, IMAP/SMTP config, and polling state
-- `tickets.source` column to branch approve route between SMTP (OAuth) and Inbound.new
+- `tickets.source` column tracking email source
 - `sendReply()` abstraction that checks ticket source and sends via the appropriate method
 - OAuth buttons hidden when Google/Microsoft client IDs are not configured (self-hosted compatibility)
 
 **Deployment considerations:**
 - **Hosted version:** Envoyer provides its own Google/Microsoft OAuth apps. Users click "Connect with Google/Microsoft" and authorize — no setup required on their end. OAuth credentials and redirect URLs are managed by us.
-- **Self-hosted version:** Operators must register their own Google Cloud project and Azure AD app, configure OAuth consent screens, and provide their own client IDs/secrets via environment variables. This is necessary because OAuth redirect URLs must point to the operator's domain, not ours. The same pattern used by self-hosted GitLab, Supabase, etc. If operators don't configure OAuth, they fall back to Inbound.new (webhook-based) or email forwarding.
+- **Self-hosted version:** Operators must register their own Google Cloud project and Azure AD app, configure OAuth consent screens, and provide their own client IDs/secrets via environment variables. This is necessary because OAuth redirect URLs must point to the operator's domain, not ours. The same pattern used by self-hosted GitLab, Supabase, etc.
 
 **Database additions:**
 
@@ -347,7 +345,7 @@ create table integrations (
 - CLI or setup wizard for initial configuration
 - MIT or similar permissive license
 - README with quickstart guide
-- Users bring their own OpenAI/Anthropic API keys and Google/Microsoft OAuth credentials (or Inbound.new account as fallback)
+- Users bring their own OpenAI/Anthropic API keys and Google/Microsoft OAuth credentials
 
 **Hosted version (paid):**
 - Multi-tenant deployment on Render/Railway/Fly.io + Supabase

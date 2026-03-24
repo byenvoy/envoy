@@ -21,7 +21,7 @@ Envoyer is a self-hosted AI customer support platform with a human-in-the-loop R
 - **Auth:** Supabase Auth
 - **Embeddings:** OpenAI text-embedding-3-small (1536 dimensions)
 - **LLM:** Anthropic Claude Haiku (default), abstracted behind provider interface
-- **Email:** Inbound.new or Resend Inbound
+- **Email:** OAuth (Google/Microsoft) via IMAP/SMTP
 - **Web scraping:** Mozilla Readability + Turndown (local, no external APIs)
 
 ## Conventions
