@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 interface ModelOption {
   id: string;
   label: string;
+  logo: string;
   available: boolean;
   providerKey: string;
   providerLabel: string;
@@ -41,7 +43,8 @@ export function ModelSelector({
     }
   }
 
-  function handleChange(modelId: string) {
+  function handleSelect(modelId: string) {
+    if (saving || savingKey) return;
     const model = models.find((m) => m.id === modelId);
     if (!model) return;
 
@@ -95,26 +98,58 @@ export function ModelSelector({
     setError(null);
   }
 
+  const activeId = pendingModel ? pendingModel.id : selected;
+
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-zinc-900 dark:text-zinc-50">
+      <label className="mb-3 block text-sm font-medium text-zinc-900 dark:text-zinc-50">
         AI Model
       </label>
-      <select
-        value={pendingModel ? pendingModel.id : selected}
-        onChange={(e) => handleChange(e.target.value)}
-        disabled={saving || savingKey}
-        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
-      >
-        {models.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.label}
-          </option>
-        ))}
-      </select>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {models.map((m) => {
+          const isActive = m.id === activeId;
+          const isAvailable = m.available || availableKeys.has(m.providerKey);
+
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => handleSelect(m.id)}
+              disabled={saving || savingKey}
+              className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-left text-sm transition-colors ${
+                isActive
+                  ? "border-zinc-900 bg-zinc-50 ring-1 ring-zinc-900 dark:border-zinc-100 dark:bg-zinc-800 dark:ring-zinc-100"
+                  : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+              } ${(saving || savingKey) ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              <Image
+                src={m.logo}
+                alt=""
+                width={20}
+                height={20}
+                className="shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <span className={`block font-medium ${
+                  isActive
+                    ? "text-zinc-900 dark:text-zinc-50"
+                    : "text-zinc-700 dark:text-zinc-300"
+                }`}>
+                  {m.label}
+                </span>
+              </div>
+              {isActive && (
+                <div className="shrink-0">
+                  <div className="h-2 w-2 rounded-full bg-zinc-900 dark:bg-zinc-100" />
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {saving && (
-        <p className="mt-1 text-xs text-zinc-500">Saving...</p>
+        <p className="mt-2 text-xs text-zinc-500">Saving...</p>
       )}
 
       {pendingModel && (

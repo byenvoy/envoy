@@ -10,6 +10,7 @@ import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
 import type { EmailConnection, Integration, Organization, Profile, TeamInvite } from "@/lib/types/database";
 
+
 /** Derive unique provider entries from SUPPORTED_MODELS for the API key UI. */
 function getUniqueProviders() {
   const seen = new Map<string, string>();
@@ -47,7 +48,6 @@ export default async function SettingsPage() {
 
   const [
     { data: org },
-    { data: emailAddress },
     { data: connections },
     { data: integrations },
     { data: teamMembers },
@@ -57,13 +57,6 @@ export default async function SettingsPage() {
       .from("organizations")
       .select("preferred_model, tone, custom_instructions")
       .eq("id", profile.org_id)
-      .single(),
-    supabase
-      .from("email_addresses")
-      .select("*")
-      .eq("org_id", profile.org_id)
-      .eq("is_active", true)
-      .limit(1)
       .single(),
     supabase
       .from("email_connections")
@@ -118,6 +111,7 @@ export default async function SettingsPage() {
   const models = Object.entries(SUPPORTED_MODELS).map(([id, config]) => ({
     id,
     label: config.label,
+    logo: config.logo,
     available: config.envKey ? keyAvailability.has(config.envKey) : false,
     providerKey: config.envKey ?? "",
     providerLabel: config.envKey
@@ -142,7 +136,6 @@ export default async function SettingsPage() {
             Email Address
           </h2>
           <EmailConnectionPicker
-            emailAddress={emailAddress}
             connections={(connections ?? []) as EmailConnection[]}
             hasGoogleClientId={!!process.env.GOOGLE_CLIENT_ID}
             hasMicrosoftClientId={!!process.env.MICROSOFT_CLIENT_ID}

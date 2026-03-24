@@ -14,9 +14,10 @@ export interface LLMProvider {
   generateDraft(systemPrompt: string, userMessage: string): Promise<LLMResponse>;
 }
 
-interface ModelConfig {
+export interface ModelConfig {
   provider: "anthropic" | "openai" | "google";
   label: string;
+  logo: string;
   costPer1kInput: number;
   costPer1kOutput: number;
   baseUrl?: string;
@@ -27,20 +28,31 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
   "claude-haiku-4-5-20251001": {
     provider: "anthropic",
     label: "Claude Haiku",
+    logo: "/logos/anthropic.svg",
     envKey: "ANTHROPIC_API_KEY",
     costPer1kInput: 0.0008,
     costPer1kOutput: 0.004,
   },
-  "claude-sonnet-4-20250514": {
+  "claude-sonnet-4-6": {
     provider: "anthropic",
     label: "Claude Sonnet",
+    logo: "/logos/anthropic.svg",
     envKey: "ANTHROPIC_API_KEY",
     costPer1kInput: 0.003,
     costPer1kOutput: 0.015,
   },
+  "claude-opus-4-6": {
+    provider: "anthropic",
+    label: "Claude Opus",
+    logo: "/logos/anthropic.svg",
+    envKey: "ANTHROPIC_API_KEY",
+    costPer1kInput: 0.015,
+    costPer1kOutput: 0.075,
+  },
   "gpt-4o": {
     provider: "openai",
     label: "GPT-4o",
+    logo: "/logos/openai.svg",
     baseUrl: "https://api.openai.com/v1",
     envKey: "OPENAI_API_KEY",
     costPer1kInput: 0.0025,
@@ -49,14 +61,24 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
   "gpt-4o-mini": {
     provider: "openai",
     label: "GPT-4o Mini",
+    logo: "/logos/openai.svg",
     baseUrl: "https://api.openai.com/v1",
     envKey: "OPENAI_API_KEY",
     costPer1kInput: 0.00015,
     costPer1kOutput: 0.0006,
   },
+  "gemini-2.5-flash": {
+    provider: "google",
+    label: "Gemini 2.5 Flash",
+    logo: "/logos/gemini-icon.png",
+    envKey: "GOOGLE_AI_KEY",
+    costPer1kInput: 0.00015,
+    costPer1kOutput: 0.0006,
+  },
   "gemini-2.0-flash": {
     provider: "google",
-    label: "Gemini Flash",
+    label: "Gemini 2.0 Flash",
+    logo: "/logos/gemini-icon.png",
     envKey: "GOOGLE_AI_KEY",
     costPer1kInput: 0.0001,
     costPer1kOutput: 0.0004,
@@ -64,10 +86,29 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
   "mistral-large-latest": {
     provider: "openai",
     label: "Mistral Large",
+    logo: "/logos/mistral.svg",
     baseUrl: "https://api.mistral.ai/v1",
     envKey: "MISTRAL_API_KEY",
     costPer1kInput: 0.002,
     costPer1kOutput: 0.006,
+  },
+  "mistral-small-latest": {
+    provider: "openai",
+    label: "Mistral Small",
+    logo: "/logos/mistral.svg",
+    baseUrl: "https://api.mistral.ai/v1",
+    envKey: "MISTRAL_API_KEY",
+    costPer1kInput: 0.0001,
+    costPer1kOutput: 0.0003,
+  },
+  "deepseek-chat": {
+    provider: "openai",
+    label: "DeepSeek V3",
+    logo: "/logos/deepseek.png",
+    baseUrl: "https://api.deepseek.com/v1",
+    envKey: "DEEPSEEK_API_KEY",
+    costPer1kInput: 0.00014,
+    costPer1kOutput: 0.00028,
   },
 };
 
