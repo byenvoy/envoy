@@ -59,7 +59,7 @@ export function PageCard({ page }: PageCardProps) {
         </a>
       ) : (
         <p className="mb-2 text-xs text-zinc-400 dark:text-zinc-500">
-          Manual entry
+          {page.source === "upload" ? "File upload" : "Manual entry"}
         </p>
       )}
       <p className="mb-3 line-clamp-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
@@ -76,7 +76,7 @@ export function PageCard({ page }: PageCardProps) {
           >
             Edit
           </Link>
-          {page.source === "crawled" && page.url && (
+          {(page.source === "crawled" || page.source === "url") && page.url && (
             <button
               type="button"
               onClick={handleResync}
