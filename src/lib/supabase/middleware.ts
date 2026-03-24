@@ -50,5 +50,28 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Redirect to onboarding if not completed (skip if already on /onboarding or auth/api routes)
+  if (user && isDashboardRoute && !path.startsWith("/onboarding")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profile) {
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("onboarding_completed_at")
+        .eq("id", profile.org_id)
+        .single();
+
+      if (org && !org.onboarding_completed_at) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/onboarding";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   return supabaseResponse;
 }

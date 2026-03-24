@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import type { Ticket } from "@/lib/types/database";
 
 function getThirtyDaysAgo(): string {
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
     { data: recentDrafts },
     { data: usageLogs },
     { data: recentTickets },
+    { count: kbPageCount },
   ] = await Promise.all([
     supabase
       .from("tickets")
@@ -66,6 +68,11 @@ export default async function DashboardPage() {
       .eq("org_id", orgId)
       .order("created_at", { ascending: false })
       .limit(10),
+    supabase
+      .from("knowledge_base_pages")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", orgId)
+      .eq("is_active", true),
   ]);
 
   const drafts30d = recentDrafts ?? [];
@@ -107,6 +114,23 @@ export default async function DashboardPage() {
           Overview of your support metrics.
         </p>
       </div>
+
+      <WelcomeBanner />
+
+      {(kbPageCount ?? 0) === 0 && (
+        <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            Your knowledge base is empty. Add content so Envoyer can start
+            drafting replies.{" "}
+            <Link
+              href="/knowledge-base"
+              className="font-medium underline hover:no-underline"
+            >
+              Go to Knowledge Base
+            </Link>
+          </p>
+        </div>
+      )}
 
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((stat) => (

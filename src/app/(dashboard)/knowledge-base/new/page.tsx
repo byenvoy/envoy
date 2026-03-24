@@ -28,6 +28,7 @@ export default function NewManualEntryPage() {
         throw new Error(data.error ?? "Failed to save");
       }
 
+      fetch("/api/embeddings/generate", { method: "POST" });
       router.push("/knowledge-base");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

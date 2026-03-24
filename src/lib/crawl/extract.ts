@@ -240,7 +240,10 @@ async function extractSingle(
   }
 }
 
-export async function extractPages(urls: string[]): Promise<ExtractedPage[]> {
+export async function extractPages(
+  urls: string[],
+  onPage?: (page: ExtractedPage) => void | Promise<void>
+): Promise<ExtractedPage[]> {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -255,7 +258,10 @@ export async function extractPages(urls: string[]): Promise<ExtractedPage[]> {
       const batchResults = await Promise.all(
         batch.map((url) => extractSingle(browser, url))
       );
-      results.push(...batchResults);
+      for (const page of batchResults) {
+        results.push(page);
+        if (onPage) await onPage(page);
+      }
     }
 
     return results;

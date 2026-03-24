@@ -5,6 +5,8 @@ export interface Organization {
   preferred_model: string;
   tone: "professional" | "casual" | "technical" | "friendly";
   custom_instructions: string | null;
+  onboarding_step: number;
+  onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,7 +24,7 @@ export interface KnowledgeBasePage {
   org_id: string;
   url: string | null;
   title: string | null;
-  source: "crawled" | "manual";
+  source: "crawled" | "manual" | "url" | "upload" | "notion" | "confluence";
   markdown_content: string | null;
   content_hash: string | null;
   is_active: boolean;
@@ -48,7 +50,7 @@ export interface EmailAddress {
   email_address: string;
   display_name: string | null;
   is_active: boolean;
-  connection_type: "webhook" | "oauth";
+  connection_type: "oauth";
   created_at: string;
 }
 
@@ -88,7 +90,7 @@ export interface Ticket {
   in_reply_to: string | null;
   thread_id: string | null;
   inbound_email_id: string | null;
-  source: "webhook" | "imap";
+  source: "imap";
   connection_id: string | null;
   status: TicketStatus;
   created_at: string;

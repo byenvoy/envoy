@@ -32,13 +32,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const extracted = await extractPages(urls);
   const results: { url: string; success: boolean; error?: string }[] = [];
 
-  for (const page of extracted) {
+  console.log(`[extract] Starting extraction of ${urls.length} URLs for org ${profile.org_id}`);
+
+  // Process URLs and save each page to DB immediately after extraction
+  // so progress can be observed by polling the knowledge_base_pages table.
+  await extractPages(urls, async (page) => {
+    console.log(`[extract] Page result: ${page.url} - ${page.error ?? 'ok'} - content length: ${page.markdown?.length ?? 0}`);
     if (page.error || !page.markdown) {
       results.push({ url: page.url, success: false, error: page.error });
-      continue;
+      return;
     }
 
     const { error } = await supabase.from("knowledge_base_pages").upsert(
@@ -58,7 +62,8 @@ export async function POST(request: Request) {
     } else {
       results.push({ url: page.url, success: true });
     }
-  }
+  });
 
+  console.log(`[extract] Finished. Results:`, JSON.stringify(results.map(r => ({ url: r.url, success: r.success, error: r.error }))));
   return NextResponse.json({ results });
 }

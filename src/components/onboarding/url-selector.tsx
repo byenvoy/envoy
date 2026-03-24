@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface UrlSelectorProps {
   urls: { url: string; suggested: boolean }[];
   onBack: () => void;
+  onComplete?: () => void;
 }
 
 interface UrlGroup {
@@ -14,7 +15,7 @@ interface UrlGroup {
   urls: { url: string; path: string; suggested: boolean }[];
 }
 
-export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
+export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(urls.filter((u) => u.suggested).map((u) => u.url))
@@ -23,6 +24,14 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [extractedCount, setExtractedCount] = useState(0);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   const domain = useMemo(() => {
     if (urls.length === 0) return "";
@@ -142,6 +151,20 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
     if (selected.size === 0) return;
     setError(null);
     setLoading(true);
+    setExtractedCount(0);
+
+    // Poll for incremental progress as pages are saved to DB
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch("/api/embeddings/status");
+        if (res.ok) {
+          const data = await res.json();
+          setExtractedCount(data.totalPages ?? 0);
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }, 2000);
 
     try {
       const res = await fetch("/api/crawl/extract", {
@@ -157,11 +180,16 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
         return;
       }
 
-      router.push("/knowledge-base");
-      router.refresh();
+      if (onComplete) {
+        onComplete();
+      } else {
+        router.push("/knowledge-base");
+        router.refresh();
+      }
     } catch {
       setError("Network error. Please try again.");
     } finally {
+      if (pollRef.current) clearInterval(pollRef.current);
       setLoading(false);
     }
   }
@@ -267,7 +295,7 @@ export function UrlSelector({ urls, onBack }: UrlSelectorProps) {
         className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
         {loading
-          ? "Extracting content..."
+          ? `Crawling... ${extractedCount} of ${selected.size} pages extracted`
           : `Import ${selected.size} page${selected.size === 1 ? "" : "s"}`}
       </button>
     </div>
