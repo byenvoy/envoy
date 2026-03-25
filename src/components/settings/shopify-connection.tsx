@@ -80,39 +80,34 @@ export function ShopifyConnection({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-text-secondary">
-        Connect your Shopify store to enrich support drafts with customer order
-        data.
-      </p>
-
       {hasShopifyClientId && !showManual && (
         <div className="space-y-3">
-          <div>
-            <label
-              htmlFor="shop-domain-oauth"
-              className="mb-1 block text-sm font-display font-medium text-text-primary"
-            >
-              Shop domain
-            </label>
+          <label
+            htmlFor="shop-domain-oauth"
+            className="mb-1 block font-display text-sm font-medium text-text-primary"
+          >
+            Shop domain
+          </label>
+          <div className="flex overflow-hidden rounded-lg border border-border bg-surface-alt focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
             <input
               id="shop-domain-oauth"
               type="text"
               placeholder="your-store.myshopify.com"
               value={shopDomain}
               onChange={(e) => setShopDomain(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none"
             />
+            <a
+              href={`/api/integrations/shopify/authorize?shop=${encodeURIComponent(shopDomain)}`}
+              className={`flex items-center gap-2 border-l border-border bg-surface px-4 font-display text-sm font-medium text-text-primary transition-colors hover:bg-surface-alt ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
+            >
+              Connect
+            </a>
           </div>
-          <a
-            href={`/api/integrations/shopify/authorize?shop=${encodeURIComponent(shopDomain)}`}
-            className={`inline-flex items-center gap-2 rounded-lg border border-border bg-surface-alt px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
-          >
-            Connect with Shopify
-          </a>
           <button
             type="button"
             onClick={() => setShowManual(true)}
-            className="block text-xs text-text-secondary underline hover:text-text-primary"
+            className="text-xs text-text-secondary/60 transition-colors hover:text-text-primary"
           >
             Or enter access token manually
           </button>
