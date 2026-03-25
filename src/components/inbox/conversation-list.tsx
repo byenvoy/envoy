@@ -1,4 +1,4 @@
-import type { Conversation } from "@/lib/types/database";
+import type { Conversation, ConversationStatus } from "@/lib/types/database";
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -72,12 +72,32 @@ export function ConversationList({ conversations, selectedId, activeFilter, onSe
                 {timeAgo(convo.last_message_at)}
               </span>
             </div>
-            <p className="mt-0.5 truncate text-sm text-text-primary">
-              {convo.subject || "(no subject)"}
-            </p>
+            <div className="mt-0.5 flex items-center justify-between gap-2">
+              <p className="truncate text-sm text-text-primary">
+                {convo.subject || "(no subject)"}
+              </p>
+              {activeFilter === "all" && (
+                <StatusLabel status={convo.status} />
+              )}
+            </div>
           </button>
         );
       })}
     </div>
+  );
+}
+
+const statusLabelConfig: Record<ConversationStatus, { label: string; className: string }> = {
+  open: { label: "Open", className: "bg-ai-accent-light text-ai-accent" },
+  waiting: { label: "Waiting", className: "bg-success-light text-primary" },
+  closed: { label: "Closed", className: "bg-surface-alt text-text-secondary" },
+};
+
+function StatusLabel({ status }: { status: ConversationStatus }) {
+  const config = statusLabelConfig[status];
+  return (
+    <span className={`rounded px-1.5 py-0.5 font-display text-[10px] font-medium ${config.className}`}>
+      {config.label}
+    </span>
   );
 }
