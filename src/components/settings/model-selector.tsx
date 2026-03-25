@@ -154,18 +154,9 @@ export function ModelSelector({
 
       {pendingModel && (
         <div className="mt-4 rounded-lg border border-border bg-surface p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="font-display text-sm font-medium text-text-primary">
-              {pendingModel.providerLabel} API key required
-            </p>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="text-xs text-text-secondary transition-colors hover:text-text-primary"
-            >
-              Cancel
-            </button>
-          </div>
+          <p className="mb-3 font-display text-sm font-medium text-text-primary">
+            {pendingModel.providerLabel} API key required
+          </p>
           <p className="mb-3 text-xs text-text-secondary">
             Add your API key to use {pendingModel.label}. Your key is encrypted and stored securely.
           </p>
