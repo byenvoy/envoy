@@ -79,6 +79,9 @@ export function InboxView({ tickets, statusCounts }: InboxViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickets]);
 
+  const isSentOrDiscarded = detailData?.ticket.status === "sent" || detailData?.ticket.status === "discarded";
+  const showDraftPanel = detailData && !isSentOrDiscarded;
+
   return (
     <div className="flex h-full">
       {/* Mobile: back button when viewing detail */}
@@ -119,20 +122,23 @@ export function InboxView({ tickets, statusCounts }: InboxViewProps) {
           }`}
         >
           {/* Thread panel */}
-          <div className="h-full min-w-0 flex-1 overflow-y-auto border-r border-border p-5">
+          <div className={`h-full min-w-0 flex-1 overflow-y-auto p-5 ${showDraftPanel ? "border-r border-border" : ""}`}>
             <ThreadPanel
               ticket={detailData.ticket}
+              draft={detailData.draft}
               threadMessages={detailData.threadMessages}
             />
           </div>
-          {/* Draft panel */}
-          <div className="hidden h-full w-[380px] flex-shrink-0 overflow-y-auto md:block">
-            <DraftPanel
-              ticket={detailData.ticket}
-              draft={detailData.draft}
-              onRefresh={handleDetailRefresh}
-            />
-          </div>
+          {/* Draft panel — hidden when ticket is sent or discarded */}
+          {showDraftPanel && (
+            <div className="hidden h-full w-[380px] flex-shrink-0 overflow-y-auto md:block">
+              <DraftPanel
+                ticket={detailData.ticket}
+                draft={detailData.draft}
+                onRefresh={handleDetailRefresh}
+              />
+            </div>
+          )}
         </div>
       ) : selectedId && detailLoading ? (
         <div
