@@ -40,21 +40,12 @@ export function ShopifyStep({
         >
           &larr; Back
         </button>
-        {integration ? (
-          <button
-            onClick={onNext}
-            className="rounded-lg bg-primary px-8 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
-          >
-            Continue
-          </button>
-        ) : (
-          <button
-            onClick={onSkip}
-            className="rounded-lg border border-border px-6 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-alt"
-          >
-            Skip
-          </button>
-        )}
+        <button
+          onClick={integration ? onNext : onSkip}
+          className="rounded-lg bg-primary px-8 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
+        >
+          Finish
+        </button>
       </div>
     </div>
   );

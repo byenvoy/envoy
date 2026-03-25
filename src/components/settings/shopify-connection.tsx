@@ -62,7 +62,7 @@ export function ShopifyConnection({
             Shopify connected
           </span>
         </div>
-        <p className="mt-1 font-mono text-xs text-text-secondary">
+        <p className="mt-1 truncate font-mono text-xs text-text-secondary">
           {integration.config.shop_domain}
         </p>
         <button
