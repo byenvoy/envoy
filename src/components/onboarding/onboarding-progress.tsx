@@ -16,7 +16,7 @@ export function OnboardingProgress({ currentStep }: { currentStep: number }) {
           return (
             <div
               key={i}
-              className={`h-1.5 w-12 rounded-full transition-colors ${
+              className={`h-1.5 w-8 rounded-full transition-colors ${
                 isCompleted
                   ? "bg-primary"
                   : isCurrent
