@@ -71,7 +71,7 @@ export function ProcessingBanner() {
           </p>
         </div>
         <p className="text-sm font-mono text-info">
-          {status.embeddedPages}/{status.totalPages} pages embedded
+          {status.embeddedPages}/{status.totalPages} pages processed
         </p>
       </div>
       <div className="mt-2 h-1.5 w-full rounded-full bg-info-light">

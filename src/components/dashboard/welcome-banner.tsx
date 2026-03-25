@@ -65,12 +65,12 @@ export function WelcomeBanner() {
       </h2>
       <p className="mb-4 text-sm text-text-secondary">
         Your knowledge base is being processed in the background. Once
-        embedding completes, Envoyer will start drafting replies to incoming
+        processing completes, Envoyer will start drafting replies to incoming
         emails.
       </p>
       <div className="mx-auto mb-4 max-w-xs">
         <div className="flex items-center justify-between font-mono text-xs text-text-secondary">
-          <span>Embedding pages...</span>
+          <span>Processing pages...</span>
           <span>
             {status.embeddedPages}/{status.totalPages} ({percent}%)
           </span>
