@@ -153,33 +153,37 @@ export function ModelSelector({
       )}
 
       {pendingModel && (
-        <div className="mt-3 rounded-lg border border-ai-accent bg-ai-accent-light p-4">
-          <p className="mb-3 text-sm text-ai-accent">
-            Enter your {pendingModel.providerLabel} API key to use{" "}
-            {pendingModel.label}.
+        <div className="mt-4 rounded-lg border border-border bg-surface p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="font-display text-sm font-medium text-text-primary">
+              {pendingModel.providerLabel} API key required
+            </p>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="text-xs text-text-secondary transition-colors hover:text-text-primary"
+            >
+              Cancel
+            </button>
+          </div>
+          <p className="mb-3 text-xs text-text-secondary">
+            Add your API key to use {pendingModel.label}. Your key is encrypted and stored securely.
           </p>
           <div className="flex gap-2">
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={`${pendingModel.providerLabel} API key...`}
-              className="flex-1 rounded-lg border border-border bg-surface-alt px-3 py-1.5 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+              placeholder={`Paste your ${pendingModel.providerLabel} API key`}
+              className="flex-1 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
             />
             <button
               type="button"
               onClick={handleSaveKeyAndSwitch}
               disabled={savingKey || !apiKey.trim()}
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
-              {savingKey ? "Saving..." : "Save & Switch"}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="text-xs text-text-secondary hover:text-text-primary"
-            >
-              Cancel
+              {savingKey ? "Saving..." : "Save"}
             </button>
           </div>
           {error && (
