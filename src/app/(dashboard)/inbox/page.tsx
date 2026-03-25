@@ -38,8 +38,9 @@ export default async function InboxPage({
     .order("last_message_at", { ascending: false })
     .limit(PAGE_SIZE);
 
-  if (statusFilter && statusFilter !== "all") {
-    query = query.eq("status", statusFilter as ConversationStatus);
+  const effectiveStatus = statusFilter ?? "open";
+  if (effectiveStatus !== "all") {
+    query = query.eq("status", effectiveStatus as ConversationStatus);
   }
 
   if (search) {

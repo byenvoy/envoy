@@ -18,7 +18,7 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const activeFilter = searchParams.get("status") ?? "all";
+  const activeFilter = searchParams.get("status") ?? "open";
 
   function applySearch() {
     const params = new URLSearchParams(searchParams.toString());
@@ -33,7 +33,7 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
 
   function setStatus(status: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (status === "all") {
+    if (status === "open") {
       params.delete("status");
     } else {
       params.set("status", status);
