@@ -17,55 +17,43 @@ export function ShopifyStep({
   onSkip: () => void;
 }) {
   return (
-    <div>
-      <h2 className="mb-2 text-xl font-semibold font-display tracking-tight text-text-primary">
-        Integrations
+    <div className="text-center">
+      <h2 className="mb-2 font-display text-2xl font-bold tracking-tight text-text-primary">
+        Connect Shopify
       </h2>
-      <p className="mb-6 text-sm text-text-secondary">
-        Connect your Shopify store to enrich draft replies with customer order
-        history, shipping status, and more.
+      <p className="mb-8 text-sm text-text-secondary">
+        Enrich draft replies with customer order history, shipping status, and more.
+        This step is optional.
       </p>
 
-      <div className="rounded-lg border border-border bg-surface-alt p-6">
+      <div className="text-left">
         <ShopifyConnection
           integration={integration}
           hasShopifyClientId={hasShopifyClientId}
         />
       </div>
 
-      <p className="mt-3 text-sm text-text-secondary">
-        Need help connecting?{" "}
-        <a
-          href="#"
-          className="font-medium text-text-primary hover:underline"
-        >
-          View setup instructions
-        </a>
-      </p>
-
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-10 flex items-center justify-center gap-4">
         <button
           onClick={onBack}
           className="text-sm text-text-secondary transition-colors hover:text-text-primary"
         >
           &larr; Back
         </button>
-        <div className="flex items-center gap-3">
+        <button
+          onClick={onSkip}
+          className="rounded-lg border border-border px-6 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-alt"
+        >
+          Skip
+        </button>
+        {integration && (
           <button
-            onClick={onSkip}
-            className="rounded-lg border border-border px-6 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface"
+            onClick={onNext}
+            className="rounded-lg bg-primary px-8 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
           >
-            Skip
+            Continue
           </button>
-          {integration && (
-            <button
-              onClick={onNext}
-              className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-            >
-              Continue
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
