@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { OnboardingProgress } from "./onboarding-progress";
 import { EmailStep } from "./steps/email-step";
 import { ModelStep } from "./steps/model-step";
 import { ShopifyStep } from "./steps/shopify-step";
@@ -73,9 +72,9 @@ export function OnboardingWizard({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="pt-8">
-        <OnboardingProgress currentStep={step} />
-      </div>
+      <p className="text-center font-mono text-xs text-text-secondary">
+        Step {step} of 3
+      </p>
       <div className="mx-auto flex w-full max-w-xl flex-1 items-center">
         <div className="w-full">
 
