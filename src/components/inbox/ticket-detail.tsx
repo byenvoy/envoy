@@ -11,9 +11,10 @@ interface DraftPanelProps {
   shopifyCustomer: ShopifyCustomerContext | null;
   draftUsedCustomerData: boolean;
   onRefresh: () => void;
+  onSent: () => void;
 }
 
-export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh }: DraftPanelProps) {
+export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent }: DraftPanelProps) {
   const router = useRouter();
   const [editedContent, setEditedContent] = useState(
     draft?.edited_content ?? draft?.draft_content ?? ""
@@ -44,8 +45,12 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         throw new Error(data.error || "Action failed");
       }
 
-      onRefresh();
-      router.refresh();
+      if (action === "approve") {
+        onSent();
+      } else {
+        onRefresh();
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Action failed");
     } finally {

@@ -17,11 +17,25 @@ function timeAgo(dateStr: string): string {
 interface ConversationListProps {
   conversations: Conversation[];
   selectedId: string | null;
+  activeFilter: string;
   onSelect: (id: string) => void;
 }
 
-export function ConversationList({ conversations, selectedId, onSelect }: ConversationListProps) {
+export function ConversationList({ conversations, selectedId, activeFilter, onSelect }: ConversationListProps) {
   if (conversations.length === 0) {
+    if (activeFilter === "open") {
+      return (
+        <div className="p-6 text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success-light">
+            <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          </div>
+          <p className="font-display text-sm font-semibold text-text-primary">All caught up!</p>
+          <p className="mt-1 text-xs text-text-secondary">No open conversations need attention.</p>
+        </div>
+      );
+    }
     return (
       <div className="p-6 text-center">
         <p className="text-sm text-text-secondary">

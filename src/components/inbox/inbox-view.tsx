@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, type RefCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ConversationList } from "./conversation-list";
 import { ThreadPanel } from "./thread-view";
@@ -9,11 +9,6 @@ import { InboxFilters } from "./inbox-filters";
 import type { Conversation, Message, Draft } from "@/lib/types/database";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
 
-interface InboxViewProps {
-  conversations: Conversation[];
-  statusCounts: Record<string, number>;
-}
-
 interface ConversationDetailData {
   conversation: Conversation;
   messages: Message[];
@@ -21,20 +16,78 @@ interface ConversationDetailData {
   shopifyCustomer: ShopifyCustomerContext | null;
 }
 
-export function InboxView({ conversations, statusCounts }: InboxViewProps) {
+interface InboxViewProps {
+  conversations: Conversation[];
+  statusCounts: Record<string, number>;
+  initialDetail: ConversationDetailData | null;
+  hasMore: boolean;
+  pageSize: number;
+}
+
+export function InboxView({
+  conversations,
+  statusCounts,
+  initialDetail,
+  hasMore: initialHasMore,
+  pageSize,
+}: InboxViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedId = searchParams.get("id");
-  const [detailData, setDetailData] = useState<ConversationDetailData | null>(null);
+
+  // Detail cache — avoids re-fetching previously viewed conversations
+  const detailCache = useRef<Map<string, ConversationDetailData>>(new Map());
+
+  const [detailData, setDetailData] = useState<ConversationDetailData | null>(initialDetail);
   const [detailLoading, setDetailLoading] = useState(false);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [extraConversations, setExtraConversations] = useState<Conversation[]>([]);
+
+  // Seed cache with initial detail
+  useEffect(() => {
+    if (initialDetail) {
+      detailCache.current.set(initialDetail.conversation.id, initialDetail);
+    }
+  }, [initialDetail]);
+
+  const allConversations = [...conversations, ...extraConversations];
+
+  // Infinite scroll — load more when sentinel enters viewport
+  const loadingMoreRef = useRef(false);
+  const sentinelRef: RefCallback<HTMLDivElement> = useCallback(
+    (node) => {
+      if (!node) return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && !loadingMoreRef.current) {
+            handleLoadMore();
+          }
+        },
+        { rootMargin: "200px" }
+      );
+      observer.observe(node);
+      return () => observer.disconnect();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allConversations.length, hasMore]
+  );
 
   const fetchDetail = useCallback(async (conversationId: string) => {
+    // Check cache first
+    const cached = detailCache.current.get(conversationId);
+    if (cached) {
+      setDetailData(cached);
+      return;
+    }
+
     setDetailLoading(true);
     try {
       const res = await fetch(`/api/conversations/${conversationId}`);
       if (!res.ok) return;
-      const data = await res.json();
+      const data: ConversationDetailData = await res.json();
+      detailCache.current.set(conversationId, data);
       setDetailData(data);
     } catch {
       // Ignore fetch errors
@@ -54,7 +107,7 @@ export function InboxView({ conversations, statusCounts }: InboxViewProps) {
   function handleSelectConversation(conversationId: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("id", conversationId);
-    router.push(`/inbox?${params.toString()}`, { scroll: false });
+    router.replace(`/inbox?${params.toString()}`, { scroll: false });
     setMobileShowDetail(true);
   }
 
@@ -62,23 +115,70 @@ export function InboxView({ conversations, statusCounts }: InboxViewProps) {
     setMobileShowDetail(false);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("id");
-    router.push(`/inbox?${params.toString()}`, { scroll: false });
+    router.replace(`/inbox?${params.toString()}`, { scroll: false });
   }
 
   function handleDetailRefresh() {
-    if (selectedId) fetchDetail(selectedId);
+    if (selectedId) {
+      // Invalidate cache and re-fetch
+      detailCache.current.delete(selectedId);
+      fetchDetail(selectedId);
+    }
+  }
+
+  function handleConversationSent() {
+    if (selectedId) {
+      detailCache.current.delete(selectedId);
+    }
+    setDetailData(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("id");
+    router.replace(`/inbox?${params.toString()}`, { scroll: false });
+    router.refresh();
+  }
+
+  async function handleLoadMore() {
+    if (loadingMoreRef.current || !hasMore) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams();
+      const status = searchParams.get("status");
+      const search = searchParams.get("search");
+      if (status) params.set("status", status);
+      if (search) params.set("search", search);
+      params.set("offset", String(allConversations.length));
+      params.set("limit", String(pageSize));
+
+      const res = await fetch(`/api/conversations?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setExtraConversations((prev) => [...prev, ...data.conversations]);
+      setHasMore(data.conversations.length === pageSize);
+    } catch {
+      // Ignore
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
   }
 
   // Auto-select first conversation on desktop when list changes
   useEffect(() => {
-    if (conversations.length > 0 && window.innerWidth >= 768) {
-      const currentStillExists = selectedId && conversations.some((c) => c.id === selectedId);
+    if (allConversations.length > 0 && window.innerWidth >= 768) {
+      const currentStillExists = selectedId && allConversations.some((c) => c.id === selectedId);
       if (!currentStillExists) {
-        handleSelectConversation(conversations[0].id);
+        handleSelectConversation(allConversations[0].id);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations]);
+
+  // Reset extra conversations when server list changes (filter switch)
+  useEffect(() => {
+    setExtraConversations([]);
+    setHasMore(initialHasMore);
+  }, [conversations, initialHasMore]);
 
   const hasPendingDraft = detailData?.draft && detailData.draft.status === "pending";
   const hasShopifyCustomer = detailData?.shopifyCustomer && (detailData.shopifyCustomer.customer || detailData.shopifyCustomer.recent_orders?.length);
@@ -109,10 +209,18 @@ export function InboxView({ conversations, statusCounts }: InboxViewProps) {
         </div>
         <div className="flex-1 overflow-y-auto">
           <ConversationList
-            conversations={conversations}
+            conversations={allConversations}
             selectedId={selectedId}
+            activeFilter={searchParams.get("status") ?? "all"}
             onSelect={handleSelectConversation}
           />
+          {hasMore && (
+            <div ref={sentinelRef} className="flex justify-center py-3">
+              {loadingMore && (
+                <p className="text-xs text-text-secondary">Loading...</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -139,6 +247,7 @@ export function InboxView({ conversations, statusCounts }: InboxViewProps) {
                 shopifyCustomer={detailData.shopifyCustomer}
                 draftUsedCustomerData={!!detailData.draft?.customer_context}
                 onRefresh={handleDetailRefresh}
+                onSent={handleConversationSent}
               />
             </div>
           )}
