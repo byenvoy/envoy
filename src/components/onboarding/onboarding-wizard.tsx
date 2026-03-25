@@ -72,8 +72,12 @@ export function OnboardingWizard({
   }
 
   return (
-    <div className="mx-auto max-w-xl">
-      <OnboardingProgress currentStep={step} />
+    <div className="flex flex-1 flex-col">
+      <div className="pt-8">
+        <OnboardingProgress currentStep={step} />
+      </div>
+      <div className="mx-auto flex w-full max-w-xl flex-1 items-center">
+        <div className="w-full">
 
       {step === 1 && (
         <EmailStep
@@ -100,6 +104,8 @@ export function OnboardingWizard({
           onSkip={skipStep}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 }
