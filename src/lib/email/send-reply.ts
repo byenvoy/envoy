@@ -91,7 +91,7 @@ export async function sendReply({
   // Update conversation status to waiting
   await admin
     .from("conversations")
-    .update({ status: "waiting", updated_at: new Date().toISOString() })
+    .update({ status: "waiting", last_message_at: new Date().toISOString() })
     .eq("id", conversation.id);
 
   return outboundMsg.id;

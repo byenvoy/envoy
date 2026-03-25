@@ -35,7 +35,7 @@ export default async function InboxPage({
     .from("conversations")
     .select("*")
     .eq("org_id", orgId)
-    .order("updated_at", { ascending: false })
+    .order("last_message_at", { ascending: false })
     .limit(PAGE_SIZE);
 
   if (statusFilter && statusFilter !== "all") {

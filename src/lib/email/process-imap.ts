@@ -84,7 +84,7 @@ export async function processImapEmail(
     // Reopen conversation if it was waiting/closed
     await admin
       .from("conversations")
-      .update({ status: "open", updated_at: new Date().toISOString() })
+      .update({ status: "open", last_message_at: new Date().toISOString() })
       .eq("id", conversationId);
   }
 

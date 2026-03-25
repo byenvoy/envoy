@@ -61,7 +61,7 @@ export default async function DashboardPage() {
       .from("conversations")
       .select("*")
       .eq("org_id", orgId)
-      .order("updated_at", { ascending: false })
+      .order("last_message_at", { ascending: false })
       .limit(10),
     supabase
       .from("knowledge_base_pages")
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
                 <div className="ml-4 flex items-center gap-3">
                   <StatusBadge status={convo.status} />
                   <span className="font-mono text-xs text-text-secondary">
-                    {new Date(convo.updated_at).toLocaleDateString()}
+                    {new Date(convo.last_message_at).toLocaleDateString()}
                   </span>
                 </div>
               </Link>

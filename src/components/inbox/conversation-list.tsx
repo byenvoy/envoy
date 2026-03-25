@@ -69,7 +69,7 @@ export function ConversationList({ conversations, selectedId, activeFilter, onSe
                 {convo.customer_name || convo.customer_email}
               </span>
               <span className="flex-shrink-0 font-mono text-xs text-text-secondary">
-                {timeAgo(convo.updated_at)}
+                {timeAgo(convo.last_message_at)}
               </span>
             </div>
             <p className="mt-0.5 truncate text-sm text-text-primary">

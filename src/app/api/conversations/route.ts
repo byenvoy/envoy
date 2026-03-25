@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     .from("conversations")
     .select("*")
     .eq("org_id", profile.org_id)
-    .order("updated_at", { ascending: false })
+    .order("last_message_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (status && status !== "all") {
