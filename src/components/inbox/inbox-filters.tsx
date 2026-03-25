@@ -5,10 +5,9 @@ import { useState } from "react";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
-  { value: "new", label: "New" },
-  { value: "draft_generated", label: "Draft" },
-  { value: "sent", label: "Sent" },
-  { value: "discarded", label: "Discarded" },
+  { value: "open", label: "Open" },
+  { value: "waiting", label: "Waiting" },
+  { value: "closed", label: "Closed" },
 ];
 
 interface InboxFiltersProps {
@@ -45,7 +44,6 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
 
   return (
     <div className="space-y-3">
-      {/* Search */}
       <div className="flex gap-1.5">
         <input
           type="text"
@@ -57,7 +55,6 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
         />
       </div>
 
-      {/* Status filter pills */}
       <div className="flex flex-wrap gap-1">
         {STATUS_FILTERS.map((filter) => {
           const count = statusCounts[filter.value] ?? 0;

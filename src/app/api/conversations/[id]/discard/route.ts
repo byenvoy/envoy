@@ -25,32 +25,24 @@ export async function POST(
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  // Get latest draft
+  // Discard latest pending draft
   const { data: draft } = await supabase
-    .from("draft_replies")
+    .from("drafts")
     .select("id")
-    .eq("ticket_id", id)
+    .eq("conversation_id", id)
     .eq("org_id", profile.org_id)
+    .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
   if (draft) {
     await supabase
-      .from("draft_replies")
-      .update({ was_approved: false })
+      .from("drafts")
+      .update({ status: "discarded" })
       .eq("id", draft.id);
   }
 
-  const { error } = await supabase
-    .from("tickets")
-    .update({ status: "discarded" })
-    .eq("id", id)
-    .eq("org_id", profile.org_id);
-
-  if (error) {
-    return NextResponse.json({ error: "Failed to discard" }, { status: 500 });
-  }
-
+  // Conversation stays open — agent can still respond manually or regenerate
   return NextResponse.json({ ok: true });
 }

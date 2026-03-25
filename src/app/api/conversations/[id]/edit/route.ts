@@ -35,12 +35,13 @@ export async function PUT(
     );
   }
 
-  // Get latest draft for this ticket
+  // Get latest pending draft for this conversation
   const { data: draft } = await supabase
-    .from("draft_replies")
+    .from("drafts")
     .select("id")
-    .eq("ticket_id", id)
+    .eq("conversation_id", id)
     .eq("org_id", profile.org_id)
+    .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
@@ -50,7 +51,7 @@ export async function PUT(
   }
 
   const { error } = await supabase
-    .from("draft_replies")
+    .from("drafts")
     .update({ edited_content })
     .eq("id", draft.id);
 

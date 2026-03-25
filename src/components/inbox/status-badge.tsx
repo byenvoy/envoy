@@ -1,29 +1,21 @@
-import type { TicketStatus } from "@/lib/types/database";
+import type { ConversationStatus } from "@/lib/types/database";
 
-const statusConfig: Record<TicketStatus, { label: string; className: string }> = {
-  new: {
-    label: "New",
-    className: "bg-info-light text-info",
-  },
-  draft_generated: {
-    label: "Draft Ready",
+const statusConfig: Record<ConversationStatus, { label: string; className: string }> = {
+  open: {
+    label: "Open",
     className: "bg-ai-accent-light text-ai-accent",
   },
-  approved: {
-    label: "Approved",
+  waiting: {
+    label: "Waiting",
     className: "bg-success-light text-primary",
   },
-  sent: {
-    label: "Sent",
-    className: "bg-success-light text-primary",
-  },
-  discarded: {
-    label: "Discarded",
+  closed: {
+    label: "Closed",
     className: "bg-surface-alt text-text-secondary",
   },
 };
 
-export function StatusBadge({ status }: { status: TicketStatus }) {
+export function StatusBadge({ status }: { status: ConversationStatus }) {
   const config = statusConfig[status];
   return (
     <span

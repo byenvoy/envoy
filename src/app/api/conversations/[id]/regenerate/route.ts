@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateDraftForTicket } from "@/lib/email/generate-draft";
+import { generateDraftForConversation } from "@/lib/email/generate-draft";
 
 export async function POST(
   _request: NextRequest,
@@ -26,20 +26,20 @@ export async function POST(
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  // Verify ticket belongs to user's org
-  const { data: ticket } = await supabase
-    .from("tickets")
+  // Verify conversation belongs to user's org
+  const { data: conversation } = await supabase
+    .from("conversations")
     .select("id")
     .eq("id", id)
     .eq("org_id", profile.org_id)
     .single();
 
-  if (!ticket) {
-    return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+  if (!conversation) {
+    return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
   }
 
   try {
-    await generateDraftForTicket(id);
+    await generateDraftForConversation(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Failed to regenerate draft:", error);

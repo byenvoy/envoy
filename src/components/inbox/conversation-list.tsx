@@ -1,5 +1,4 @@
-import { StatusBadge } from "./status-badge";
-import type { Ticket } from "@/lib/types/database";
+import type { Conversation } from "@/lib/types/database";
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -15,18 +14,18 @@ function timeAgo(dateStr: string): string {
   return `${days}d`;
 }
 
-interface TicketListSidebarProps {
-  tickets: Ticket[];
+interface ConversationListProps {
+  conversations: Conversation[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
 
-export function TicketListSidebar({ tickets, selectedId, onSelect }: TicketListSidebarProps) {
-  if (tickets.length === 0) {
+export function ConversationList({ conversations, selectedId, onSelect }: ConversationListProps) {
+  if (conversations.length === 0) {
     return (
       <div className="p-6 text-center">
         <p className="text-sm text-text-secondary">
-          No tickets yet.
+          No conversations yet.
         </p>
       </div>
     );
@@ -34,14 +33,14 @@ export function TicketListSidebar({ tickets, selectedId, onSelect }: TicketListS
 
   return (
     <div className="divide-y divide-border">
-      {tickets.map((ticket) => {
-        const isSelected = ticket.id === selectedId;
-        const isUnread = ticket.status === "new";
+      {conversations.map((convo) => {
+        const isSelected = convo.id === selectedId;
+        const isOpen = convo.status === "open";
 
         return (
           <button
-            key={ticket.id}
-            onClick={() => onSelect(ticket.id)}
+            key={convo.id}
+            onClick={() => onSelect(convo.id)}
             className={`w-full px-4 py-3 text-left transition-colors ${
               isSelected
                 ? "bg-success-light"
@@ -50,20 +49,17 @@ export function TicketListSidebar({ tickets, selectedId, onSelect }: TicketListS
           >
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 truncate font-display text-sm font-semibold text-text-primary">
-                {isUnread && (
+                {isOpen && (
                   <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
                 )}
-                {ticket.from_name || ticket.from_email}
+                {convo.customer_name || convo.customer_email}
               </span>
               <span className="flex-shrink-0 font-mono text-xs text-text-secondary">
-                {timeAgo(ticket.created_at)}
+                {timeAgo(convo.updated_at)}
               </span>
             </div>
             <p className="mt-0.5 truncate text-sm text-text-primary">
-              {ticket.subject || "(no subject)"}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-text-secondary">
-              {ticket.body_text?.slice(0, 80) || ""}
+              {convo.subject || "(no subject)"}
             </p>
           </button>
         );

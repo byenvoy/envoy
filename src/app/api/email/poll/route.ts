@@ -33,12 +33,12 @@ export async function GET(request: NextRequest) {
 
     let polled = 0;
     let errors = 0;
-    let ticketsCreated = 0;
+    let conversationsCreated = 0;
 
     for (const conn of (connections ?? []) as EmailConnection[]) {
       try {
         const created = await pollConnection(conn);
-        ticketsCreated += created;
+        conversationsCreated += created ? 1 : 0;
         polled++;
       } catch (err) {
         console.error(`Poll error for connection ${conn.id}:`, err);
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ polled, errors, tickets_created: ticketsCreated });
+    return NextResponse.json({ polled, errors, conversations_processed: conversationsCreated });
   } finally {
     await admin.rpc("advisory_unlock", { lock_id: 73501 });
   }

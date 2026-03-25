@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
-import type { Ticket } from "@/lib/types/database";
+import { StatusBadge } from "@/components/inbox/status-badge";
+import type { Conversation } from "@/lib/types/database";
 
 function getThirtyDaysAgo(): string {
   return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -36,25 +37,19 @@ export default async function DashboardPage() {
   // Fetch all stats in parallel
   const [
     { count: openCount },
-    { count: needingResponseCount },
     { data: recentDrafts },
     { data: usageLogs },
-    { data: recentTickets },
+    { data: recentConversations },
     { count: kbPageCount },
   ] = await Promise.all([
     supabase
-      .from("tickets")
+      .from("conversations")
       .select("*", { count: "exact", head: true })
       .eq("org_id", orgId)
-      .in("status", ["new", "draft_generated"]),
+      .eq("status", "open"),
     supabase
-      .from("tickets")
-      .select("*", { count: "exact", head: true })
-      .eq("org_id", orgId)
-      .eq("status", "new"),
-    supabase
-      .from("draft_replies")
-      .select("was_approved, approved_at, created_at")
+      .from("drafts")
+      .select("status, approved_at, created_at")
       .eq("org_id", orgId)
       .gte("created_at", thirtyDaysAgo),
     supabase
@@ -63,10 +58,10 @@ export default async function DashboardPage() {
       .eq("org_id", orgId)
       .gte("created_at", monthStart),
     supabase
-      .from("tickets")
+      .from("conversations")
       .select("*")
       .eq("org_id", orgId)
-      .order("created_at", { ascending: false })
+      .order("updated_at", { ascending: false })
       .limit(10),
     supabase
       .from("knowledge_base_pages")
@@ -79,7 +74,7 @@ export default async function DashboardPage() {
   const approvalRate =
     drafts30d.length > 0
       ? Math.round(
-          (drafts30d.filter((d) => d.was_approved === true).length /
+          (drafts30d.filter((d) => d.status === "approved").length /
             drafts30d.length) *
             100
         )
@@ -94,11 +89,10 @@ export default async function DashboardPage() {
     (l) => l.call_type === "draft"
   ).length;
 
-  const tickets = (recentTickets ?? []) as Ticket[];
+  const conversations = (recentConversations ?? []) as Conversation[];
 
   const stats = [
-    { label: "Open Tickets", value: openCount ?? 0 },
-    { label: "Needing Response", value: needingResponseCount ?? 0 },
+    { label: "Open Conversations", value: openCount ?? 0 },
     { label: "Approval Rate (30d)", value: `${approvalRate}%` },
     { label: "Cost This Month", value: `$${costThisMonth.toFixed(2)}` },
     { label: "Drafts This Month", value: draftsThisMonth },
@@ -132,7 +126,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -150,44 +144,32 @@ export default async function DashboardPage() {
 
       <div>
         <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">
-          Recent Tickets
+          Recent Conversations
         </h2>
-        {tickets.length === 0 ? (
+        {conversations.length === 0 ? (
           <p className="text-sm text-text-secondary">
-            No tickets yet.
+            No conversations yet.
           </p>
         ) : (
           <div className="divide-y divide-border rounded-lg border border-border bg-surface-alt">
-            {tickets.map((ticket) => (
+            {conversations.map((convo) => (
               <Link
-                key={ticket.id}
-                href={`/inbox/${ticket.id}`}
+                key={convo.id}
+                href={`/inbox?id=${convo.id}`}
                 className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-surface"
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-display text-sm font-semibold text-text-primary">
-                    {ticket.subject || "(No subject)"}
+                    {convo.subject || "(No subject)"}
                   </p>
                   <p className="truncate text-xs text-text-secondary">
-                    {ticket.from_name || ticket.from_email}
+                    {convo.customer_name || convo.customer_email}
                   </p>
                 </div>
                 <div className="ml-4 flex items-center gap-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 font-display text-xs font-semibold ${
-                      ticket.status === "new"
-                        ? "bg-info-light text-info"
-                        : ticket.status === "draft_generated"
-                          ? "bg-ai-accent-light text-ai-accent"
-                          : ticket.status === "sent"
-                            ? "bg-success-light text-primary"
-                            : "bg-surface-alt text-text-secondary"
-                    }`}
-                  >
-                    {ticket.status.replace("_", " ")}
-                  </span>
+                  <StatusBadge status={convo.status} />
                   <span className="font-mono text-xs text-text-secondary">
-                    {new Date(ticket.created_at).toLocaleDateString()}
+                    {new Date(convo.updated_at).toLocaleDateString()}
                   </span>
                 </div>
               </Link>

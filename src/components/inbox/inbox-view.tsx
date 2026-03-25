@@ -2,36 +2,37 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { TicketListSidebar } from "./ticket-list";
+import { ConversationList } from "./conversation-list";
 import { ThreadPanel } from "./thread-view";
 import { DraftPanel } from "./ticket-detail";
 import { InboxFilters } from "./inbox-filters";
-import type { Ticket, DraftReply } from "@/lib/types/database";
-import type { ThreadMessage } from "./thread-view";
+import type { Conversation, Message, Draft } from "@/lib/types/database";
+import type { ShopifyCustomerContext } from "@/lib/types/shopify";
 
 interface InboxViewProps {
-  tickets: Ticket[];
+  conversations: Conversation[];
   statusCounts: Record<string, number>;
 }
 
-interface TicketDetailData {
-  ticket: Ticket;
-  draft: DraftReply | null;
-  threadMessages: ThreadMessage[];
+interface ConversationDetailData {
+  conversation: Conversation;
+  messages: Message[];
+  draft: Draft | null;
+  shopifyCustomer: ShopifyCustomerContext | null;
 }
 
-export function InboxView({ tickets, statusCounts }: InboxViewProps) {
+export function InboxView({ conversations, statusCounts }: InboxViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedId = searchParams.get("id");
-  const [detailData, setDetailData] = useState<TicketDetailData | null>(null);
+  const [detailData, setDetailData] = useState<ConversationDetailData | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
-  const fetchDetail = useCallback(async (ticketId: string) => {
+  const fetchDetail = useCallback(async (conversationId: string) => {
     setDetailLoading(true);
     try {
-      const res = await fetch(`/api/tickets/${ticketId}/detail`);
+      const res = await fetch(`/api/conversations/${conversationId}`);
       if (!res.ok) return;
       const data = await res.json();
       setDetailData(data);
@@ -50,9 +51,9 @@ export function InboxView({ tickets, statusCounts }: InboxViewProps) {
     }
   }, [selectedId, fetchDetail]);
 
-  function handleSelectTicket(ticketId: string) {
+  function handleSelectConversation(conversationId: string) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("id", ticketId);
+    params.set("id", conversationId);
     router.push(`/inbox?${params.toString()}`, { scroll: false });
     setMobileShowDetail(true);
   }
@@ -68,23 +69,24 @@ export function InboxView({ tickets, statusCounts }: InboxViewProps) {
     if (selectedId) fetchDetail(selectedId);
   }
 
-  // Auto-select first ticket on desktop when list changes (initial load, filter switch)
+  // Auto-select first conversation on desktop when list changes
   useEffect(() => {
-    if (tickets.length > 0 && window.innerWidth >= 768) {
-      const currentStillExists = selectedId && tickets.some((t) => t.id === selectedId);
+    if (conversations.length > 0 && window.innerWidth >= 768) {
+      const currentStillExists = selectedId && conversations.some((c) => c.id === selectedId);
       if (!currentStillExists) {
-        handleSelectTicket(tickets[0].id);
+        handleSelectConversation(conversations[0].id);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickets]);
+  }, [conversations]);
 
-  const isSentOrDiscarded = detailData?.ticket.status === "sent" || detailData?.ticket.status === "discarded";
-  const showDraftPanel = detailData && !isSentOrDiscarded;
+  const hasPendingDraft = detailData?.draft && detailData.draft.status === "pending";
+  const hasShopifyCustomer = detailData?.shopifyCustomer && (detailData.shopifyCustomer.customer || detailData.shopifyCustomer.recent_orders?.length);
+  const showRightPanel = hasPendingDraft || hasShopifyCustomer;
 
   return (
     <div className="flex h-full">
-      {/* Mobile: back button when viewing detail */}
+      {/* Mobile: back button */}
       {mobileShowDetail && selectedId && (
         <div className="fixed left-0 right-0 top-14 z-10 border-b border-border bg-surface p-3 md:hidden">
           <button
@@ -106,15 +108,15 @@ export function InboxView({ tickets, statusCounts }: InboxViewProps) {
           <InboxFilters statusCounts={statusCounts} />
         </div>
         <div className="flex-1 overflow-y-auto">
-          <TicketListSidebar
-            tickets={tickets}
+          <ConversationList
+            conversations={conversations}
             selectedId={selectedId}
-            onSelect={handleSelectTicket}
+            onSelect={handleSelectConversation}
           />
         </div>
       </div>
 
-      {/* Middle + Right columns: thread + draft */}
+      {/* Middle + Right columns */}
       {selectedId && detailData ? (
         <div
           className={`flex h-full min-w-0 flex-1 ${
@@ -122,30 +124,27 @@ export function InboxView({ tickets, statusCounts }: InboxViewProps) {
           }`}
         >
           {/* Thread panel */}
-          <div className={`h-full min-w-0 flex-1 overflow-y-auto p-5 ${showDraftPanel ? "border-r border-border" : ""}`}>
+          <div className={`h-full min-w-0 flex-1 overflow-y-auto p-5 ${showRightPanel ? "border-r border-border" : ""}`}>
             <ThreadPanel
-              ticket={detailData.ticket}
-              draft={detailData.draft}
-              threadMessages={detailData.threadMessages}
+              conversation={detailData.conversation}
+              messages={detailData.messages}
             />
           </div>
-          {/* Draft panel — hidden when ticket is sent or discarded */}
-          {showDraftPanel && (
+          {/* Right panel — customer context + draft */}
+          {showRightPanel && (
             <div className="hidden h-full w-[380px] flex-shrink-0 overflow-y-auto md:block">
               <DraftPanel
-                ticket={detailData.ticket}
-                draft={detailData.draft}
+                conversation={detailData.conversation}
+                draft={hasPendingDraft ? detailData.draft! : null}
+                shopifyCustomer={detailData.shopifyCustomer}
+                draftUsedCustomerData={!!detailData.draft?.customer_context}
                 onRefresh={handleDetailRefresh}
               />
             </div>
           )}
         </div>
       ) : selectedId && detailLoading ? (
-        <div
-          className={`flex flex-1 items-center justify-center ${
-            !mobileShowDetail ? "hidden md:flex" : "flex"
-          }`}
-        >
+        <div className={`flex flex-1 items-center justify-center ${!mobileShowDetail ? "hidden md:flex" : "flex"}`}>
           <p className="text-sm text-text-secondary">Loading...</p>
         </div>
       ) : (
@@ -153,9 +152,6 @@ export function InboxView({ tickets, statusCounts }: InboxViewProps) {
           <div className="text-center">
             <p className="font-display text-sm font-medium text-text-secondary">
               Select a conversation to view
-            </p>
-            <p className="mt-1 text-xs text-text-secondary">
-              Choose a ticket from the list on the left
             </p>
           </div>
         </div>

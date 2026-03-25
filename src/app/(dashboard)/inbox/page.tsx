@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { InboxView } from "@/components/inbox/inbox-view";
+import type { ConversationStatus } from "@/lib/types/database";
 
 export default async function InboxPage({
   searchParams,
@@ -24,39 +25,39 @@ export default async function InboxPage({
 
   if (!profile) redirect("/onboarding");
 
-  // Fetch tickets with filters
+  // Fetch conversations with filters
   let query = supabase
-    .from("tickets")
+    .from("conversations")
     .select("*")
     .eq("org_id", profile.org_id)
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false });
 
   if (statusFilter && statusFilter !== "all") {
-    query = query.eq("status", statusFilter);
+    query = query.eq("status", statusFilter as ConversationStatus);
   }
 
   if (search) {
     query = query.or(
-      `from_email.ilike.%${search}%,from_name.ilike.%${search}%,subject.ilike.%${search}%`
+      `customer_email.ilike.%${search}%,customer_name.ilike.%${search}%,subject.ilike.%${search}%`
     );
   }
 
-  const { data: tickets } = await query;
+  const { data: conversations } = await query;
 
   // Get counts per status
-  const { data: allTickets } = await supabase
-    .from("tickets")
+  const { data: allConversations } = await supabase
+    .from("conversations")
     .select("status")
     .eq("org_id", profile.org_id);
 
-  const counts: Record<string, number> = { all: allTickets?.length ?? 0 };
-  for (const t of allTickets ?? []) {
-    counts[t.status] = (counts[t.status] ?? 0) + 1;
+  const counts: Record<string, number> = { all: allConversations?.length ?? 0 };
+  for (const c of allConversations ?? []) {
+    counts[c.status] = (counts[c.status] ?? 0) + 1;
   }
 
   return (
     <Suspense fallback={<div className="flex h-full items-center justify-center"><p className="text-sm text-text-secondary">Loading inbox...</p></div>}>
-      <InboxView tickets={tickets ?? []} statusCounts={counts} />
+      <InboxView conversations={conversations ?? []} statusCounts={counts} />
     </Suspense>
   );
 }

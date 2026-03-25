@@ -75,34 +75,48 @@ export interface EmailConnection {
   updated_at: string;
 }
 
-export type TicketStatus = "new" | "draft_generated" | "approved" | "sent" | "discarded";
+export type ConversationStatus = "open" | "waiting" | "closed";
 
-export interface Ticket {
+export interface Conversation {
   id: string;
   org_id: string;
+  subject: string | null;
+  status: ConversationStatus;
+  customer_email: string;
+  customer_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MessageDirection = "inbound" | "outbound";
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  org_id: string;
+  direction: MessageDirection;
   from_email: string;
   from_name: string | null;
   to_email: string;
-  subject: string | null;
   body_text: string | null;
   body_html: string | null;
   message_id: string | null;
   in_reply_to: string | null;
-  thread_id: string | null;
-  inbound_email_id: string | null;
-  source: "imap";
+  source: "imap" | "smtp" | "manual";
   connection_id: string | null;
-  status: TicketStatus;
   created_at: string;
 }
 
-export interface DraftReply {
+export type DraftStatus = "pending" | "approved" | "discarded";
+
+export interface Draft {
   id: string;
-  ticket_id: string;
+  conversation_id: string;
   org_id: string;
+  message_id: string | null;
   draft_content: string;
   edited_content: string | null;
-  was_approved: boolean | null;
+  status: DraftStatus;
   model_used: string | null;
   chunks_used: { id: string; content: string; similarity: number; source_url?: string }[] | null;
   customer_context: Record<string, unknown> | null;
@@ -112,6 +126,7 @@ export interface DraftReply {
   created_at: string;
 }
 
+
 export interface ShopifyConfig {
   shop_domain: string;
 }
@@ -119,7 +134,7 @@ export interface ShopifyConfig {
 export interface UsageLog {
   id: string;
   org_id: string;
-  draft_reply_id: string | null;
+  draft_id: string | null;
   call_type: "draft" | "classification";
   model: string;
   input_tokens: number;

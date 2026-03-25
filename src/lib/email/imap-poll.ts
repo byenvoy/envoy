@@ -10,7 +10,7 @@ export async function pollConnection(
 ): Promise<number> {
   const tokens = await getValidTokens(connection);
   const admin = createAdminClient();
-  let ticketsCreated = 0;
+  let processed = 0;
 
   const client = new ImapFlow({
     host: connection.imap_host,
@@ -63,8 +63,8 @@ export async function pollConnection(
         const testAllowList = process.env.IMAP_ALLOW_SENDERS?.split(",").map(s => s.trim().toLowerCase());
         if (testAllowList && testAllowList.length > 0 && (!fromAddr || !testAllowList.includes(fromAddr))) continue;
 
-        const ticket = await processImapEmail(parsed, connection);
-        if (ticket) ticketsCreated++;
+        const conversation = await processImapEmail(parsed, connection);
+        if (conversation) processed++;
 
         if (!maxUid || Number(uid) > Number(maxUid)) {
           maxUid = uid;
@@ -88,5 +88,5 @@ export async function pollConnection(
     await client.logout().catch(() => {});
   }
 
-  return ticketsCreated;
+  return processed;
 }

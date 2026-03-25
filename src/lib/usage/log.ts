@@ -3,14 +3,14 @@ import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 
 export async function logUsage({
   orgId,
-  draftReplyId,
+  draftId,
   callType,
   model,
   inputTokens,
   outputTokens,
 }: {
   orgId: string;
-  draftReplyId?: string;
+  draftId?: string;
   callType: "draft" | "classification";
   model: string;
   inputTokens: number;
@@ -26,7 +26,7 @@ export async function logUsage({
   const admin = createAdminClient();
   const { error } = await admin.from("usage_logs").insert({
     org_id: orgId,
-    draft_reply_id: draftReplyId ?? null,
+    draft_id: draftId ?? null,
     call_type: callType,
     model,
     input_tokens: inputTokens,

@@ -1,12 +1,12 @@
 import type { ParsedMail } from "mailparser";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateDraftForTicket } from "@/lib/email/generate-draft";
-import type { EmailConnection, Ticket } from "@/lib/types/database";
+import { generateDraftForConversation } from "@/lib/email/generate-draft";
+import type { EmailConnection, Conversation } from "@/lib/types/database";
 
 export async function processImapEmail(
   parsed: ParsedMail,
   connection: EmailConnection
-): Promise<Ticket | null> {
+): Promise<Conversation | null> {
   const admin = createAdminClient();
 
   const fromAddr = parsed.from?.value?.[0]?.address ?? "";
@@ -20,10 +20,10 @@ export async function processImapEmail(
   const bodyText = parsed.text ?? null;
   const bodyHtml = parsed.html || null;
 
-  // Idempotency: skip if already processed
+  // Idempotency: skip if message already processed
   if (messageId) {
     const { data: existing } = await admin
-      .from("tickets")
+      .from("messages")
       .select("id")
       .eq("message_id", messageId)
       .single();
@@ -31,54 +31,92 @@ export async function processImapEmail(
     if (existing) return null;
   }
 
-  // Resolve threading
-  let threadId: string | null = null;
+  // Resolve conversation via in_reply_to
+  // This now finds both inbound AND outbound messages since both are in the messages table
+  let conversationId: string | null = null;
   if (inReplyTo) {
-    const { data: parentTicket } = await admin
-      .from("tickets")
-      .select("id, thread_id")
+    const { data: parentMessage } = await admin
+      .from("messages")
+      .select("conversation_id")
       .eq("message_id", inReplyTo)
       .single();
 
-    if (parentTicket) {
-      threadId = parentTicket.thread_id ?? parentTicket.id;
+    if (parentMessage) {
+      conversationId = parentMessage.conversation_id;
     }
   }
 
-  // Insert ticket
-  const { data: ticket, error } = await admin
-    .from("tickets")
+  // Fallback: match by subject + customer email if in_reply_to didn't resolve
+  if (!conversationId && subject) {
+    const normalizedSubject = subject.replace(/^(Re|Fwd|Fw):\s*/gi, "").trim();
+    const { data: matchingConvo } = await admin
+      .from("conversations")
+      .select("id")
+      .eq("org_id", connection.org_id)
+      .eq("customer_email", fromAddr)
+      .ilike("subject", normalizedSubject)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (matchingConvo) {
+      conversationId = matchingConvo.id;
+    }
+  }
+
+  // Create new conversation if no thread found
+  if (!conversationId) {
+    const { data: conversation, error: convoError } = await admin
+      .from("conversations")
+      .insert({
+        org_id: connection.org_id,
+        subject,
+        status: "open",
+        customer_email: fromAddr,
+        customer_name: fromName,
+      })
+      .select()
+      .single();
+
+    if (convoError) throw convoError;
+    conversationId = conversation.id;
+  } else {
+    // Reopen conversation if it was waiting/closed
+    await admin
+      .from("conversations")
+      .update({ status: "open", updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+  }
+
+  // Insert inbound message
+  const { error: msgError } = await admin
+    .from("messages")
     .insert({
+      conversation_id: conversationId,
       org_id: connection.org_id,
+      direction: "inbound",
       from_email: fromAddr,
       from_name: fromName,
       to_email: toEmail,
-      subject,
       body_text: bodyText,
       body_html: bodyHtml,
       message_id: messageId,
       in_reply_to: inReplyTo,
-      thread_id: threadId,
       source: "imap",
       connection_id: connection.id,
-      status: "new",
-    })
-    .select()
-    .single();
+    });
 
-  if (error) throw error;
-
-  // Self-thread if first in conversation
-  if (!threadId) {
-    await admin
-      .from("tickets")
-      .update({ thread_id: ticket.id })
-      .eq("id", ticket.id);
-    ticket.thread_id = ticket.id;
-  }
+  if (msgError) throw msgError;
 
   // Generate draft via RAG pipeline
-  await generateDraftForTicket(ticket.id);
+  await generateDraftForConversation(conversationId!);
 
-  return ticket as Ticket;
+  // Return conversation
+  const { data: conversation } = await admin
+    .from("conversations")
+    .select("*")
+    .eq("id", conversationId)
+    .single();
+
+  return conversation as Conversation;
 }
