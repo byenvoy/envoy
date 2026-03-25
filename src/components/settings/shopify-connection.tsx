@@ -99,7 +99,7 @@ export function ShopifyConnection({
             />
             <a
               href={`/api/integrations/shopify/authorize?shop=${encodeURIComponent(shopDomain)}`}
-              className={`flex items-center gap-2 border-l border-border bg-surface px-4 font-display text-sm font-medium text-text-primary transition-colors hover:bg-surface-alt ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
+              className={`flex items-center gap-2 bg-surface px-5 font-display text-sm font-medium text-text-primary transition-colors hover:bg-border ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
             >
               Connect
             </a>
