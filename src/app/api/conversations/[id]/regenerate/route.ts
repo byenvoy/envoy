@@ -38,6 +38,13 @@ export async function POST(
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
   }
 
+  // Discard any pending drafts first (keeps history for tracking)
+  await supabase
+    .from("drafts")
+    .update({ status: "discarded" })
+    .eq("conversation_id", id)
+    .eq("status", "pending");
+
   try {
     await generateDraftForConversation(id);
     return NextResponse.json({ ok: true });

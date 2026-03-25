@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Conversation, Draft } from "@/lib/types/database";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
@@ -22,58 +22,93 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function handleAction(action: "approve" | "discard" | "regenerate") {
-    setLoading(action);
+  // Auto-save with debounce
+  const autoSave = useCallback(
+    async (content: string) => {
+      if (!draft || draft.status !== "pending") return;
+      // Don't save if content matches the original draft
+      if (content === draft.draft_content && !draft.edited_content) return;
+      if (content === draft.edited_content) return;
+
+      setSaveStatus("saving");
+      try {
+        const res = await fetch(`/api/conversations/${conversation.id}/edit`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ edited_content: content }),
+        });
+        if (res.ok) {
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus("idle"), 2000);
+        }
+      } catch {
+        setSaveStatus("idle");
+      }
+    },
+    [conversation.id, draft]
+  );
+
+  function handleContentChange(value: string) {
+    setEditedContent(value);
+    setSaveStatus("idle");
+
+    // Debounce auto-save
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => autoSave(value), 800);
+  }
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  async function handleApprove() {
+    setLoading("approve");
     setError(null);
 
     try {
-      const url = `/api/conversations/${conversation.id}/${action}`;
-      const body =
-        action === "approve"
-          ? JSON.stringify({ edited_content: editedContent })
-          : undefined;
-
-      const res = await fetch(url, {
+      const res = await fetch(`/api/conversations/${conversation.id}/approve`, {
         method: "POST",
-        headers: body ? { "Content-Type": "application/json" } : undefined,
-        body,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ edited_content: editedContent }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Action failed");
+        throw new Error(data.error || "Failed to send");
       }
 
-      if (action === "approve") {
-        onSent();
-      } else {
-        onRefresh();
-        router.refresh();
-      }
+      onSent();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
+      setError(err instanceof Error ? err.message : "Failed to send");
     } finally {
       setLoading(null);
     }
   }
 
-  async function handleSaveEdit() {
-    setLoading("save");
+  async function handleRegenerate() {
+    setLoading("regenerate");
     setError(null);
 
     try {
-      const res = await fetch(`/api/conversations/${conversation.id}/edit`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ edited_content: editedContent }),
+      const res = await fetch(`/api/conversations/${conversation.id}/regenerate`, {
+        method: "POST",
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to regenerate");
+      }
+
       onRefresh();
       router.refresh();
-    } catch {
-      setError("Failed to save edit");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to regenerate");
     } finally {
       setLoading(null);
     }
@@ -90,7 +125,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
 
   return (
     <div className="flex h-full flex-col bg-surface-alt">
-      {/* Customer context card — always shows when Shopify data available */}
+      {/* Customer context card */}
       {shopifyCustomer && (shopifyCustomer.customer || shopifyCustomer.recent_orders?.length > 0) && (
         <CustomerContextCard
           customerContext={shopifyCustomer}
@@ -98,13 +133,20 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         />
       )}
 
-      {/* Draft section — only when there's a pending draft */}
+      {/* Draft section */}
       {draft && isPending && (
         <div className="flex flex-1 flex-col gap-3 p-4">
+          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-display text-sm font-semibold">
               <span className="inline-block h-2 w-2 rounded-full bg-ai-accent" />
               <span className="text-text-primary">AI Draft</span>
+              {saveStatus === "saving" && (
+                <span className="font-mono text-[10px] font-normal text-text-secondary">Saving...</span>
+              )}
+              {saveStatus === "saved" && (
+                <span className="font-mono text-[10px] font-normal text-primary">Saved</span>
+              )}
             </div>
             <button
               onClick={handleCopy}
@@ -118,9 +160,10 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             <p className="text-xs text-error">{error}</p>
           )}
 
+          {/* Draft textarea */}
           <textarea
             value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
+            onChange={(e) => handleContentChange(e.target.value)}
             rows={10}
             className="flex-1 resize-none rounded-lg border border-l-[3px] border-l-ai-accent border-t-border border-r-border border-b-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
@@ -152,28 +195,21 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             </div>
           )}
 
-          {/* Actions */}
+          {/* Actions: Approve & Send + Regenerate */}
           <div className="flex gap-2">
             <button
-              onClick={() => handleAction("approve")}
+              onClick={handleApprove}
               disabled={loading !== null}
               className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
               {loading === "approve" ? "Sending..." : "Approve & Send"}
             </button>
             <button
-              onClick={handleSaveEdit}
+              onClick={handleRegenerate}
               disabled={loading !== null}
-              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-surface disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50"
             >
-              {loading === "save" ? "..." : "Edit"}
-            </button>
-            <button
-              onClick={() => handleAction("discard")}
-              disabled={loading !== null}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-error transition-colors hover:bg-error-light disabled:opacity-50"
-            >
-              {loading === "discard" ? "..." : "Reject"}
+              {loading === "regenerate" ? "..." : "Regenerate"}
             </button>
           </div>
         </div>
