@@ -67,15 +67,15 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     };
   }, []);
 
-  async function handleApprove() {
-    setLoading("approve");
+  async function handleSend(close: boolean = false) {
+    setLoading(close ? "send-close" : "send");
     setError(null);
 
     try {
       const res = await fetch(`/api/conversations/${conversation.id}/approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ edited_content: editedContent }),
+        body: JSON.stringify({ edited_content: editedContent, close }),
       });
 
       if (!res.ok) {
@@ -195,21 +195,30 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             </div>
           )}
 
-          {/* Actions: Approve & Send + Regenerate */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleApprove}
-              disabled={loading !== null}
-              className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
-            >
-              {loading === "approve" ? "Sending..." : "Approve & Send"}
-            </button>
+          {/* Actions */}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleSend(false)}
+                disabled={loading !== null}
+                className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+              >
+                {loading === "send" ? "Sending..." : "Send"}
+              </button>
+              <button
+                onClick={() => handleSend(true)}
+                disabled={loading !== null}
+                className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
+              >
+                {loading === "send-close" ? "..." : "Send & Close"}
+              </button>
+            </div>
             <button
               onClick={handleRegenerate}
               disabled={loading !== null}
-              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50"
+              className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50"
             >
-              {loading === "regenerate" ? "..." : "Regenerate"}
+              {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
             </button>
           </div>
         </div>

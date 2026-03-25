@@ -67,9 +67,10 @@ export async function POST(
     return NextResponse.json({ error: "No inbound message found" }, { status: 404 });
   }
 
-  // Check for edited content in request body
+  // Check for edited content and close flag in request body
   const body = await request.json().catch(() => ({}));
   const editedContent = body.edited_content;
+  const closeAfterSend = body.close === true;
 
   // Get org's email address and connection for sending
   const { data: emailAddr } = await supabase
@@ -120,6 +121,14 @@ export async function POST(
         ...(editedContent ? { edited_content: editedContent } : {}),
       })
       .eq("id", draft.id);
+
+    // If close requested, override the "waiting" status set by sendReply
+    if (closeAfterSend) {
+      await supabase
+        .from("conversations")
+        .update({ status: "closed" })
+        .eq("id", id);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

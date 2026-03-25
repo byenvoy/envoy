@@ -137,6 +137,27 @@ export function InboxView({
     router.refresh();
   }
 
+  const [closing, setClosing] = useState(false);
+
+  async function handleClose() {
+    if (!selectedId) return;
+    setClosing(true);
+    try {
+      const res = await fetch(`/api/conversations/${selectedId}/close`, {
+        method: "POST",
+      });
+      if (!res.ok) return;
+      detailCache.current.delete(selectedId);
+      setDetailData(null);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("id");
+      router.replace(`/inbox?${params.toString()}`, { scroll: false });
+      router.refresh();
+    } finally {
+      setClosing(false);
+    }
+  }
+
   async function handleLoadMore() {
     if (loadingMoreRef.current || !hasMore) return;
     loadingMoreRef.current = true;
@@ -236,6 +257,8 @@ export function InboxView({
             <ThreadPanel
               conversation={detailData.conversation}
               messages={detailData.messages}
+              onClose={handleClose}
+              closing={closing}
             />
           </div>
           {/* Right panel — customer context + draft */}

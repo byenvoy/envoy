@@ -30,11 +30,14 @@ function getPreview(body: string | null): { text: string; truncated: boolean } {
 interface ThreadPanelProps {
   conversation: Conversation;
   messages: Message[];
+  onClose?: () => void;
+  closing?: boolean;
 }
 
-export function ThreadPanel({ conversation, messages }: ThreadPanelProps) {
+export function ThreadPanel({ conversation, messages, onClose, closing }: ThreadPanelProps) {
   // Most recent message starts expanded, others collapsed
   const lastIndex = messages.length - 1;
+  const canClose = conversation.status !== "closed";
 
   return (
     <div>
@@ -44,7 +47,18 @@ export function ThreadPanel({ conversation, messages }: ThreadPanelProps) {
           <h2 className="font-display text-lg font-bold tracking-tight text-text-primary">
             {conversation.subject || "(no subject)"}
           </h2>
-          <StatusBadge status={conversation.status} />
+          <div className="flex items-center gap-2">
+            {canClose && onClose && (
+              <button
+                onClick={onClose}
+                disabled={closing}
+                className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-alt disabled:opacity-50"
+              >
+                {closing ? "Closing..." : "Close"}
+              </button>
+            )}
+            <StatusBadge status={conversation.status} />
+          </div>
         </div>
         <p className="mt-1 font-mono text-xs text-text-secondary">
           {conversation.customer_name
