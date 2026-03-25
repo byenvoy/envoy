@@ -39,6 +39,11 @@ export function EmailStep({
 
       {activeConnection ? (
         <div className="mx-auto max-w-sm rounded-lg border border-primary bg-success-light p-5">
+          <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary">
+            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          </div>
           <p className="font-display text-sm font-semibold text-primary">
             {activeConnection.provider === "google" ? "Google" : "Microsoft"} connected
           </p>
@@ -47,7 +52,7 @@ export function EmailStep({
           </p>
           <button
             onClick={() => handleDisconnect(activeConnection.provider)}
-            className="mt-3 text-xs text-text-secondary underline transition-colors hover:text-error"
+            className="mt-3 text-[11px] text-text-secondary/60 transition-colors hover:text-error"
           >
             Disconnect
           </button>
