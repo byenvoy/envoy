@@ -49,7 +49,6 @@ export function ConversationList({ conversations, selectedId, activeFilter, onSe
     <div className="divide-y divide-border">
       {conversations.map((convo) => {
         const isSelected = convo.id === selectedId;
-        const isOpen = convo.status === "open";
 
         return (
           <button
@@ -62,10 +61,7 @@ export function ConversationList({ conversations, selectedId, activeFilter, onSe
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 truncate font-display text-sm font-semibold text-text-primary">
-                {isOpen && (
-                  <span className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
-                )}
+              <span className="truncate font-display text-sm font-semibold text-text-primary">
                 {convo.customer_name || convo.customer_email}
               </span>
               <span className="flex-shrink-0 font-mono text-xs text-text-secondary">

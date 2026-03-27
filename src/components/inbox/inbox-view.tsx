@@ -235,7 +235,7 @@ export function InboxView({
           <ConversationList
             conversations={allConversations}
             selectedId={selectedId}
-            activeFilter={searchParams.get("status") ?? "all"}
+            activeFilter={searchParams.get("status") ?? "open"}
             onSelect={handleSelectConversation}
           />
           {hasMore && (
