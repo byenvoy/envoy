@@ -10,6 +10,7 @@ interface SendReplyParams {
   replyHtml: string;
   emailAddr: { email_address: string; display_name: string | null };
   connectionId: string;
+  sentByAutopilot?: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ export async function sendReply({
   replyHtml,
   emailAddr,
   connectionId,
+  sentByAutopilot = false,
 }: SendReplyParams): Promise<string> {
   const admin = createAdminClient();
   const { data: connection } = await admin
@@ -82,6 +84,7 @@ export async function sendReply({
       in_reply_to: latestInboundMessage.message_id,
       source: "smtp",
       connection_id: connectionId,
+      sent_by_autopilot: sentByAutopilot,
     })
     .select("id")
     .single();

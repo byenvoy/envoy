@@ -1,6 +1,7 @@
 import type { ParsedMail } from "mailparser";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateDraftForConversation } from "@/lib/email/generate-draft";
+import { checkAndEscalateThread } from "@/lib/autopilot/escalation";
 import type { EmailConnection, Conversation } from "@/lib/types/database";
 
 export async function processImapEmail(
@@ -46,23 +47,6 @@ export async function processImapEmail(
     }
   }
 
-  // Fallback: match by subject + customer email if in_reply_to didn't resolve
-  if (!conversationId && subject) {
-    const normalizedSubject = subject.replace(/^(Re|Fwd|Fw):\s*/gi, "").trim();
-    const { data: matchingConvo } = await admin
-      .from("conversations")
-      .select("id")
-      .eq("org_id", connection.org_id)
-      .eq("customer_email", fromAddr)
-      .ilike("subject", normalizedSubject)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (matchingConvo) {
-      conversationId = matchingConvo.id;
-    }
-  }
 
   // Create new conversation if no thread found
   if (!conversationId) {
@@ -107,6 +91,31 @@ export async function processImapEmail(
     });
 
   if (msgError) throw msgError;
+
+  // Check for escalation if this is a reply to an auto-sent message
+  if (conversationId && bodyText) {
+    try {
+      const { data: lastDraft } = await admin
+        .from("drafts")
+        .select("sent_by_autopilot")
+        .eq("conversation_id", conversationId)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastDraft?.sent_by_autopilot) {
+        await checkAndEscalateThread({
+          supabase: admin,
+          conversationId,
+          customerMessage: bodyText,
+          orgId: connection.org_id,
+        });
+      }
+    } catch {
+      // Escalation check failure should not block processing
+    }
+  }
 
   // Generate draft via RAG pipeline
   await generateDraftForConversation(conversationId!);

@@ -92,7 +92,10 @@ export function buildDraftPrompt({ companyName, chunks, customerMessage, convers
   const customerDataRules = hasCustomerContext
     ? `
 - Use customer-specific data when provided to give personalized, accurate answers.
-- Never fabricate order numbers, tracking numbers, or customer data — only reference what is provided in the Customer Context section.`
+- Never fabricate order numbers, tracking numbers, or customer data — only reference what is provided in the Customer Context section.
+- If the customer asks about an order, try to identify which order they mean from any clues they provide (dates, product names, order numbers). If they give no identifying details, default to their most recent order. Always clearly state which order you are referring to (e.g., "Regarding your order #1001 from March 11th...") so the customer can correct you if it's the wrong one. Do NOT ask the customer to clarify which order they mean — just answer about the most likely one.
+- When referencing fulfillment statuses, explain them in plain language. For example: "partially fulfilled" means some items have shipped but others are still being prepared; "unfulfilled" means the order is being processed and hasn't shipped yet; "fulfilled" means all items have shipped.
+- When tracking information is available, always include both the tracking number and the tracking URL so the customer can easily check their shipment status.`
     : "";
 
   const system = `You are a customer support agent for ${companyName}. Your job is to draft helpful, concise, and professional email replies to customer inquiries.

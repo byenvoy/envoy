@@ -20,6 +20,7 @@ interface MatchedChunk {
 export interface RetrieveResult {
   draft: string;
   chunks: MatchedChunk[];
+  messageEmbedding: number[];
   customerContext: ShopifyCustomerContext | null;
   classification: ClassificationResult | null;
   model: string;
@@ -27,11 +28,16 @@ export interface RetrieveResult {
   outputTokens: number;
 }
 
+interface VectorSearchResult {
+  chunks: MatchedChunk[];
+  queryEmbedding: number[];
+}
+
 async function doVectorSearch(
   supabase: SupabaseClient,
   orgId: string,
   customerMessage: string
-): Promise<MatchedChunk[]> {
+): Promise<VectorSearchResult> {
   const queryEmbedding = await embedText(customerMessage);
 
   const { data: matches, error } = await supabase.rpc("match_chunks", {
@@ -61,7 +67,7 @@ async function doVectorSearch(
     }
   }
 
-  return chunks;
+  return { chunks, queryEmbedding };
 }
 
 export async function retrieveAndDraft({
@@ -71,6 +77,7 @@ export async function retrieveAndDraft({
   customerMessage,
   customerEmail,
   conversationHistory,
+  injectConstrainedPrompt,
 }: {
   supabase: SupabaseClient;
   orgId: string;
@@ -78,6 +85,7 @@ export async function retrieveAndDraft({
   customerMessage: string;
   customerEmail?: string;
   conversationHistory?: { role: "customer" | "agent"; content: string }[];
+  injectConstrainedPrompt?: boolean;
 }): Promise<RetrieveResult> {
   // Fetch org settings
   const { data: org } = await supabase
@@ -104,7 +112,7 @@ export async function retrieveAndDraft({
   });
 
   // Execute vector search and Shopify fetch in parallel
-  const [chunks, customerContext] = await Promise.all([
+  const [vectorResult, customerContext] = await Promise.all([
     doVectorSearch(supabase, orgId, customerMessage),
     classification.needs_customer_data && customerEmail && shopifyClient
       ? shopifyClient
@@ -115,6 +123,13 @@ export async function retrieveAndDraft({
           })
       : Promise.resolve(null),
   ]);
+
+  const { chunks, queryEmbedding: messageEmbedding } = vectorResult;
+
+  // When this email matches an autopilot topic, append constrained generation instructions (Gate 3)
+  const effectiveInstructions = injectConstrainedPrompt
+    ? (customInstructions ?? "") + (await import("@/lib/autopilot/prompts")).getConstrainedGenerationAddendum()
+    : customInstructions;
 
   // Build prompt and generate draft
   const { system, user } = buildDraftPrompt({
@@ -127,7 +142,7 @@ export async function retrieveAndDraft({
     conversationHistory,
     customerContext,
     tone,
-    customInstructions,
+    customInstructions: effectiveInstructions,
   });
 
   const llm = await createLLMProvider(model, orgId);
@@ -145,6 +160,7 @@ export async function retrieveAndDraft({
   return {
     draft: response.text,
     chunks,
+    messageEmbedding,
     customerContext,
     classification,
     model: response.model,
