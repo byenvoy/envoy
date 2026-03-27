@@ -8,7 +8,7 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { incrementAutopilotDailySends } from "@/lib/db/helpers";
 import { sendReply } from "@/lib/email/send-reply";
-import type { Conversation, Message } from "@/lib/types/database";
+
 
 /**
  * Auto-send a draft reply, mirroring the manual approve flow.
@@ -55,8 +55,8 @@ export async function autoSendDraft({
   // Get org's email address
   const emailAddr = await db
     .select({
-      email_address: emailAddresses.emailAddress,
-      display_name: emailAddresses.displayName,
+      emailAddress: emailAddresses.emailAddress,
+      displayName: emailAddresses.displayName,
     })
     .from(emailAddresses)
     .where(
@@ -77,8 +77,8 @@ export async function autoSendDraft({
 
   // Send via SMTP (same function as manual approve)
   const outboundMessageId = await sendReply({
-    conversation: conversation as unknown as Conversation,
-    latestInboundMessage: latestInbound as unknown as Message,
+    conversation,
+    latestInboundMessage: latestInbound,
     replyContent: draftContent,
     replyHtml,
     emailAddr,

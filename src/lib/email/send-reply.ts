@@ -3,14 +3,20 @@ import { messages, conversations, emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getValidTokens } from "./oauth-tokens";
 import { createTransport } from "nodemailer";
-import type { Conversation, Message } from "@/lib/types/database";
 
 interface SendReplyParams {
-  conversation: Conversation;
-  latestInboundMessage: Message;
+  conversation: {
+    id: string;
+    orgId: string;
+    subject: string | null;
+    customerEmail: string;
+  };
+  latestInboundMessage: {
+    messageId: string | null;
+  };
   replyContent: string;
   replyHtml: string;
-  emailAddr: { email_address: string; display_name: string | null };
+  emailAddr: { emailAddress: string; displayName: string | null };
   connectionId: string;
   sentByAutopilot?: boolean;
 }
@@ -49,9 +55,9 @@ export async function sendReply({
     },
   });
 
-  const from = emailAddr.display_name
-    ? `${emailAddr.display_name} <${emailAddr.email_address}>`
-    : emailAddr.email_address;
+  const from = emailAddr.displayName
+    ? `${emailAddr.displayName} <${emailAddr.emailAddress}>`
+    : emailAddr.emailAddress;
 
   const subject = conversation.subject
     ? `Re: ${conversation.subject.replace(/^Re:\s*/i, "")}`
@@ -59,13 +65,13 @@ export async function sendReply({
 
   const info = await transport.sendMail({
     from,
-    to: conversation.customer_email,
+    to: conversation.customerEmail,
     subject,
     text: replyContent,
     html: replyHtml,
-    inReplyTo: latestInboundMessage.message_id ?? undefined,
-    references: latestInboundMessage.message_id
-      ? [latestInboundMessage.message_id]
+    inReplyTo: latestInboundMessage.messageId ?? undefined,
+    references: latestInboundMessage.messageId
+      ? [latestInboundMessage.messageId]
       : undefined,
   });
 
@@ -74,15 +80,15 @@ export async function sendReply({
     .insert(messages)
     .values({
       conversationId: conversation.id,
-      orgId: conversation.org_id,
+      orgId: conversation.orgId,
       direction: "outbound",
-      fromEmail: emailAddr.email_address,
-      fromName: emailAddr.display_name,
-      toEmail: conversation.customer_email,
+      fromEmail: emailAddr.emailAddress,
+      fromName: emailAddr.displayName,
+      toEmail: conversation.customerEmail,
       bodyText: replyContent,
       bodyHtml: replyHtml,
       messageId: info.messageId ?? null,
-      inReplyTo: latestInboundMessage.message_id,
+      inReplyTo: latestInboundMessage.messageId,
       source: "smtp",
       connectionId,
       sentByAutopilot,

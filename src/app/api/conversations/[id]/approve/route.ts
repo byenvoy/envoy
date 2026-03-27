@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { conversations, messages, drafts, emailAddresses, autopilotEvaluations } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { sendReply } from "@/lib/email/send-reply";
-import type { Conversation, Message } from "@/lib/types/database";
+
 
 /** Simple word-level edit distance (Levenshtein on word arrays). */
 function computeWordEditDistance(a: string, b: string): number {
@@ -81,8 +81,8 @@ export async function POST(
   // Get org's email address and connection for sending
   const emailAddr = await db
     .select({
-      email_address: emailAddresses.emailAddress,
-      display_name: emailAddresses.displayName,
+      emailAddress: emailAddresses.emailAddress,
+      displayName: emailAddresses.displayName,
     })
     .from(emailAddresses)
     .where(and(eq(emailAddresses.orgId, orgId), eq(emailAddresses.isActive, true)))
@@ -108,41 +108,10 @@ export async function POST(
   const replyContent = editedContent ?? draft.editedContent ?? draft.draftContent;
   const replyHtml = replyContent.replace(/\n/g, "<br>");
 
-  // Map Drizzle rows to snake_case for sendReply compatibility
-  const conversationSnake = {
-    id: conversation.id,
-    org_id: conversation.orgId,
-    subject: conversation.subject,
-    status: conversation.status,
-    customer_email: conversation.customerEmail,
-    customer_name: conversation.customerName,
-    autopilot_disabled: conversation.autopilotDisabled,
-    created_at: conversation.createdAt,
-    updated_at: conversation.updatedAt,
-  } as unknown as Conversation;
-
-  const latestInboundSnake = {
-    id: latestInbound.id,
-    conversation_id: latestInbound.conversationId,
-    org_id: latestInbound.orgId,
-    direction: latestInbound.direction,
-    from_email: latestInbound.fromEmail,
-    from_name: latestInbound.fromName,
-    to_email: latestInbound.toEmail,
-    body_text: latestInbound.bodyText,
-    body_html: latestInbound.bodyHtml,
-    message_id: latestInbound.messageId,
-    in_reply_to: latestInbound.inReplyTo,
-    source: latestInbound.source,
-    connection_id: latestInbound.connectionId,
-    sent_by_autopilot: latestInbound.sentByAutopilot,
-    created_at: latestInbound.createdAt,
-  } as unknown as Message;
-
   try {
     const outboundMessageId = await sendReply({
-      conversation: conversationSnake,
-      latestInboundMessage: latestInboundSnake,
+      conversation,
+      latestInboundMessage: latestInbound,
       replyContent,
       replyHtml,
       emailAddr,
