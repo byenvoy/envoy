@@ -1,4 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { db } from "@/lib/db";
+import { autopilotTopics, autopilotEvaluations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { judgeRetrievalQuality } from "./gates/judge-retrieval";
 import { validateDraft } from "./gates/validate-draft";
 import type {
@@ -31,7 +33,6 @@ function cosineSimilarity(a: number[], b: number[]): number {
  * Returns the evaluation result and whether to auto-send.
  */
 export async function runAutopilotPipeline(
-  supabase: SupabaseClient,
   params: AutopilotPipelineParams
 ): Promise<AutopilotPipelineResult | null> {
   const {
@@ -78,7 +79,7 @@ export async function runAutopilotPipeline(
 
   if (!gate1Result.passed) {
     failureGate = 1;
-    return await insertEvaluation(supabase, {
+    return await insertEvaluation({
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
@@ -98,7 +99,7 @@ export async function runAutopilotPipeline(
 
   if (!gate2Result.passed) {
     failureGate = 2;
-    return await insertEvaluation(supabase, {
+    return await insertEvaluation({
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
@@ -112,7 +113,7 @@ export async function runAutopilotPipeline(
 
   if (!gate3Passed) {
     failureGate = 3;
-    return await insertEvaluation(supabase, {
+    return await insertEvaluation({
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
@@ -131,7 +132,7 @@ export async function runAutopilotPipeline(
 
   if (!gate4Result.passed) {
     failureGate = 4;
-    return await insertEvaluation(supabase, {
+    return await insertEvaluation({
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
@@ -147,10 +148,10 @@ export async function runAutopilotPipeline(
   if (topicMode === "auto") {
     // Reset daily count if needed
     if (matchedTopic && new Date(matchedTopic.daily_sends_reset_at) < startOfToday()) {
-      await supabase
-        .from("autopilot_topics")
-        .update({ daily_sends_today: 0, daily_sends_reset_at: new Date().toISOString() })
-        .eq("id", matchedTopic.id);
+      await db
+        .update(autopilotTopics)
+        .set({ dailySendsToday: 0, dailySendsResetAt: new Date() })
+        .where(eq(autopilotTopics.id, matchedTopic.id));
       matchedTopic.daily_sends_today = 0;
     }
 
@@ -164,7 +165,7 @@ export async function runAutopilotPipeline(
     outcome = "shadow_tagged";
   }
 
-  return await insertEvaluation(supabase, {
+  return await insertEvaluation({
     orgId, conversationId, draftId, failureGate: null,
     gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
     outcome, allGatesPassed: true,
@@ -192,39 +193,38 @@ interface InsertEvaluationParams {
 }
 
 async function insertEvaluation(
-  supabase: SupabaseClient,
   p: InsertEvaluationParams
 ): Promise<AutopilotPipelineResult> {
-  const { data: evaluation, error } = await supabase
-    .from("autopilot_evaluations")
-    .insert({
-      org_id: p.orgId,
-      conversation_id: p.conversationId,
-      draft_id: p.draftId,
-      gate1_passed: p.gate1Result?.passed ?? null,
-      gate1_topic_id: p.gate1Result?.topicId ?? null,
-      gate1_topic_name: p.gate1Result?.topicName ?? null,
-      gate1_confidence: p.gate1Result?.confidence ?? null,
-      gate1_embedding_similarity: p.gate1Result?.embeddingSimilarity ?? null,
-      gate1_reasoning: p.gate1Result?.reasoning ?? null,
-      gate2_passed: p.gate2Result?.passed ?? null,
-      gate2_confidence: p.gate2Result?.confidence ?? null,
-      gate2_reasoning: p.gate2Result?.reasoning ?? null,
-      gate3_passed: p.gate3Passed,
-      gate3_needs_human_reason: p.gate3Reason,
-      gate4_passed: p.gate4Result?.passed ?? null,
-      gate4_confidence: p.gate4Result?.confidence ?? null,
-      gate4_checks: p.gate4Result?.checks ?? null,
-      gate4_reasoning: p.gate4Result?.reasoning ?? null,
-      all_gates_passed: p.allGatesPassed,
+  const evaluation = await db
+    .insert(autopilotEvaluations)
+    .values({
+      orgId: p.orgId,
+      conversationId: p.conversationId,
+      draftId: p.draftId,
+      gate1Passed: p.gate1Result?.passed ?? null,
+      gate1TopicId: p.gate1Result?.topicId ?? null,
+      gate1TopicName: p.gate1Result?.topicName ?? null,
+      gate1Confidence: p.gate1Result?.confidence != null ? String(p.gate1Result.confidence) : null,
+      gate1EmbeddingSimilarity: p.gate1Result?.embeddingSimilarity != null ? String(p.gate1Result.embeddingSimilarity) : null,
+      gate1Reasoning: p.gate1Result?.reasoning ?? null,
+      gate2Passed: p.gate2Result?.passed ?? null,
+      gate2Confidence: p.gate2Result?.confidence != null ? String(p.gate2Result.confidence) : null,
+      gate2Reasoning: p.gate2Result?.reasoning ?? null,
+      gate3Passed: p.gate3Passed,
+      gate3NeedsHumanReason: p.gate3Reason,
+      gate4Passed: p.gate4Result?.passed ?? null,
+      gate4Confidence: p.gate4Result?.confidence != null ? String(p.gate4Result.confidence) : null,
+      gate4Checks: p.gate4Result?.checks ?? null,
+      gate4Reasoning: p.gate4Result?.reasoning ?? null,
+      allGatesPassed: p.allGatesPassed,
       outcome: p.outcome,
-      failure_gate: p.failureGate,
+      failureGate: p.failureGate,
     })
-    .select("id")
-    .single();
+    .returning({ id: autopilotEvaluations.id })
+    .then((r) => r[0]);
 
-  if (error) {
-    console.error("Failed to insert autopilot evaluation:", error);
+  if (!evaluation) {
+    console.error("Failed to insert autopilot evaluation");
     // Return a safe fallback — route to human queue
     return {
       shouldAutoSend: false,

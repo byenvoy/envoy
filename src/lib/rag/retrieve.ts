@@ -1,4 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { db } from "@/lib/db";
+import { organizations, knowledgeBasePages } from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
+import { matchChunks, type MatchedChunk } from "@/lib/db/helpers";
 import { embedText } from "./embeddings";
 import { buildDraftPrompt } from "./prompt";
 import { createLLMProvider } from "./llm";
@@ -7,19 +10,13 @@ import { logUsage } from "@/lib/usage/log";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
 import type { ShopifyCustomerContext, ClassificationResult } from "@/lib/types/shopify";
 
-interface MatchedChunk {
-  id: string;
-  page_id: string;
-  chunk_index: number;
-  content: string;
-  token_count: number;
-  similarity: number;
+interface RetrieveChunk extends MatchedChunk {
   source_url?: string;
 }
 
 export interface RetrieveResult {
   draft: string;
-  chunks: MatchedChunk[];
+  chunks: RetrieveChunk[];
   messageEmbedding: number[];
   customerContext: ShopifyCustomerContext | null;
   classification: ClassificationResult | null;
@@ -29,41 +26,36 @@ export interface RetrieveResult {
 }
 
 interface VectorSearchResult {
-  chunks: MatchedChunk[];
+  chunks: RetrieveChunk[];
   queryEmbedding: number[];
 }
 
 async function doVectorSearch(
-  supabase: SupabaseClient,
   orgId: string,
   customerMessage: string
 ): Promise<VectorSearchResult> {
   const queryEmbedding = await embedText(customerMessage);
 
-  const { data: matches, error } = await supabase.rpc("match_chunks", {
-    query_embedding: JSON.stringify(queryEmbedding),
-    filter_org_id: orgId,
-    match_count: 3,
-    similarity_threshold: 0.3,
+  const matches = await matchChunks({
+    queryEmbedding,
+    orgId,
+    matchCount: 3,
+    similarityThreshold: 0.3,
   });
 
-  if (error) throw error;
-
-  const chunks: MatchedChunk[] = matches ?? [];
+  const chunks: RetrieveChunk[] = matches.map((m) => ({ ...m }));
 
   if (chunks.length > 0) {
     const pageIds = [...new Set(chunks.map((c) => c.page_id))];
-    const { data: pages } = await supabase
-      .from("knowledge_base_pages")
-      .select("id, url")
-      .in("id", pageIds);
+    const pages = await db
+      .select({ id: knowledgeBasePages.id, url: knowledgeBasePages.url })
+      .from(knowledgeBasePages)
+      .where(inArray(knowledgeBasePages.id, pageIds));
 
-    const pageUrlMap = new Map(
-      (pages ?? []).map((p: { id: string; url: string }) => [p.id, p.url])
-    );
+    const pageUrlMap = new Map(pages.map((p) => [p.id, p.url]));
 
     for (const chunk of chunks) {
-      chunk.source_url = pageUrlMap.get(chunk.page_id);
+      chunk.source_url = pageUrlMap.get(chunk.page_id) ?? undefined;
     }
   }
 
@@ -71,7 +63,6 @@ async function doVectorSearch(
 }
 
 export async function retrieveAndDraft({
-  supabase,
   orgId,
   companyName,
   customerMessage,
@@ -79,7 +70,6 @@ export async function retrieveAndDraft({
   conversationHistory,
   injectConstrainedPrompt,
 }: {
-  supabase: SupabaseClient;
   orgId: string;
   companyName: string;
   customerMessage: string;
@@ -88,15 +78,19 @@ export async function retrieveAndDraft({
   injectConstrainedPrompt?: boolean;
 }): Promise<RetrieveResult> {
   // Fetch org settings
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("preferred_model, tone, custom_instructions")
-    .eq("id", orgId)
-    .single();
+  const org = await db
+    .select({
+      preferredModel: organizations.preferredModel,
+      tone: organizations.tone,
+      customInstructions: organizations.customInstructions,
+    })
+    .from(organizations)
+    .where(eq(organizations.id, orgId))
+    .then((r) => r[0]);
 
-  const model = org?.preferred_model ?? "claude-haiku-4-5-20251001";
+  const model = org?.preferredModel ?? "claude-haiku-4-5-20251001";
   const tone = org?.tone ?? "professional";
-  const customInstructions = org?.custom_instructions ?? null;
+  const customInstructions = org?.customInstructions ?? null;
 
   // Check if Shopify is connected
   const shopifyClient = await createShopifyClient(orgId);
@@ -113,7 +107,7 @@ export async function retrieveAndDraft({
 
   // Execute vector search and Shopify fetch in parallel
   const [vectorResult, customerContext] = await Promise.all([
-    doVectorSearch(supabase, orgId, customerMessage),
+    doVectorSearch(orgId, customerMessage),
     classification.needs_customer_data && customerEmail && shopifyClient
       ? shopifyClient
           .getCustomerContext(customerEmail, classification.order_identifier)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { integrations } from "@/lib/db/schema";
 import { encrypt } from "@/lib/email/encryption";
 import {
   getShopifyTokenUrl,
@@ -82,20 +83,26 @@ export async function GET(request: NextRequest) {
   const tokenData = await tokenRes.json();
   const accessTokenEncrypted = encrypt(tokenData.access_token);
 
-  const admin = createAdminClient();
-
-  const { error: upsertError } = await admin.from("integrations").upsert(
-    {
-      org_id: stateData.orgId,
-      provider: "shopify",
-      access_token_encrypted: accessTokenEncrypted,
-      config: { shop_domain: shop },
-      is_active: true,
-    },
-    { onConflict: "org_id,provider" }
-  );
-
-  if (upsertError) {
+  try {
+    await db
+      .insert(integrations)
+      .values({
+        orgId: stateData.orgId,
+        provider: "shopify",
+        accessTokenEncrypted,
+        config: { shop_domain: shop },
+        isActive: true,
+      })
+      .onConflictDoUpdate({
+        target: [integrations.orgId, integrations.provider],
+        set: {
+          accessTokenEncrypted,
+          config: { shop_domain: shop },
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (upsertError) {
     console.error("Failed to save Shopify integration:", upsertError);
     return NextResponse.redirect(`${appUrl}/settings?error=save_failed`);
   }

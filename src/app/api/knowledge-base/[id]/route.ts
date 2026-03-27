@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { knowledgeBasePages, knowledgeBaseChunks } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { withAuth } from "@/lib/db/helpers";
 import { syncPageChunks } from "@/lib/rag/sync";
 import type { KnowledgeBasePage } from "@/lib/types/database";
 
@@ -9,48 +11,40 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const { title, content } = await request.json();
 
-  const admin = createAdminClient();
+  try {
+    const page = await db
+      .update(knowledgeBasePages)
+      .set({
+        title,
+        markdownContent: content,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(knowledgeBasePages.id, id),
+          eq(knowledgeBasePages.orgId, orgId)
+        )
+      )
+      .returning()
+      .then((r) => r[0]);
 
-  const { data: page, error } = await admin
-    .from("knowledge_base_pages")
-    .update({
-      title,
-      markdown_content: content,
-    })
-    .eq("id", id)
-    .eq("org_id", profile.org_id)
-    .select()
-    .single();
+    if (!page) {
+      return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    }
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    await syncPageChunks(page as unknown as KnowledgeBasePage);
+
+    return NextResponse.json({ page });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  // Re-chunk and re-embed
-  await syncPageChunks(admin, page as KnowledgeBasePage);
-
-  return NextResponse.json({ page });
 }
 
 export async function DELETE(
@@ -58,43 +52,30 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    // Delete chunks first
+    await db
+      .delete(knowledgeBaseChunks)
+      .where(eq(knowledgeBaseChunks.pageId, id));
+
+    // Mark page as inactive
+    await db
+      .update(knowledgeBasePages)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(
+        and(
+          eq(knowledgeBasePages.id, id),
+          eq(knowledgeBasePages.orgId, orgId)
+        )
+      );
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
-
-  const admin = createAdminClient();
-
-  // Delete chunks first
-  await admin
-    .from("knowledge_base_chunks")
-    .delete()
-    .eq("page_id", id);
-
-  // Mark page as inactive
-  const { error } = await admin
-    .from("knowledge_base_pages")
-    .update({ is_active: false })
-    .eq("id", id)
-    .eq("org_id", profile.org_id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
 }

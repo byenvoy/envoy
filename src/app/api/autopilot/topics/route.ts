@@ -1,61 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/db/helpers";
+import { db } from "@/lib/db";
+import { autopilotTopics } from "@/lib/db/schema";
+import { eq, asc } from "drizzle-orm";
 import { embedText } from "@/lib/rag/embeddings";
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const topics = await db
+      .select({
+        id: autopilotTopics.id,
+        name: autopilotTopics.name,
+        description: autopilotTopics.description,
+        mode: autopilotTopics.mode,
+        confidenceThreshold: autopilotTopics.confidenceThreshold,
+        dailySendLimit: autopilotTopics.dailySendLimit,
+        dailySendsToday: autopilotTopics.dailySendsToday,
+        createdAt: autopilotTopics.createdAt,
+        updatedAt: autopilotTopics.updatedAt,
+      })
+      .from(autopilotTopics)
+      .where(eq(autopilotTopics.orgId, orgId))
+      .orderBy(asc(autopilotTopics.createdAt));
+
+    return NextResponse.json({
+      topics: topics.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        mode: t.mode,
+        confidence_threshold: t.confidenceThreshold,
+        daily_send_limit: t.dailySendLimit,
+        daily_sends_today: t.dailySendsToday,
+        created_at: t.createdAt,
+        updated_at: t.updatedAt,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
-
-  const { data: topics, error } = await supabase
-    .from("autopilot_topics")
-    .select("id, name, description, mode, confidence_threshold, daily_send_limit, daily_sends_today, created_at, updated_at")
-    .eq("org_id", profile.org_id)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ topics });
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId, role } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id, role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
-
-  if (profile.role !== "owner") {
+  if (role !== "owner") {
     return NextResponse.json({ error: "Only owners can manage autopilot" }, { status: 403 });
   }
 
@@ -78,23 +74,42 @@ export async function POST(request: NextRequest) {
     console.error("Failed to embed topic description:", error);
   }
 
-  const { data: topic, error } = await supabase
-    .from("autopilot_topics")
-    .insert({
-      org_id: profile.org_id,
-      name,
-      description,
-      embedding: embedding ? JSON.stringify(embedding) : null,
-      mode: mode ?? "off",
-      confidence_threshold: confidence_threshold ?? 0.95,
-      daily_send_limit: daily_send_limit ?? 100,
-    })
-    .select("id, name, description, mode, confidence_threshold, daily_send_limit, created_at")
-    .single();
+  try {
+    const topic = await db
+      .insert(autopilotTopics)
+      .values({
+        orgId,
+        name,
+        description,
+        embedding: embedding ? JSON.stringify(embedding) : null,
+        mode: mode ?? "off",
+        confidenceThreshold: String(confidence_threshold ?? 0.95),
+        dailySendLimit: daily_send_limit ?? 100,
+      })
+      .returning({
+        id: autopilotTopics.id,
+        name: autopilotTopics.name,
+        description: autopilotTopics.description,
+        mode: autopilotTopics.mode,
+        confidenceThreshold: autopilotTopics.confidenceThreshold,
+        dailySendLimit: autopilotTopics.dailySendLimit,
+        createdAt: autopilotTopics.createdAt,
+      })
+      .then((r) => r[0]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      topic: {
+        id: topic.id,
+        name: topic.name,
+        description: topic.description,
+        mode: topic.mode,
+        confidence_threshold: topic.confidenceThreshold,
+        daily_send_limit: topic.dailySendLimit,
+        created_at: topic.createdAt,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ topic });
 }

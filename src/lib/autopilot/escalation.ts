@@ -1,4 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { db } from "@/lib/db";
+import { conversations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { createLLMProvider } from "@/lib/rag/llm";
 import { logUsage } from "@/lib/usage/log";
 
@@ -11,12 +13,10 @@ const ESCALATION_MODEL = "claude-haiku-4-5-20251001";
  * Returns true if the thread was escalated.
  */
 export async function checkAndEscalateThread({
-  supabase,
   conversationId,
   customerMessage,
   orgId,
 }: {
-  supabase: SupabaseClient;
   conversationId: string;
   customerMessage: string;
   orgId: string;
@@ -50,10 +50,10 @@ ${customerMessage}`;
     const parsed = JSON.parse(cleaned);
 
     if (parsed.escalate === true) {
-      await supabase
-        .from("conversations")
-        .update({ autopilot_disabled: true })
-        .eq("id", conversationId);
+      await db
+        .update(conversations)
+        .set({ autopilotDisabled: true })
+        .where(eq(conversations.id, conversationId));
 
       console.log(
         `Autopilot escalation: disabled for conversation ${conversationId} — ${parsed.reasoning}`
@@ -65,10 +65,10 @@ ${customerMessage}`;
   } catch (error) {
     console.error("Escalation check failed:", error);
     // On failure, be safe and escalate
-    await supabase
-      .from("conversations")
-      .update({ autopilot_disabled: true })
-      .eq("id", conversationId);
+    await db
+      .update(conversations)
+      .set({ autopilotDisabled: true })
+      .where(eq(conversations.id, conversationId));
     return true;
   }
 }

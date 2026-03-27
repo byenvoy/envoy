@@ -1,4 +1,12 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import {
+  conversations,
+  messages,
+  drafts,
+  autopilotTopics,
+  organizations,
+} from "@/lib/db/schema";
+import { eq, and, asc, inArray } from "drizzle-orm";
 import { retrieveAndDraft } from "@/lib/rag/retrieve";
 import { runAutopilotPipeline } from "@/lib/autopilot/pipeline";
 import { autoSendDraft } from "@/lib/autopilot/auto-send";
@@ -7,68 +15,75 @@ import type { TopicClassificationResult } from "@/lib/autopilot/types";
 import type { AutopilotTopic } from "@/lib/types/database";
 
 export async function generateDraftForConversation(conversationId: string, isRegeneration = false): Promise<void> {
-  const admin = createAdminClient();
+  // Fetch conversation with org name
+  const conversation = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .then((r) => r[0]);
 
-  // Fetch conversation
-  const { data: conversation, error: convoError } = await admin
-    .from("conversations")
-    .select("*, organizations!inner(name)")
-    .eq("id", conversationId)
-    .single();
+  if (!conversation) throw new Error("Conversation not found");
 
-  if (convoError || !conversation) throw convoError ?? new Error("Conversation not found");
+  const org = await db
+    .select({ name: organizations.name })
+    .from(organizations)
+    .where(eq(organizations.id, conversation.orgId))
+    .then((r) => r[0]);
 
   // Fetch all messages in the conversation, ordered chronologically
-  const { data: messages } = await admin
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+  const allMessages = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(asc(messages.createdAt));
 
-  if (!messages || messages.length === 0) throw new Error("No messages in conversation");
+  if (allMessages.length === 0) throw new Error("No messages in conversation");
 
   // Build conversation history from all messages except the latest inbound
-  const latestMessage = messages[messages.length - 1];
-  const priorMessages = messages.slice(0, -1);
+  const latestMessage = allMessages[allMessages.length - 1];
+  const priorMessages = allMessages.slice(0, -1);
 
   const conversationHistory: { role: "customer" | "agent"; content: string }[] = [];
   for (const msg of priorMessages) {
-    if (msg.body_text) {
+    if (msg.bodyText) {
       conversationHistory.push({
         role: msg.direction === "inbound" ? "customer" : "agent",
-        content: msg.body_text,
+        content: msg.bodyText,
       });
     }
   }
 
-  const companyName = conversation.organizations?.name ?? "Our Company";
-  const customerMessage = latestMessage.body_text ?? conversation.subject ?? "";
+  const companyName = org?.name ?? "Our Company";
+  const customerMessage = latestMessage.bodyText ?? conversation.subject ?? "";
 
   // Run Gate 1 (topic classification) before draft generation
-  // so we only inject the constrained prompt for autopilot-eligible emails
   let gate1Result: TopicClassificationResult | null = null;
-  let activeTopics: AutopilotTopic[] = [];
+  let activeTopicsList: AutopilotTopic[] = [];
 
   // Check if conversation has autopilot disabled (per-thread escalation)
-  const isEscalated = conversation.autopilot_disabled === true;
+  const isEscalated = conversation.autopilotDisabled === true;
 
   if (!isEscalated) {
-    const { data: topics } = await admin
-      .from("autopilot_topics")
-      .select("*")
-      .eq("org_id", conversation.org_id)
-      .in("mode", ["shadow", "auto"]);
+    const topics = await db
+      .select()
+      .from(autopilotTopics)
+      .where(
+        and(
+          eq(autopilotTopics.orgId, conversation.orgId),
+          inArray(autopilotTopics.mode, ["shadow", "auto"])
+        )
+      );
 
-    activeTopics = (topics as AutopilotTopic[]) ?? [];
+    activeTopicsList = topics as unknown as AutopilotTopic[];
 
-    if (activeTopics.length > 0) {
+    if (activeTopicsList.length > 0) {
       try {
         gate1Result = await classifyTopic({
           customerMessage,
           conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
-          topics: activeTopics,
+          topics: activeTopicsList,
           model: "claude-haiku-4-5-20251001",
-          orgId: conversation.org_id,
+          orgId: conversation.orgId,
         });
       } catch (error) {
         console.error("Gate 1 classification failed:", error);
@@ -77,47 +92,44 @@ export async function generateDraftForConversation(conversationId: string, isReg
   }
 
   const result = await retrieveAndDraft({
-    supabase: admin,
-    orgId: conversation.org_id,
+    orgId: conversation.orgId,
     companyName,
     customerMessage,
-    customerEmail: conversation.customer_email,
+    customerEmail: conversation.customerEmail,
     conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
     injectConstrainedPrompt: gate1Result?.passed === true,
   });
 
   // Strip NEEDS_HUMAN_REVIEW flag from draft content if present.
-  // The flag is captured by Gate 3 in the autopilot pipeline — we don't want it
-  // stored as sendable draft content. Tolerant of markdown bold formatting.
   const cleanedDraft = result.draft.replace(/\n?\*{0,2}NEEDS_HUMAN_REVIEW\*{0,2}:.*$/m, "").trim();
 
   // Insert draft and get its ID
-  const { data: insertedDraft, error: draftError } = await admin
-    .from("drafts")
-    .insert({
-      conversation_id: conversationId,
-      org_id: conversation.org_id,
-      draft_content: cleanedDraft,
-      model_used: result.model,
-      chunks_used: result.chunks.map((c) => ({
+  const insertedDraft = await db
+    .insert(drafts)
+    .values({
+      conversationId,
+      orgId: conversation.orgId,
+      draftContent: cleanedDraft,
+      modelUsed: result.model,
+      chunksUsed: result.chunks.map((c) => ({
         id: c.id,
         content: c.content,
         similarity: c.similarity,
         source_url: c.source_url,
       })),
-      customer_context: result.customerContext ?? null,
-      classification_result: result.classification ?? null,
-      is_regeneration: isRegeneration,
+      customerContext: result.customerContext ?? null,
+      classificationResult: result.classification ?? null,
+      isRegeneration,
     })
-    .select("id")
-    .single();
+    .returning({ id: drafts.id })
+    .then((r) => r[0]);
 
-  if (draftError) throw draftError;
+  if (!insertedDraft) throw new Error("Failed to insert draft");
 
   // Run autopilot pipeline
   try {
-    const autopilotResult = await runAutopilotPipeline(admin, {
-      orgId: conversation.org_id,
+    const autopilotResult = await runAutopilotPipeline({
+      orgId: conversation.orgId,
       conversationId,
       draftId: insertedDraft.id,
       customerMessage,
@@ -128,27 +140,26 @@ export async function generateDraftForConversation(conversationId: string, isReg
       customerContext: result.customerContext,
       model: result.model,
       gate1Result: gate1Result ?? undefined,
-      activeTopics,
+      activeTopics: activeTopicsList,
     });
 
     if (autopilotResult) {
       // Tag the draft with the evaluation
-      await admin
-        .from("drafts")
-        .update({
-          autopilot_evaluation_id: autopilotResult.evaluationId || null,
-          sent_by_autopilot: autopilotResult.shouldAutoSend,
+      await db
+        .update(drafts)
+        .set({
+          autopilotEvaluationId: autopilotResult.evaluationId || null,
+          sentByAutopilot: autopilotResult.shouldAutoSend,
         })
-        .eq("id", insertedDraft.id);
+        .where(eq(drafts.id, insertedDraft.id));
 
       // Auto-send if all gates passed and mode is auto
       if (autopilotResult.shouldAutoSend && autopilotResult.topicMatch) {
         await autoSendDraft({
-          supabase: admin,
           conversationId,
           draftId: insertedDraft.id,
           draftContent: result.draft,
-          orgId: conversation.org_id,
+          orgId: conversation.orgId,
           topicId: autopilotResult.topicMatch.id,
         });
       }

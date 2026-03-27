@@ -1,52 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/db/helpers";
+import { db } from "@/lib/db";
+import { teamInvites } from "@/lib/db/schema";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { userId, orgId, role } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id, role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "owner") {
+  if (role !== "owner") {
     return NextResponse.json({ error: "Only owners can invite" }, { status: 403 });
   }
 
-  const { email, role } = await request.json();
+  const { email, role: inviteRoleInput } = await request.json();
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 
-  const inviteRole = role === "owner" ? "owner" : "agent";
+  const inviteRole = inviteRoleInput === "owner" ? "owner" : "agent";
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  const { data: invite, error } = await supabase
-    .from("team_invites")
-    .insert({
-      org_id: profile.org_id,
-      email,
-      role: inviteRole,
-      invited_by: user.id,
-      token,
-      expires_at: expiresAt,
-    })
-    .select()
-    .single();
+  try {
+    const invite = await db
+      .insert(teamInvites)
+      .values({
+        orgId,
+        email,
+        role: inviteRole,
+        invitedBy: userId,
+        token,
+        expiresAt,
+      })
+      .returning()
+      .then((r) => r[0]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      invite: {
+        id: invite.id,
+        org_id: invite.orgId,
+        email: invite.email,
+        role: invite.role,
+        invited_by: invite.invitedBy,
+        token: invite.token,
+        accepted_at: invite.acceptedAt,
+        expires_at: invite.expiresAt,
+        created_at: invite.createdAt,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ invite });
 }

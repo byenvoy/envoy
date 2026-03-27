@@ -1,33 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { integrations } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { withAuth } from "@/lib/db/helpers";
 
 export async function POST() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
-
-  const admin = createAdminClient();
-  await admin
-    .from("integrations")
-    .delete()
-    .eq("org_id", profile.org_id)
-    .eq("provider", "shopify");
+  await db
+    .delete(integrations)
+    .where(
+      and(
+        eq(integrations.orgId, orgId),
+        eq(integrations.provider, "shopify")
+      )
+    );
 
   return NextResponse.json({ ok: true });
 }

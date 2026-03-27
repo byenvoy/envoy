@@ -1,57 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { emailConnections, emailAddresses } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { withAuth } from "@/lib/db/helpers";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const { provider } = await request.json();
   if (provider !== "google" && provider !== "microsoft") {
     return NextResponse.json({ error: "Invalid provider" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
-
   // Get the connection to find the email address
-  const { data: connection } = await admin
-    .from("email_connections")
-    .select("email_address")
-    .eq("org_id", profile.org_id)
-    .eq("provider", provider)
-    .single();
+  const connection = await db
+    .select({ emailAddress: emailConnections.emailAddress })
+    .from(emailConnections)
+    .where(
+      and(
+        eq(emailConnections.orgId, orgId),
+        eq(emailConnections.provider, provider)
+      )
+    )
+    .then((r) => r[0]);
 
   // Delete the connection
-  await admin
-    .from("email_connections")
-    .delete()
-    .eq("org_id", profile.org_id)
-    .eq("provider", provider);
+  await db
+    .delete(emailConnections)
+    .where(
+      and(
+        eq(emailConnections.orgId, orgId),
+        eq(emailConnections.provider, provider)
+      )
+    );
 
   // Deactivate the associated email address
   if (connection) {
-    await admin
-      .from("email_addresses")
-      .update({ is_active: false })
-      .eq("org_id", profile.org_id)
-      .eq("email_address", connection.email_address)
-      .eq("connection_type", "oauth");
+    await db
+      .update(emailAddresses)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(emailAddresses.orgId, orgId),
+          eq(emailAddresses.emailAddress, connection.emailAddress),
+          eq(emailAddresses.connectionType, "oauth")
+        )
+      );
   }
 
   return NextResponse.json({ ok: true });

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { emailConnections } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
 import type { EmailConnection } from "@/lib/types/database";
 
@@ -9,33 +12,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
   }
 
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${cronSecret}`) {
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const admin = createAdminClient();
-
   // Advisory lock to prevent concurrent poll runs
-  const { data: lockResult } = await admin.rpc("try_advisory_lock", {
-    lock_id: 73501, // arbitrary unique lock ID
-  });
+  const lockAcquired = await tryAdvisoryLock(73501);
 
-  if (!lockResult) {
+  if (!lockAcquired) {
     return NextResponse.json({ error: "Poll already in progress" }, { status: 409 });
   }
 
   try {
-    const { data: connections } = await admin
-      .from("email_connections")
-      .select("*")
-      .eq("status", "active");
+    const connections = await db
+      .select()
+      .from(emailConnections)
+      .where(eq(emailConnections.status, "active"));
 
     let polled = 0;
     let errors = 0;
     let conversationsCreated = 0;
 
-    for (const conn of (connections ?? []) as EmailConnection[]) {
+    for (const conn of connections as unknown as EmailConnection[]) {
       try {
         const created = await pollConnection(conn);
         conversationsCreated += created ? 1 : 0;
@@ -43,18 +42,19 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         console.error(`Poll error for connection ${conn.id}:`, err);
         errors++;
-        await admin
-          .from("email_connections")
-          .update({
+        await db
+          .update(emailConnections)
+          .set({
             status: "error",
-            error_message: err instanceof Error ? err.message : "Unknown error",
+            errorMessage: err instanceof Error ? err.message : "Unknown error",
+            updatedAt: new Date(),
           })
-          .eq("id", conn.id);
+          .where(eq(emailConnections.id, conn.id));
       }
     }
 
     return NextResponse.json({ polled, errors, conversations_processed: conversationsCreated });
   } finally {
-    await admin.rpc("advisory_unlock", { lock_id: 73501 });
+    await advisoryUnlock(73501);
   }
 }

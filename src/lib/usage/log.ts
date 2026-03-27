@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { usageLogs } from "@/lib/db/schema";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 import type { UsageCallType } from "@/lib/types/database";
 
@@ -24,18 +25,17 @@ export async function logUsage({
     (inputTokens / 1000) * costPer1kInput +
     (outputTokens / 1000) * costPer1kOutput;
 
-  const admin = createAdminClient();
-  const { error } = await admin.from("usage_logs").insert({
-    org_id: orgId,
-    draft_id: draftId ?? null,
-    call_type: callType,
-    model,
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
-    estimated_cost_usd: estimatedCost,
-  });
-
-  if (error) {
+  try {
+    await db.insert(usageLogs).values({
+      orgId,
+      draftId: draftId ?? null,
+      callType,
+      model,
+      inputTokens,
+      outputTokens,
+      estimatedCostUsd: String(estimatedCost),
+    });
+  } catch (error) {
     console.error("Failed to log usage:", error);
   }
 }

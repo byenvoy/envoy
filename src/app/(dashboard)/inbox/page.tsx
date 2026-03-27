@@ -1,9 +1,19 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
-import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import {
+  profiles,
+  conversations,
+  messages,
+  drafts,
+  autopilotEvaluations,
+} from "@/lib/db/schema";
+import { eq, and, desc, asc, or, ilike, sql } from "drizzle-orm";
+import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
 import { InboxView } from "@/components/inbox/inbox-view";
-import type { ConversationStatus } from "@/lib/types/database";
+import type { Conversation, Message, Draft, ConversationStatus, MessageDirection, DraftStatus } from "@/lib/types/database";
 
 const PAGE_SIZE = 50;
 
@@ -13,94 +23,163 @@ export default async function InboxPage({
   searchParams: Promise<{ status?: string; search?: string; id?: string }>;
 }) {
   const { status: statusFilter, search, id: selectedId } = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
+  const profile = await db
+    .select({ orgId: profiles.orgId })
+    .from(profiles)
+    .where(eq(profiles.id, session.user.id))
+    .then((r) => r[0]);
 
   if (!profile) redirect("/onboarding");
 
-  const orgId = profile.org_id;
+  const orgId = profile.orgId;
 
-  // Fetch conversations with filters + pagination
-  let query = supabase
-    .from("conversations")
-    .select("*")
-    .eq("org_id", orgId)
-    .order("last_message_at", { ascending: false })
-    .limit(PAGE_SIZE);
-
+  // Build where conditions for conversations query
   const effectiveStatus = statusFilter ?? "open";
+  const baseConditions = [eq(conversations.orgId, orgId)];
+
   if (effectiveStatus !== "all") {
-    query = query.eq("status", effectiveStatus as ConversationStatus);
+    baseConditions.push(eq(conversations.status, effectiveStatus as ConversationStatus));
   }
 
   if (search) {
-    query = query.or(
-      `customer_email.ilike.%${search}%,customer_name.ilike.%${search}%,subject.ilike.%${search}%`
+    baseConditions.push(
+      or(
+        ilike(conversations.customerEmail, `%${search}%`),
+        ilike(conversations.customerName, `%${search}%`),
+        ilike(conversations.subject, `%${search}%`)
+      )!
     );
   }
 
-  // Fetch conversations and counts in parallel
-  const [{ data: conversations }, { data: allConversations }] = await Promise.all([
-    query,
-    supabase
-      .from("conversations")
-      .select("status")
-      .eq("org_id", orgId),
+  // Fetch conversations and all conversation statuses in parallel
+  const [convoRows, allConvoRows] = await Promise.all([
+    db
+      .select()
+      .from(conversations)
+      .where(and(...baseConditions))
+      .orderBy(desc(conversations.updatedAt))
+      .limit(PAGE_SIZE),
+    db
+      .select({ status: conversations.status })
+      .from(conversations)
+      .where(eq(conversations.orgId, orgId)),
   ]);
 
-  const counts: Record<string, number> = { all: allConversations?.length ?? 0 };
-  for (const c of allConversations ?? []) {
+  const counts: Record<string, number> = { all: allConvoRows.length };
+  for (const c of allConvoRows) {
     counts[c.status] = (counts[c.status] ?? 0) + 1;
   }
 
-  const convoList = conversations ?? [];
+  // Map conversations to snake_case
+  const convoList = convoRows.map((c) => ({
+    id: c.id,
+    org_id: c.orgId,
+    subject: c.subject,
+    status: c.status,
+    customer_email: c.customerEmail,
+    customer_name: c.customerName,
+    autopilot_disabled: c.autopilotDisabled,
+    created_at: c.createdAt.toISOString(),
+    updated_at: c.updatedAt.toISOString(),
+    last_message_at: c.updatedAt.toISOString(),
+  }));
+
   const hasMore = convoList.length === PAGE_SIZE;
 
   // Prefetch selected (or first) conversation's detail to eliminate the waterfall
   let initialDetail = null;
   if (convoList.length > 0) {
-    const firstId = selectedId && convoList.some((c) => c.id === selectedId)
-      ? selectedId
-      : convoList[0].id;
+    const firstId =
+      selectedId && convoList.some((c) => c.id === selectedId)
+        ? selectedId
+        : convoList[0].id;
 
-    const [{ data: messages }, { data: draft }] = await Promise.all([
-      supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", firstId)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("drafts")
-        .select("*")
-        .eq("conversation_id", firstId)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
+    const [messageRows, draftRow] = await Promise.all([
+      db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, firstId))
+        .orderBy(asc(messages.createdAt)),
+      db
+        .select()
+        .from(drafts)
+        .where(and(eq(drafts.conversationId, firstId), eq(drafts.status, "pending")))
+        .orderBy(desc(drafts.createdAt))
         .limit(1)
-        .single(),
+        .then((r) => r[0] ?? null),
     ]);
 
     // Fetch autopilot evaluation separately if draft has one
     let autopilotEvaluation = null;
-    if (draft?.autopilot_evaluation_id) {
-      const { data: evalData } = await supabase
-        .from("autopilot_evaluations")
-        .select("gate3_passed, gate3_needs_human_reason, outcome")
-        .eq("id", draft.autopilot_evaluation_id)
-        .single();
-      autopilotEvaluation = evalData;
+    if (draftRow?.autopilotEvaluationId) {
+      autopilotEvaluation = await db
+        .select({
+          gate3Passed: autopilotEvaluations.gate3Passed,
+          gate3NeedsHumanReason: autopilotEvaluations.gate3NeedsHumanReason,
+          outcome: autopilotEvaluations.outcome,
+        })
+        .from(autopilotEvaluations)
+        .where(eq(autopilotEvaluations.id, draftRow.autopilotEvaluationId))
+        .then((r) => {
+          const row = r[0];
+          return row
+            ? {
+                gate3_passed: row.gate3Passed,
+                gate3_needs_human_reason: row.gate3NeedsHumanReason,
+                outcome: row.outcome,
+              }
+            : null;
+        });
     }
 
-    const selectedConvo = convoList.find((c) => c.id === firstId) ?? convoList[0];
+    const selectedConvo =
+      convoList.find((c) => c.id === firstId) ?? convoList[0];
+
+    // Map messages to snake_case
+    const messagesSnake: Message[] = messageRows.map((m) => ({
+      id: m.id,
+      conversation_id: m.conversationId,
+      org_id: m.orgId,
+      direction: m.direction as MessageDirection,
+      from_email: m.fromEmail,
+      from_name: m.fromName,
+      to_email: m.toEmail,
+      body_text: m.bodyText,
+      body_html: m.bodyHtml,
+      message_id: m.messageId,
+      in_reply_to: m.inReplyTo,
+      source: m.source as "imap" | "smtp" | "manual",
+      connection_id: m.connectionId,
+      sent_by_autopilot: m.sentByAutopilot,
+      created_at: m.createdAt.toISOString(),
+    }));
+
+    // Map draft to snake_case
+    const draftSnake: (Draft & { autopilot_evaluation: typeof autopilotEvaluation }) | null = draftRow
+      ? {
+          id: draftRow.id,
+          conversation_id: draftRow.conversationId,
+          org_id: draftRow.orgId,
+          message_id: draftRow.messageId,
+          draft_content: draftRow.draftContent,
+          edited_content: draftRow.editedContent,
+          status: draftRow.status as DraftStatus,
+          model_used: draftRow.modelUsed,
+          chunks_used: draftRow.chunksUsed as Draft["chunks_used"],
+          customer_context: draftRow.customerContext as Draft["customer_context"],
+          classification_result: draftRow.classificationResult as Draft["classification_result"],
+          autopilot_evaluation_id: draftRow.autopilotEvaluationId,
+          sent_by_autopilot: draftRow.sentByAutopilot,
+          is_regeneration: draftRow.isRegeneration,
+          approved_at: draftRow.approvedAt?.toISOString() ?? null,
+          approved_by: draftRow.approvedBy,
+          created_at: draftRow.createdAt.toISOString(),
+          autopilot_evaluation: autopilotEvaluation,
+        }
+      : null;
 
     let shopifyCustomer = null;
     try {
@@ -116,8 +195,8 @@ export default async function InboxPage({
 
     initialDetail = {
       conversation: selectedConvo,
-      messages: messages ?? [],
-      draft: draft ? { ...draft, autopilot_evaluation: autopilotEvaluation } : null,
+      messages: messagesSnake,
+      draft: draftSnake,
       shopifyCustomer,
     };
   }

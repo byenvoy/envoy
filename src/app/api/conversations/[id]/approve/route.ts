@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/db/helpers";
+import { db } from "@/lib/db";
+import { conversations, messages, drafts, emailAddresses, autopilotEvaluations } from "@/lib/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { sendReply } from "@/lib/email/send-reply";
 import type { Conversation, Message } from "@/lib/types/database";
 
@@ -27,60 +30,44 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { userId, orgId } = auth.context;
 
   // Fetch conversation
-  const { data: conversation } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("id", id)
-    .eq("org_id", profile.org_id)
-    .single();
+  const conversation = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.orgId, orgId)))
+    .then((r) => r[0]);
 
   if (!conversation) {
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
   }
 
   // Fetch latest pending draft
-  const { data: draft } = await supabase
-    .from("drafts")
-    .select("*")
-    .eq("conversation_id", id)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false })
+  const draft = await db
+    .select()
+    .from(drafts)
+    .where(and(eq(drafts.conversationId, id), eq(drafts.status, "pending")))
+    .orderBy(desc(drafts.createdAt))
     .limit(1)
-    .single();
+    .then((r) => r[0]);
 
   if (!draft) {
     return NextResponse.json({ error: "No pending draft found" }, { status: 404 });
   }
 
   // Get latest inbound message for reply threading
-  const { data: latestInbound } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", id)
-    .eq("direction", "inbound")
-    .order("created_at", { ascending: false })
+  const latestInbound = await db
+    .select()
+    .from(messages)
+    .where(
+      and(eq(messages.conversationId, id), eq(messages.direction, "inbound"))
+    )
+    .orderBy(desc(messages.createdAt))
     .limit(1)
-    .single();
+    .then((r) => r[0]);
 
   if (!latestInbound) {
     return NextResponse.json({ error: "No inbound message found" }, { status: 404 });
@@ -92,13 +79,15 @@ export async function POST(
   const closeAfterSend = body.close === true;
 
   // Get org's email address and connection for sending
-  const { data: emailAddr } = await supabase
-    .from("email_addresses")
-    .select("email_address, display_name")
-    .eq("org_id", profile.org_id)
-    .eq("is_active", true)
+  const emailAddr = await db
+    .select({
+      email_address: emailAddresses.emailAddress,
+      display_name: emailAddresses.displayName,
+    })
+    .from(emailAddresses)
+    .where(and(eq(emailAddresses.orgId, orgId), eq(emailAddresses.isActive, true)))
     .limit(1)
-    .single();
+    .then((r) => r[0]);
 
   if (!emailAddr) {
     return NextResponse.json(
@@ -108,7 +97,7 @@ export async function POST(
   }
 
   // Find the connection ID from the latest inbound message
-  const connectionId = latestInbound.connection_id;
+  const connectionId = latestInbound.connectionId;
   if (!connectionId) {
     return NextResponse.json(
       { error: "No email connection found for this conversation" },
@@ -116,13 +105,44 @@ export async function POST(
     );
   }
 
-  const replyContent = editedContent ?? draft.edited_content ?? draft.draft_content;
+  const replyContent = editedContent ?? draft.editedContent ?? draft.draftContent;
   const replyHtml = replyContent.replace(/\n/g, "<br>");
+
+  // Map Drizzle rows to snake_case for sendReply compatibility
+  const conversationSnake = {
+    id: conversation.id,
+    org_id: conversation.orgId,
+    subject: conversation.subject,
+    status: conversation.status,
+    customer_email: conversation.customerEmail,
+    customer_name: conversation.customerName,
+    autopilot_disabled: conversation.autopilotDisabled,
+    created_at: conversation.createdAt,
+    updated_at: conversation.updatedAt,
+  } as unknown as Conversation;
+
+  const latestInboundSnake = {
+    id: latestInbound.id,
+    conversation_id: latestInbound.conversationId,
+    org_id: latestInbound.orgId,
+    direction: latestInbound.direction,
+    from_email: latestInbound.fromEmail,
+    from_name: latestInbound.fromName,
+    to_email: latestInbound.toEmail,
+    body_text: latestInbound.bodyText,
+    body_html: latestInbound.bodyHtml,
+    message_id: latestInbound.messageId,
+    in_reply_to: latestInbound.inReplyTo,
+    source: latestInbound.source,
+    connection_id: latestInbound.connectionId,
+    sent_by_autopilot: latestInbound.sentByAutopilot,
+    created_at: latestInbound.createdAt,
+  } as unknown as Message;
 
   try {
     const outboundMessageId = await sendReply({
-      conversation: conversation as Conversation,
-      latestInboundMessage: latestInbound as Message,
+      conversation: conversationSnake,
+      latestInboundMessage: latestInboundSnake,
       replyContent,
       replyHtml,
       emailAddr,
@@ -130,39 +150,39 @@ export async function POST(
     });
 
     // Update draft
-    await supabase
-      .from("drafts")
-      .update({
+    await db
+      .update(drafts)
+      .set({
         status: "approved",
-        message_id: outboundMessageId,
-        approved_at: new Date().toISOString(),
-        approved_by: user.id,
-        ...(editedContent ? { edited_content: editedContent } : {}),
+        messageId: outboundMessageId,
+        approvedAt: new Date(),
+        approvedBy: userId,
+        ...(editedContent ? { editedContent } : {}),
       })
-      .eq("id", draft.id);
+      .where(eq(drafts.id, draft.id));
 
     // Record shadow mode human action if this draft was evaluated by autopilot
-    if (draft.autopilot_evaluation_id) {
-      const wasEdited = !!(editedContent && editedContent !== draft.draft_content);
+    if (draft.autopilotEvaluationId) {
+      const wasEdited = !!(editedContent && editedContent !== draft.draftContent);
       const editDistance = wasEdited
-        ? computeWordEditDistance(draft.draft_content, editedContent!)
+        ? computeWordEditDistance(draft.draftContent, editedContent!)
         : 0;
 
-      await supabase
-        .from("autopilot_evaluations")
-        .update({
-          human_action: wasEdited ? "approved_with_edit" : "approved_no_edit",
-          edit_distance: editDistance,
+      await db
+        .update(autopilotEvaluations)
+        .set({
+          humanAction: wasEdited ? "approved_with_edit" : "approved_no_edit",
+          editDistance,
         })
-        .eq("id", draft.autopilot_evaluation_id);
+        .where(eq(autopilotEvaluations.id, draft.autopilotEvaluationId));
     }
 
     // If close requested, override the "waiting" status set by sendReply
     if (closeAfterSend) {
-      await supabase
-        .from("conversations")
-        .update({ status: "closed" })
-        .eq("id", id);
+      await db
+        .update(conversations)
+        .set({ status: "closed" })
+        .where(eq(conversations.id, id));
     }
 
     return NextResponse.json({ ok: true });

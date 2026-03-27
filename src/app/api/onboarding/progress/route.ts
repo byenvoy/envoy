@@ -1,57 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/db/helpers";
+import { db } from "@/lib/db";
+import { organizations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
-
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("onboarding_step, onboarding_completed_at")
-    .eq("id", profile.org_id)
-    .single();
+  const org = await db
+    .select({
+      onboardingStep: organizations.onboardingStep,
+      onboardingCompletedAt: organizations.onboardingCompletedAt,
+    })
+    .from(organizations)
+    .where(eq(organizations.id, orgId))
+    .then((r) => r[0]);
 
   return NextResponse.json({
-    step: org?.onboarding_step ?? 1,
-    completedAt: org?.onboarding_completed_at ?? null,
+    step: org?.onboardingStep ?? 1,
+    completedAt: org?.onboardingCompletedAt ?? null,
   });
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const { step } = await request.json();
   if (typeof step !== "number" || step < 1 || step > 4) {
@@ -59,31 +35,32 @@ export async function POST(request: NextRequest) {
   }
 
   const updates: Record<string, unknown> = {
-    onboarding_step: step,
+    onboardingStep: step,
   };
 
   if (step === 4) {
-    updates.onboarding_completed_at = new Date().toISOString();
+    updates.onboardingCompletedAt = new Date();
   }
 
   // Only advance, never go backward in persisted step
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("onboarding_step")
-    .eq("id", profile.org_id)
-    .single();
+  const org = await db
+    .select({ onboardingStep: organizations.onboardingStep })
+    .from(organizations)
+    .where(eq(organizations.id, orgId))
+    .then((r) => r[0]);
 
-  if (org && step <= org.onboarding_step) {
+  if (org && step <= org.onboardingStep) {
     return NextResponse.json({ ok: true });
   }
 
-  const { error } = await supabase
-    .from("organizations")
-    .update(updates)
-    .eq("id", profile.org_id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await db
+      .update(organizations)
+      .set(updates)
+      .where(eq(organizations.id, orgId));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

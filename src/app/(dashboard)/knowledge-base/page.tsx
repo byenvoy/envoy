@@ -1,26 +1,63 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { profiles, knowledgeBasePages, knowledgeBaseChunks } from "@/lib/db/schema";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { PageList } from "@/components/knowledge-base/page-list";
 import { ProcessingBanner } from "@/components/knowledge-base/processing-banner";
 import { GettingStartedChecklist } from "@/components/knowledge-base/getting-started-checklist";
 import type { KnowledgeBasePage } from "@/lib/types/database";
 
 export default async function KnowledgeBasePage() {
-  const supabase = await createClient();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
 
-  const { data: pages } = await supabase
-    .from("knowledge_base_pages")
-    .select("*")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: false })
-    .returns<KnowledgeBasePage[]>();
+  const profile = await db
+    .select({ orgId: profiles.orgId })
+    .from(profiles)
+    .where(eq(profiles.id, session.user.id))
+    .then((r) => r[0]);
 
-  const { count: chunkCount } = await supabase
-    .from("knowledge_base_chunks")
-    .select("*", { count: "exact", head: true });
+  if (!profile) redirect("/onboarding");
 
-  const hasPages = pages && pages.length > 0;
-  const sources = new Set((pages ?? []).map((p) => p.source));
+  const [pageRows, chunkCountResult] = await Promise.all([
+    db
+      .select()
+      .from(knowledgeBasePages)
+      .where(
+        and(
+          eq(knowledgeBasePages.orgId, profile.orgId),
+          eq(knowledgeBasePages.isActive, true)
+        )
+      )
+      .orderBy(desc(knowledgeBasePages.updatedAt)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(knowledgeBaseChunks)
+      .where(eq(knowledgeBaseChunks.orgId, profile.orgId))
+      .then((r) => Number(r[0]?.count ?? 0)),
+  ]);
+
+  // Map to snake_case for component compatibility
+  const pages = pageRows.map((p) => ({
+    id: p.id,
+    org_id: p.orgId,
+    url: p.url,
+    title: p.title,
+    source: p.source,
+    markdown_content: p.markdownContent,
+    content_hash: p.contentHash,
+    is_active: p.isActive,
+    created_at: p.createdAt.toISOString(),
+    updated_at: p.updatedAt.toISOString(),
+  })) as KnowledgeBasePage[];
+
+  const chunkCount = chunkCountResult;
+
+  const hasPages = pages.length > 0;
+  const sources = new Set(pages.map((p) => p.source));
 
   return (
     <div>

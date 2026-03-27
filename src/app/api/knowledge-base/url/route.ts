@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { knowledgeBasePages } from "@/lib/db/schema";
+import { withAuth } from "@/lib/db/helpers";
 import { extractPages } from "@/lib/crawl/extract";
 import { syncPageChunks } from "@/lib/rag/sync";
 import type { KnowledgeBasePage } from "@/lib/types/database";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const { url } = await request.json();
   if (!url || typeof url !== "string") {
@@ -52,30 +38,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const admin = createAdminClient();
-
-  const { data: page, error } = await admin
-    .from("knowledge_base_pages")
-    .upsert(
-      {
-        org_id: profile.org_id,
+  try {
+    const page = await db
+      .insert(knowledgeBasePages)
+      .values({
+        orgId,
         url: extracted.url,
         title: extracted.title,
-        markdown_content: extracted.markdown,
-        content_hash: extracted.contentHash,
+        markdownContent: extracted.markdown,
+        contentHash: extracted.contentHash,
         source: "url",
-        is_active: true,
-      },
-      { onConflict: "org_id,url" }
-    )
-    .select()
-    .single();
+        isActive: true,
+      })
+      .onConflictDoUpdate({
+        target: [knowledgeBasePages.orgId, knowledgeBasePages.url],
+        set: {
+          title: extracted.title,
+          markdownContent: extracted.markdown,
+          contentHash: extracted.contentHash,
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      })
+      .returning()
+      .then((r) => r[0]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    await syncPageChunks(page as unknown as KnowledgeBasePage);
+
+    return NextResponse.json({ page });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  await syncPageChunks(admin, page as KnowledgeBasePage);
-
-  return NextResponse.json({ page });
 }

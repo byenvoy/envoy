@@ -1,28 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { integrations } from "@/lib/db/schema";
+import { withAuth } from "@/lib/db/helpers";
 import { encrypt } from "@/lib/email/encryption";
 import { ShopifyClient } from "@/lib/integrations/shopify-client";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const { shop_domain, access_token } = await request.json();
 
@@ -48,19 +34,26 @@ export async function POST(request: Request) {
 
   const accessTokenEncrypted = encrypt(access_token);
 
-  const admin = createAdminClient();
-  const { error } = await admin.from("integrations").upsert(
-    {
-      org_id: profile.org_id,
-      provider: "shopify",
-      access_token_encrypted: accessTokenEncrypted,
-      config: { shop_domain },
-      is_active: true,
-    },
-    { onConflict: "org_id,provider" }
-  );
-
-  if (error) {
+  try {
+    await db
+      .insert(integrations)
+      .values({
+        orgId,
+        provider: "shopify",
+        accessTokenEncrypted,
+        config: { shop_domain },
+        isActive: true,
+      })
+      .onConflictDoUpdate({
+        target: [integrations.orgId, integrations.provider],
+        set: {
+          accessTokenEncrypted,
+          config: { shop_domain },
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (error) {
     console.error("Failed to save Shopify integration:", error);
     return NextResponse.json({ error: "Failed to save" }, { status: 500 });
   }

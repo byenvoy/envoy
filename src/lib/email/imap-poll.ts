@@ -1,6 +1,8 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { emailConnections } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getValidTokens } from "./oauth-tokens";
 import { processImapEmail } from "./process-imap";
 import type { EmailConnection } from "@/lib/types/database";
@@ -9,7 +11,6 @@ export async function pollConnection(
   connection: EmailConnection
 ): Promise<number> {
   const tokens = await getValidTokens(connection);
-  const admin = createAdminClient();
   let processed = 0;
 
   const client = new ImapFlow({
@@ -72,15 +73,15 @@ export async function pollConnection(
       }
 
       // Update connection state
-      await admin
-        .from("email_connections")
-        .update({
-          last_uid: maxUid,
-          last_polled_at: new Date().toISOString(),
+      await db
+        .update(emailConnections)
+        .set({
+          lastUid: maxUid,
+          lastPolledAt: new Date(),
           status: "active",
-          error_message: null,
+          errorMessage: null,
         })
-        .eq("id", connection.id);
+        .where(eq(emailConnections.id, connection.id));
     } finally {
       lock.release();
     }

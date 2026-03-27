@@ -1,32 +1,57 @@
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { profiles, autopilotTopics } from "@/lib/db/schema";
+import { eq, asc } from "drizzle-orm";
 import { TopicList } from "@/components/autopilot/topic-list";
-import type { Profile, AutopilotTopic } from "@/lib/types/database";
+import type { AutopilotTopic } from "@/lib/types/database";
 
 export default async function AutopilotPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id, role")
-    .eq("id", user.id)
-    .single();
+  const profile = await db
+    .select({ orgId: profiles.orgId, role: profiles.role })
+    .from(profiles)
+    .where(eq(profiles.id, session.user.id))
+    .then((r) => r[0]);
 
   if (!profile) redirect("/onboarding");
 
-  const isOwner = (profile as Profile).role === "owner";
+  const isOwner = profile.role === "owner";
   if (!isOwner) redirect("/inbox");
 
-  const { data: topics } = await supabase
-    .from("autopilot_topics")
-    .select("id, name, description, mode, confidence_threshold, daily_send_limit, daily_sends_today, created_at, updated_at")
-    .eq("org_id", (profile as Profile & { org_id: string }).org_id)
-    .order("created_at", { ascending: true });
+  const topicRows = await db
+    .select({
+      id: autopilotTopics.id,
+      name: autopilotTopics.name,
+      description: autopilotTopics.description,
+      mode: autopilotTopics.mode,
+      confidenceThreshold: autopilotTopics.confidenceThreshold,
+      dailySendLimit: autopilotTopics.dailySendLimit,
+      dailySendsToday: autopilotTopics.dailySendsToday,
+      createdAt: autopilotTopics.createdAt,
+      updatedAt: autopilotTopics.updatedAt,
+    })
+    .from(autopilotTopics)
+    .where(eq(autopilotTopics.orgId, profile.orgId))
+    .orderBy(asc(autopilotTopics.createdAt));
+
+  // Map to snake_case for component compatibility
+  const topics = topicRows.map((t) => ({
+    id: t.id,
+    org_id: profile.orgId,
+    name: t.name,
+    description: t.description,
+    embedding: null,
+    mode: t.mode,
+    confidence_threshold: Number(t.confidenceThreshold),
+    daily_send_limit: t.dailySendLimit,
+    daily_sends_today: t.dailySendsToday,
+    created_at: t.createdAt.toISOString(),
+    updated_at: t.updatedAt.toISOString(),
+  })) as AutopilotTopic[];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
@@ -44,7 +69,7 @@ export default async function AutopilotPage() {
         <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
           Topics
         </h2>
-        <TopicList initialTopics={(topics as AutopilotTopic[]) ?? []} />
+        <TopicList initialTopics={topics} />
       </div>
     </div>
   );

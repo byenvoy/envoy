@@ -1,5 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import {
+  profiles,
+  organizations,
+  emailConnections,
+  integrations,
+} from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
@@ -25,45 +34,47 @@ function getUniqueProviders() {
 }
 
 export default async function OnboardingPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id, role")
-    .eq("id", user.id)
-    .single();
+  const profile = await db
+    .select({ orgId: profiles.orgId, role: profiles.role })
+    .from(profiles)
+    .where(eq(profiles.id, session.user.id))
+    .then((r) => r[0]);
 
   if (!profile) redirect("/login");
 
-  const [
-    { data: org },
-    { data: connections },
-    { data: integrations },
-  ] = await Promise.all([
-    supabase
-      .from("organizations")
-      .select("preferred_model, onboarding_step, onboarding_completed_at")
-      .eq("id", profile.org_id)
-      .single(),
-    supabase
-      .from("email_connections")
-      .select("*")
-      .eq("org_id", profile.org_id),
-    supabase
-      .from("integrations")
-      .select("*")
-      .eq("org_id", profile.org_id),
+  const [orgRow, connectionRows, integrationRows] = await Promise.all([
+    db
+      .select({
+        preferredModel: organizations.preferredModel,
+        onboardingStep: organizations.onboardingStep,
+        onboardingCompletedAt: organizations.onboardingCompletedAt,
+      })
+      .from(organizations)
+      .where(eq(organizations.id, profile.orgId))
+      .then((r) => r[0]),
+    db
+      .select()
+      .from(emailConnections)
+      .where(eq(emailConnections.orgId, profile.orgId)),
+    db
+      .select()
+      .from(integrations)
+      .where(eq(integrations.orgId, profile.orgId)),
   ]);
 
-  const orgData = org as Organization | null;
+  const orgData = orgRow
+    ? ({
+        preferred_model: orgRow.preferredModel,
+        onboarding_step: orgRow.onboardingStep,
+        onboarding_completed_at: orgRow.onboardingCompletedAt?.toISOString() ?? null,
+      } as Pick<Organization, "preferred_model" | "onboarding_step" | "onboarding_completed_at">)
+    : null;
 
   // Build model availability
-  const orgKeyStatus = await getOrgApiKeyStatus(profile.org_id);
+  const orgKeyStatus = await getOrgApiKeyStatus(profile.orgId);
   const uniqueProviders = getUniqueProviders();
 
   const keyAvailability = new Set<string>();
@@ -84,8 +95,42 @@ export default async function OnboardingPage() {
       : "",
   }));
 
+  // Map connections to snake_case
+  const connectionsSnake = connectionRows.map((c) => ({
+    id: c.id,
+    org_id: c.orgId,
+    provider: c.provider,
+    email_address: c.emailAddress,
+    display_name: c.displayName,
+    access_token_encrypted: c.accessTokenEncrypted,
+    refresh_token_encrypted: c.refreshTokenEncrypted,
+    token_expires_at: c.tokenExpiresAt?.toISOString() ?? "",
+    imap_host: c.imapHost,
+    imap_port: c.imapPort,
+    smtp_host: c.smtpHost,
+    smtp_port: c.smtpPort,
+    last_polled_at: c.lastPolledAt?.toISOString() ?? null,
+    last_uid: c.lastUid,
+    status: c.status,
+    error_message: c.errorMessage,
+    created_at: c.createdAt.toISOString(),
+    updated_at: c.updatedAt.toISOString(),
+  })) as EmailConnection[];
+
+  // Map integrations to snake_case
+  const integrationsSnake = integrationRows.map((i) => ({
+    id: i.id,
+    org_id: i.orgId,
+    provider: i.provider,
+    access_token_encrypted: i.accessTokenEncrypted,
+    config: i.config,
+    is_active: i.isActive,
+    created_at: i.createdAt.toISOString(),
+    updated_at: i.updatedAt.toISOString(),
+  })) as Integration[];
+
   const shopifyIntegration =
-    ((integrations ?? []) as Integration[]).find(
+    integrationsSnake.find(
       (i) => i.provider === "shopify" && i.is_active
     ) ?? null;
 
@@ -94,7 +139,7 @@ export default async function OnboardingPage() {
       initialStep={orgData?.onboarding_step ?? 1}
       currentModel={orgData?.preferred_model ?? "claude-haiku-4-5-20251001"}
       models={models}
-      emailConnections={(connections ?? []) as EmailConnection[]}
+      emailConnections={connectionsSnake}
       hasGoogleClientId={!!process.env.GOOGLE_CLIENT_ID}
       hasMicrosoftClientId={!!process.env.MICROSOFT_CLIENT_ID}
       shopifyIntegration={shopifyIntegration}

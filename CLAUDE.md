@@ -17,8 +17,8 @@ Envoyer is a self-hosted AI customer support platform with a human-in-the-loop R
 
 - **Framework:** Next.js 16 with App Router, TypeScript, React 19
 - **Styling:** Tailwind CSS v4
-- **Database:** Supabase (Postgres + pgvector for embeddings)
-- **Auth:** Supabase Auth
+- **Database:** Postgres + pgvector for embeddings, Drizzle ORM
+- **Auth:** Better Auth (email/password, sessions stored in Postgres)
 - **Embeddings:** OpenAI text-embedding-3-small (1536 dimensions)
 - **LLM:** Anthropic Claude Haiku (default), abstracted behind provider interface
 - **Email:** OAuth (Google/Microsoft) via IMAP/SMTP
@@ -37,7 +37,9 @@ Envoyer is a self-hosted AI customer support platform with a human-in-the-loop R
 - Path alias: `@/*` maps to `./src/*`
 - No Vercel-specific features (Edge Middleware, Vercel KV, Vercel Blob) — must stay portable for self-hosted deployment
 - RAG pipeline is custom (no LangChain/LlamaIndex): chunk text → embed via OpenAI → query pgvector → construct prompt → call LLM
-- All database tables use `org_id` with Supabase RLS for multi-tenancy
+- All database tables use `org_id` with app-layer filtering for multi-tenancy (via `withAuth()` helper and `orgEq()`)
+- Database schema defined in `src/lib/db/schema/`, Drizzle config in `drizzle.config.ts`
+- Local dev database: `docker compose up db` (pgvector/pgvector:pg16)
 - Same codebase runs both hosted and self-hosted (Docker Compose) — no abstraction layers or conditional logic between deployment modes
 - Environment variable-driven configuration; feature flags only for hosted-only features (billing, usage limits)
 

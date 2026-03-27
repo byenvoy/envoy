@@ -1,5 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { knowledgeBasePages } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { EditPageForm } from "./edit-page-form";
 
 export default async function EditKnowledgeBasePage({
@@ -8,18 +12,18 @@ export default async function EditKnowledgeBasePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: page } = await supabase
-    .from("knowledge_base_pages")
-    .select("id, title, markdown_content")
-    .eq("id", id)
-    .single();
+  const page = await db
+    .select({
+      id: knowledgeBasePages.id,
+      title: knowledgeBasePages.title,
+      markdownContent: knowledgeBasePages.markdownContent,
+    })
+    .from(knowledgeBasePages)
+    .where(eq(knowledgeBasePages.id, id))
+    .then((r) => r[0]);
 
   if (!page) notFound();
 
@@ -33,7 +37,7 @@ export default async function EditKnowledgeBasePage({
       <EditPageForm
         pageId={page.id}
         initialTitle={page.title ?? ""}
-        initialContent={page.markdown_content ?? ""}
+        initialContent={page.markdownContent ?? ""}
       />
     </div>
   );

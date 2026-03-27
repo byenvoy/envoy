@@ -1,5 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import {
+  profiles,
+  organizations,
+  emailConnections,
+  integrations,
+  teamInvites,
+} from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { EmailConnectionPicker } from "@/components/settings/email-connection-picker";
 import { ShopifyConnection } from "@/components/settings/shopify-connection";
 import { ModelSelector } from "@/components/settings/model-selector";
@@ -29,64 +39,89 @@ function getUniqueProviders() {
 }
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id, role")
-    .eq("id", user.id)
-    .single();
+  const profile = await db
+    .select({ orgId: profiles.orgId, role: profiles.role })
+    .from(profiles)
+    .where(eq(profiles.id, session.user.id))
+    .then((r) => r[0]);
 
   if (!profile) redirect("/onboarding");
 
-  const isOwner = (profile as Profile).role === "owner";
+  const isOwner = profile.role === "owner";
 
-  const [
-    { data: org },
-    { data: connections },
-    { data: integrations },
-    { data: teamMembers },
-    { data: invites },
-  ] = await Promise.all([
-    supabase
-      .from("organizations")
-      .select("preferred_model, tone, custom_instructions")
-      .eq("id", profile.org_id)
-      .single(),
-    supabase
-      .from("email_connections")
-      .select("*")
-      .eq("org_id", profile.org_id),
-    supabase
-      .from("integrations")
-      .select("*")
-      .eq("org_id", profile.org_id),
-    supabase
-      .from("profiles")
-      .select("id, full_name, role")
-      .eq("org_id", profile.org_id),
-    isOwner
-      ? supabase
-          .from("team_invites")
-          .select("*")
-          .eq("org_id", profile.org_id)
-      : Promise.resolve({ data: [] }),
-  ]);
+  const [orgRows, connectionRows, integrationRows, teamMemberRows, inviteRows] =
+    await Promise.all([
+      db
+        .select({
+          preferredModel: organizations.preferredModel,
+          tone: organizations.tone,
+          customInstructions: organizations.customInstructions,
+        })
+        .from(organizations)
+        .where(eq(organizations.id, profile.orgId))
+        .then((r) => r[0]),
+      db.select().from(emailConnections).where(eq(emailConnections.orgId, profile.orgId)),
+      db.select().from(integrations).where(eq(integrations.orgId, profile.orgId)),
+      db
+        .select({ id: profiles.id, fullName: profiles.fullName, role: profiles.role })
+        .from(profiles)
+        .where(eq(profiles.orgId, profile.orgId)),
+      isOwner
+        ? db.select().from(teamInvites).where(eq(teamInvites.orgId, profile.orgId))
+        : Promise.resolve([]),
+    ]);
+
+  // Map Drizzle camelCase results to snake_case for components
+  const connectionsSnake = connectionRows.map((c) => ({
+    id: c.id,
+    org_id: c.orgId,
+    provider: c.provider,
+    email_address: c.emailAddress,
+    display_name: c.displayName,
+    access_token_encrypted: c.accessTokenEncrypted,
+    refresh_token_encrypted: c.refreshTokenEncrypted,
+    token_expires_at: c.tokenExpiresAt?.toISOString() ?? "",
+    imap_host: c.imapHost,
+    imap_port: c.imapPort,
+    smtp_host: c.smtpHost,
+    smtp_port: c.smtpPort,
+    last_polled_at: c.lastPolledAt?.toISOString() ?? null,
+    last_uid: c.lastUid,
+    status: c.status,
+    error_message: c.errorMessage,
+    created_at: c.createdAt.toISOString(),
+    updated_at: c.updatedAt.toISOString(),
+  })) as EmailConnection[];
+
+  const integrationRows_snake = integrationRows.map((i) => ({
+    id: i.id,
+    org_id: i.orgId,
+    provider: i.provider,
+    access_token_encrypted: i.accessTokenEncrypted,
+    config: i.config,
+    is_active: i.isActive,
+    created_at: i.createdAt.toISOString(),
+    updated_at: i.updatedAt.toISOString(),
+  })) as Integration[];
 
   const shopifyIntegration =
-    ((integrations ?? []) as Integration[]).find(
+    integrationRows_snake.find(
       (i) => i.provider === "shopify" && i.is_active
     ) ?? null;
 
-  const orgData = org as Organization | null;
+  const orgData = orgRows
+    ? ({
+        preferred_model: orgRows.preferredModel,
+        tone: orgRows.tone,
+        custom_instructions: orgRows.customInstructions,
+      } as Pick<Organization, "preferred_model" | "tone" | "custom_instructions">)
+    : null;
 
   // Fetch org-level API key status (provider_key -> last 4 chars)
-  const orgKeyStatus = await getOrgApiKeyStatus(profile.org_id);
+  const orgKeyStatus = await getOrgApiKeyStatus(profile.orgId);
 
   // Build unique provider list for API key UI
   const uniqueProviders = getUniqueProviders();
@@ -119,6 +154,24 @@ export default async function SettingsPage() {
       : "",
   }));
 
+  const teamMembersSnake = teamMemberRows.map((m) => ({
+    id: m.id,
+    full_name: m.fullName,
+    role: m.role,
+  }));
+
+  const invitesSnake = inviteRows.map((i) => ({
+    id: i.id,
+    org_id: i.orgId,
+    email: i.email,
+    role: i.role,
+    invited_by: i.invitedBy,
+    token: i.token,
+    accepted_at: i.acceptedAt?.toISOString() ?? null,
+    expires_at: i.expiresAt.toISOString(),
+    created_at: i.createdAt.toISOString(),
+  })) as TeamInvite[];
+
   return (
     <div>
       <div className="mb-8">
@@ -136,7 +189,7 @@ export default async function SettingsPage() {
             Email Address
           </h2>
           <EmailConnectionPicker
-            connections={(connections ?? []) as EmailConnection[]}
+            connections={connectionsSnake}
             hasGoogleClientId={!!process.env.GOOGLE_CLIENT_ID}
             hasMicrosoftClientId={!!process.env.MICROSOFT_CLIENT_ID}
           />
@@ -191,9 +244,9 @@ export default async function SettingsPage() {
               Team
             </h2>
             <TeamManagement
-              members={(teamMembers ?? []) as { id: string; full_name: string | null; role: string }[]}
-              invites={(invites ?? []) as TeamInvite[]}
-              currentUserId={user.id}
+              members={teamMembersSnake as { id: string; full_name: string | null; role: string }[]}
+              invites={invitesSnake}
+              currentUserId={session.user.id}
               appUrl={process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}
             />
           </div>

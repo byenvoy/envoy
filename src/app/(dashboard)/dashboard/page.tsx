@@ -1,6 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import {
+  profiles,
+  conversations,
+  drafts,
+  usageLogs,
+  knowledgeBasePages,
+} from "@/lib/db/schema";
+import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { StatusBadge } from "@/components/inbox/status-badge";
 import type { Conversation } from "@/lib/types/database";
@@ -15,60 +25,73 @@ function getMonthStart(): string {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
+  const profile = await db
+    .select({ orgId: profiles.orgId })
+    .from(profiles)
+    .where(eq(profiles.id, session.user.id))
+    .then((r) => r[0]);
 
   if (!profile) redirect("/onboarding");
 
-  const orgId = profile.org_id;
+  const orgId = profile.orgId;
   const thirtyDaysAgo = getThirtyDaysAgo();
   const monthStart = getMonthStart();
 
   // Fetch all stats in parallel
-  const [
-    { count: openCount },
-    { data: recentDrafts },
-    { data: usageLogs },
-    { data: recentConversations },
-    { count: kbPageCount },
-  ] = await Promise.all([
-    supabase
-      .from("conversations")
-      .select("*", { count: "exact", head: true })
-      .eq("org_id", orgId)
-      .eq("status", "open"),
-    supabase
-      .from("drafts")
-      .select("status, approved_at, created_at")
-      .eq("org_id", orgId)
-      .gte("created_at", thirtyDaysAgo),
-    supabase
-      .from("usage_logs")
-      .select("estimated_cost_usd, call_type")
-      .eq("org_id", orgId)
-      .gte("created_at", monthStart),
-    supabase
-      .from("conversations")
-      .select("*")
-      .eq("org_id", orgId)
-      .order("last_message_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("knowledge_base_pages")
-      .select("*", { count: "exact", head: true })
-      .eq("org_id", orgId)
-      .eq("is_active", true),
-  ]);
+  const [openCount, recentDrafts, usageLogRows, recentConvoRows, kbPageCount] =
+    await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(conversations)
+        .where(
+          and(eq(conversations.orgId, orgId), eq(conversations.status, "open"))
+        )
+        .then((r) => Number(r[0]?.count ?? 0)),
+      db
+        .select({
+          status: drafts.status,
+          approvedAt: drafts.approvedAt,
+          createdAt: drafts.createdAt,
+        })
+        .from(drafts)
+        .where(
+          and(
+            eq(drafts.orgId, orgId),
+            gte(drafts.createdAt, new Date(thirtyDaysAgo))
+          )
+        ),
+      db
+        .select({
+          estimatedCostUsd: usageLogs.estimatedCostUsd,
+          callType: usageLogs.callType,
+        })
+        .from(usageLogs)
+        .where(
+          and(
+            eq(usageLogs.orgId, orgId),
+            gte(usageLogs.createdAt, new Date(monthStart))
+          )
+        ),
+      db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.orgId, orgId))
+        .orderBy(desc(conversations.updatedAt))
+        .limit(10),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(knowledgeBasePages)
+        .where(
+          and(
+            eq(knowledgeBasePages.orgId, orgId),
+            eq(knowledgeBasePages.isActive, true)
+          )
+        )
+        .then((r) => Number(r[0]?.count ?? 0)),
+    ]);
 
   const drafts30d = recentDrafts ?? [];
   const approvalRate =
@@ -80,16 +103,28 @@ export default async function DashboardPage() {
         )
       : 0;
 
-  const monthLogs = usageLogs ?? [];
+  const monthLogs = usageLogRows ?? [];
   const costThisMonth = monthLogs.reduce(
-    (sum, l) => sum + Number(l.estimated_cost_usd),
+    (sum, l) => sum + Number(l.estimatedCostUsd),
     0
   );
   const draftsThisMonth = monthLogs.filter(
-    (l) => l.call_type === "draft"
+    (l) => l.callType === "draft"
   ).length;
 
-  const conversations = (recentConversations ?? []) as Conversation[];
+  // Map conversations to snake_case for component compatibility
+  const recentConversations = recentConvoRows.map((c) => ({
+    id: c.id,
+    org_id: c.orgId,
+    subject: c.subject,
+    status: c.status,
+    customer_email: c.customerEmail,
+    customer_name: c.customerName,
+    autopilot_disabled: c.autopilotDisabled,
+    created_at: c.createdAt.toISOString(),
+    updated_at: c.updatedAt.toISOString(),
+    last_message_at: c.updatedAt.toISOString(),
+  })) as Conversation[];
 
   const stats = [
     { label: "Open Conversations", value: openCount ?? 0 },
@@ -146,13 +181,13 @@ export default async function DashboardPage() {
         <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">
           Recent Conversations
         </h2>
-        {conversations.length === 0 ? (
+        {recentConversations.length === 0 ? (
           <p className="text-sm text-text-secondary">
             No conversations yet.
           </p>
         ) : (
           <div className="divide-y divide-border rounded-lg border border-border bg-surface-alt">
-            {conversations.map((convo) => (
+            {recentConversations.map((convo) => (
               <Link
                 key={convo.id}
                 href={`/inbox?id=${convo.id}`}

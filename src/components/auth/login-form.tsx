@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
 export function LoginForm() {
@@ -17,17 +17,16 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await authClient.signIn.email({
       email,
       password,
     });
 
     if (error) {
       setError(
-        error.message === "Email not confirmed"
+        error.status === 403
           ? "Please confirm your email address first. Check your inbox for a confirmation link."
-          : error.message
+          : error.message ?? "Sign in failed"
       );
       setLoading(false);
       return;

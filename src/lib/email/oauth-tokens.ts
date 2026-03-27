@@ -1,4 +1,6 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { emailConnections } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { decryptTokens, encryptTokens } from "./encryption";
 import { OAUTH_PROVIDERS, getClientCredentials } from "./oauth-config";
 import type { EmailConnection } from "@/lib/types/database";
@@ -47,17 +49,16 @@ export async function getValidTokens(
   };
 
   const encrypted = encryptTokens(newTokens);
-  const admin = createAdminClient();
-  await admin
-    .from("email_connections")
-    .update({
-      access_token_encrypted: encrypted.access_token_encrypted,
-      refresh_token_encrypted: encrypted.refresh_token_encrypted,
-      token_expires_at: new Date(
+  await db
+    .update(emailConnections)
+    .set({
+      accessTokenEncrypted: encrypted.access_token_encrypted,
+      refreshTokenEncrypted: encrypted.refresh_token_encrypted,
+      tokenExpiresAt: new Date(
         Date.now() + (data.expires_in ?? 3600) * 1000
-      ).toISOString(),
+      ),
     })
-    .eq("id", connection.id);
+    .where(eq(emailConnections.id, connection.id));
 
   return newTokens;
 }

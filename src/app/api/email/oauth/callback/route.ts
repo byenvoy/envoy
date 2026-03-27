@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { emailConnections, emailAddresses } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import {
   OAUTH_PROVIDERS,
   getClientCredentials,
@@ -82,33 +84,47 @@ export async function GET(request: NextRequest) {
     refresh_token: tokenData.refresh_token,
   });
 
-  const admin = createAdminClient();
-
   // Upsert email_connections
-  const { error: connError } = await admin
-    .from("email_connections")
-    .upsert(
-      {
-        org_id: orgId,
+  try {
+    await db
+      .insert(emailConnections)
+      .values({
+        orgId,
         provider,
-        email_address: email,
-        display_name: name ?? null,
-        access_token_encrypted: encrypted.access_token_encrypted,
-        refresh_token_encrypted: encrypted.refresh_token_encrypted,
-        token_expires_at: new Date(
+        emailAddress: email,
+        displayName: name ?? null,
+        accessTokenEncrypted: encrypted.access_token_encrypted,
+        refreshTokenEncrypted: encrypted.refresh_token_encrypted,
+        tokenExpiresAt: new Date(
           Date.now() + (tokenData.expires_in ?? 3600) * 1000
-        ).toISOString(),
-        imap_host: config.imapHost,
-        imap_port: config.imapPort,
-        smtp_host: config.smtpHost,
-        smtp_port: config.smtpPort,
+        ),
+        imapHost: config.imapHost,
+        imapPort: config.imapPort,
+        smtpHost: config.smtpHost,
+        smtpPort: config.smtpPort,
         status: "active",
-        error_message: null,
-      },
-      { onConflict: "org_id,provider" }
-    );
-
-  if (connError) {
+        errorMessage: null,
+      })
+      .onConflictDoUpdate({
+        target: [emailConnections.orgId, emailConnections.provider],
+        set: {
+          emailAddress: email,
+          displayName: name ?? null,
+          accessTokenEncrypted: encrypted.access_token_encrypted,
+          refreshTokenEncrypted: encrypted.refresh_token_encrypted,
+          tokenExpiresAt: new Date(
+            Date.now() + (tokenData.expires_in ?? 3600) * 1000
+          ),
+          imapHost: config.imapHost,
+          imapPort: config.imapPort,
+          smtpHost: config.smtpHost,
+          smtpPort: config.smtpPort,
+          status: "active",
+          errorMessage: null,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (connError) {
     console.error("Failed to save connection:", connError);
     return NextResponse.redirect(
       `${appUrl}/settings?error=save_failed`
@@ -116,25 +132,29 @@ export async function GET(request: NextRequest) {
   }
 
   // Upsert email_addresses with connection_type = 'oauth'
-  const { data: existingAddr } = await admin
-    .from("email_addresses")
-    .select("id")
-    .eq("org_id", orgId)
-    .eq("email_address", email)
-    .single();
+  const existingAddr = await db
+    .select({ id: emailAddresses.id })
+    .from(emailAddresses)
+    .where(
+      and(
+        eq(emailAddresses.orgId, orgId),
+        eq(emailAddresses.emailAddress, email)
+      )
+    )
+    .then((r) => r[0]);
 
   if (existingAddr) {
-    await admin
-      .from("email_addresses")
-      .update({ display_name: name ?? null, is_active: true, connection_type: "oauth" })
-      .eq("id", existingAddr.id);
+    await db
+      .update(emailAddresses)
+      .set({ displayName: name ?? null, isActive: true, connectionType: "oauth" })
+      .where(eq(emailAddresses.id, existingAddr.id));
   } else {
-    await admin.from("email_addresses").insert({
-      org_id: orgId,
-      email_address: email,
-      display_name: name ?? null,
-      is_active: true,
-      connection_type: "oauth",
+    await db.insert(emailAddresses).values({
+      orgId,
+      emailAddress: email,
+      displayName: name ?? null,
+      isActive: true,
+      connectionType: "oauth",
     });
   }
 

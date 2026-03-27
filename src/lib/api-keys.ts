@@ -1,4 +1,6 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { orgApiKeys } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { decrypt } from "@/lib/email/encryption";
 
 /**
@@ -10,17 +12,20 @@ export async function getOrgApiKey(
   orgId: string,
   providerKey: string
 ): Promise<string | null> {
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("org_api_keys")
-    .select("api_key_encrypted")
-    .eq("org_id", orgId)
-    .eq("provider_key", providerKey)
-    .single();
+  const row = await db
+    .select({ apiKeyEncrypted: orgApiKeys.apiKeyEncrypted })
+    .from(orgApiKeys)
+    .where(
+      and(
+        eq(orgApiKeys.orgId, orgId),
+        eq(orgApiKeys.providerKey, providerKey)
+      )
+    )
+    .then((r) => r[0]);
 
-  if (data?.api_key_encrypted) {
+  if (row?.apiKeyEncrypted) {
     try {
-      return decrypt(data.api_key_encrypted);
+      return decrypt(row.apiKeyEncrypted);
     } catch {
       console.error(`Failed to decrypt ${providerKey} API key for org ${orgId}`);
     }
@@ -43,19 +48,21 @@ export function hasEnvKey(providerKey: string): boolean {
 export async function getOrgApiKeyStatus(
   orgId: string
 ): Promise<Map<string, string>> {
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("org_api_keys")
-    .select("provider_key, api_key_encrypted")
-    .eq("org_id", orgId);
+  const rows = await db
+    .select({
+      providerKey: orgApiKeys.providerKey,
+      apiKeyEncrypted: orgApiKeys.apiKeyEncrypted,
+    })
+    .from(orgApiKeys)
+    .where(eq(orgApiKeys.orgId, orgId));
 
   const result = new Map<string, string>();
-  for (const row of data ?? []) {
+  for (const row of rows) {
     try {
-      const decrypted = decrypt(row.api_key_encrypted);
-      result.set(row.provider_key, decrypted.slice(-4));
+      const decrypted = decrypt(row.apiKeyEncrypted);
+      result.set(row.providerKey, decrypted.slice(-4));
     } catch {
-      result.set(row.provider_key, "****");
+      result.set(row.providerKey, "****");
     }
   }
   return result;

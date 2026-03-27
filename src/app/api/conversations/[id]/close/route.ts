@@ -1,46 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/db/helpers";
+import { db } from "@/lib/db";
+import { conversations, drafts } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   // Discard any pending drafts
-  await supabase
-    .from("drafts")
-    .update({ status: "discarded" })
-    .eq("conversation_id", id)
-    .eq("org_id", profile.org_id)
-    .eq("status", "pending");
+  await db
+    .update(drafts)
+    .set({ status: "discarded" })
+    .where(
+      and(
+        eq(drafts.conversationId, id),
+        eq(drafts.orgId, orgId),
+        eq(drafts.status, "pending")
+      )
+    );
 
   // Close the conversation
-  const { error } = await supabase
-    .from("conversations")
-    .update({ status: "closed" })
-    .eq("id", id)
-    .eq("org_id", profile.org_id);
-
-  if (error) {
+  try {
+    await db
+      .update(conversations)
+      .set({ status: "closed" })
+      .where(and(eq(conversations.id, id), eq(conversations.orgId, orgId)));
+  } catch {
     return NextResponse.json({ error: "Failed to close" }, { status: 500 });
   }
 

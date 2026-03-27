@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db";
+import { organizations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { withAuth } from "@/lib/db/helpers";
 import { discoverUrls, isSupportRelevant } from "@/lib/crawl/discover";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const body = await request.json();
   const domain = body.domain as string;
@@ -41,19 +39,11 @@ export async function POST(request: Request) {
   }
 
   // Update org domain
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (profile) {
-    const normalizedDomain = domain.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-    await supabase
-      .from("organizations")
-      .update({ domain: normalizedDomain })
-      .eq("id", profile.org_id);
-  }
+  const normalizedDomain = domain.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  await db
+    .update(organizations)
+    .set({ domain: normalizedDomain, updatedAt: new Date() })
+    .where(eq(organizations.id, orgId));
 
   const urls = await discoverUrls(domain);
   const results = urls.map((url) => ({

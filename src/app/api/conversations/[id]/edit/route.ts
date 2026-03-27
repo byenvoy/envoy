@@ -1,29 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/db/helpers";
+import { db } from "@/lib/db";
+import { drafts } from "@/lib/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const body = await request.json();
   const { edited_content } = body;
@@ -36,26 +24,30 @@ export async function PUT(
   }
 
   // Get latest pending draft for this conversation
-  const { data: draft } = await supabase
-    .from("drafts")
-    .select("id")
-    .eq("conversation_id", id)
-    .eq("org_id", profile.org_id)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false })
+  const draft = await db
+    .select({ id: drafts.id })
+    .from(drafts)
+    .where(
+      and(
+        eq(drafts.conversationId, id),
+        eq(drafts.orgId, orgId),
+        eq(drafts.status, "pending")
+      )
+    )
+    .orderBy(desc(drafts.createdAt))
     .limit(1)
-    .single();
+    .then((r) => r[0]);
 
   if (!draft) {
     return NextResponse.json({ error: "No draft found" }, { status: 404 });
   }
 
-  const { error } = await supabase
-    .from("drafts")
-    .update({ edited_content })
-    .eq("id", draft.id);
-
-  if (error) {
+  try {
+    await db
+      .update(drafts)
+      .set({ editedContent: edited_content })
+      .where(eq(drafts.id, draft.id));
+  } catch {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }
 

@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { knowledgeBasePages } from "@/lib/db/schema";
+import { withAuth } from "@/lib/db/helpers";
 import { syncPageChunks } from "@/lib/rag/sync";
 import type { KnowledgeBasePage } from "@/lib/types/database";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const { title, content } = await request.json();
   if (!title || !content) {
@@ -32,27 +18,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const admin = createAdminClient();
+  try {
+    const page = await db
+      .insert(knowledgeBasePages)
+      .values({
+        orgId,
+        url: null,
+        title,
+        markdownContent: content,
+        source: "manual",
+        isActive: true,
+      })
+      .returning()
+      .then((r) => r[0]);
 
-  const { data: page, error } = await admin
-    .from("knowledge_base_pages")
-    .insert({
-      org_id: profile.org_id,
-      url: null,
-      title,
-      markdown_content: content,
-      source: "manual",
-      is_active: true,
-    })
-    .select()
-    .single();
+    await syncPageChunks(page as unknown as KnowledgeBasePage);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ page });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  // Chunk and embed
-  await syncPageChunks(admin, page as KnowledgeBasePage);
-
-  return NextResponse.json({ page });
 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { knowledgeBasePages } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { withAuth } from "@/lib/db/helpers";
 import { syncPageChunks } from "@/lib/rag/sync";
 import type { KnowledgeBasePage } from "@/lib/types/database";
 
@@ -9,33 +11,20 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
-
-  const admin = createAdminClient();
-
-  const { data: page } = await admin
-    .from("knowledge_base_pages")
-    .select("*")
-    .eq("id", id)
-    .eq("org_id", profile.org_id)
-    .single();
+  const page = await db
+    .select()
+    .from(knowledgeBasePages)
+    .where(
+      and(
+        eq(knowledgeBasePages.id, id),
+        eq(knowledgeBasePages.orgId, orgId)
+      )
+    )
+    .then((r) => r[0]);
 
   if (!page) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
@@ -71,23 +60,23 @@ export async function POST(
     const turndown = new TurndownService();
     const markdown = turndown.turndown(article.content ?? "");
 
-    await admin
-      .from("knowledge_base_pages")
-      .update({
+    await db
+      .update(knowledgeBasePages)
+      .set({
         title: article.title || page.title,
-        markdown_content: markdown,
+        markdownContent: markdown,
+        updatedAt: new Date(),
       })
-      .eq("id", id);
+      .where(eq(knowledgeBasePages.id, id));
 
     const updatedPage = {
       ...page,
       title: article.title || page.title,
-      markdown_content: markdown,
+      markdownContent: markdown,
     };
 
     const chunks = await syncPageChunks(
-      admin,
-      updatedPage as KnowledgeBasePage
+      updatedPage as unknown as KnowledgeBasePage
     );
 
     return NextResponse.json({ ok: true, chunks });

@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { headers } from "next/headers";
+import { db } from "@/lib/db";
+import { profiles, teamInvites } from "@/lib/db/schema";
+import { eq, and, isNull } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
     // Redirect to login with a return URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     return NextResponse.redirect(
@@ -20,15 +23,19 @@ export async function GET(
     );
   }
 
-  const admin = createAdminClient();
+  const user = session.user;
 
   // Find the invite
-  const { data: invite } = await admin
-    .from("team_invites")
-    .select("*")
-    .eq("token", token)
-    .is("accepted_at", null)
-    .single();
+  const invite = await db
+    .select()
+    .from(teamInvites)
+    .where(
+      and(
+        eq(teamInvites.token, token),
+        isNull(teamInvites.acceptedAt)
+      )
+    )
+    .then((r) => r[0]);
 
   if (!invite) {
     return NextResponse.json(
@@ -37,46 +44,50 @@ export async function GET(
     );
   }
 
-  if (new Date(invite.expires_at) < new Date()) {
+  if (new Date(invite.expiresAt) < new Date()) {
     return NextResponse.json({ error: "Invite has expired" }, { status: 410 });
   }
 
   // Check if user already has a profile in this org
-  const { data: existing } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .eq("org_id", invite.org_id)
-    .single();
+  const existing = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(
+      and(
+        eq(profiles.id, user.id),
+        eq(profiles.orgId, invite.orgId)
+      )
+    )
+    .then((r) => r[0]);
 
   if (!existing) {
     // Update existing profile to join this org, or create new one
-    const { data: currentProfile } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("id", user.id)
-      .single();
+    const currentProfile = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.id, user.id))
+      .then((r) => r[0]);
 
     if (currentProfile) {
-      await admin
-        .from("profiles")
-        .update({ org_id: invite.org_id, role: invite.role })
-        .eq("id", user.id);
+      await db
+        .update(profiles)
+        .set({ orgId: invite.orgId, role: invite.role })
+        .where(eq(profiles.id, user.id));
     } else {
-      await admin.from("profiles").insert({
+      await db.insert(profiles).values({
         id: user.id,
-        org_id: invite.org_id,
-        full_name: user.user_metadata?.full_name ?? null,
+        orgId: invite.orgId,
+        fullName: user.name ?? null,
         role: invite.role,
       });
     }
   }
 
   // Mark invite as accepted
-  await admin
-    .from("team_invites")
-    .update({ accepted_at: new Date().toISOString() })
-    .eq("id", invite.id);
+  await db
+    .update(teamInvites)
+    .set({ acceptedAt: new Date() })
+    .where(eq(teamInvites.id, invite.id));
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   return NextResponse.redirect(`${appUrl}/inbox`);

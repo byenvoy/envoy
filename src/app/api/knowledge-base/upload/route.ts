@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { knowledgeBasePages } from "@/lib/db/schema";
+import { withAuth } from "@/lib/db/helpers";
 import { parseFile } from "@/lib/parse/file";
 import { syncPageChunks } from "@/lib/rag/sync";
 import { computeHash } from "@/lib/crawl/hash";
@@ -9,24 +10,9 @@ import type { KnowledgeBasePage } from "@/lib/types/database";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId } = auth.context;
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
@@ -55,27 +41,27 @@ export async function POST(request: NextRequest) {
   }
 
   const contentHash = computeHash(parsed.content);
-  const admin = createAdminClient();
 
-  const { data: page, error } = await admin
-    .from("knowledge_base_pages")
-    .insert({
-      org_id: profile.org_id,
-      url: null,
-      title: parsed.title,
-      markdown_content: parsed.content,
-      content_hash: contentHash,
-      source: "upload",
-      is_active: true,
-    })
-    .select()
-    .single();
+  try {
+    const page = await db
+      .insert(knowledgeBasePages)
+      .values({
+        orgId,
+        url: null,
+        title: parsed.title,
+        markdownContent: parsed.content,
+        contentHash,
+        source: "upload",
+        isActive: true,
+      })
+      .returning()
+      .then((r) => r[0]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    await syncPageChunks(page as unknown as KnowledgeBasePage);
+
+    return NextResponse.json({ page });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  await syncPageChunks(admin, page as KnowledgeBasePage);
-
-  return NextResponse.json({ page });
 }

@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/db/helpers";
+import { db } from "@/lib/db";
+import { orgApiKeys } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { encrypt } from "@/lib/email/encryption";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId, role } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id, role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "owner") {
+  if (role !== "owner") {
     return NextResponse.json({ error: "Only owners can manage API keys" }, { status: 403 });
   }
 
@@ -35,41 +27,35 @@ export async function POST(request: NextRequest) {
   const encrypted = encrypt(api_key.trim());
 
   // Upsert: insert or update on conflict
-  const { error } = await supabase
-    .from("org_api_keys")
-    .upsert(
-      {
-        org_id: profile.org_id,
-        provider_key,
-        api_key_encrypted: encrypted,
-      },
-      { onConflict: "org_id,provider_key" }
-    );
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await db
+      .insert(orgApiKeys)
+      .values({
+        orgId,
+        providerKey: provider_key,
+        apiKeyEncrypted: encrypted,
+      })
+      .onConflictDoUpdate({
+        target: [orgApiKeys.orgId, orgApiKeys.providerKey],
+        set: {
+          apiKeyEncrypted: encrypted,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await withAuth();
+  if (!auth.success) return auth.response;
+  const { orgId, role } = auth.context;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id, role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "owner") {
+  if (role !== "owner") {
     return NextResponse.json({ error: "Only owners can manage API keys" }, { status: 403 });
   }
 
@@ -79,14 +65,15 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "provider_key is required" }, { status: 400 });
   }
 
-  const { error } = await supabase
-    .from("org_api_keys")
-    .delete()
-    .eq("org_id", profile.org_id)
-    .eq("provider_key", provider_key);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await db
+      .delete(orgApiKeys)
+      .where(
+        and(eq(orgApiKeys.orgId, orgId), eq(orgApiKeys.providerKey, provider_key))
+      );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

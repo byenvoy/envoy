@@ -1,4 +1,6 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { db } from "@/lib/db";
+import { messages, conversations, emailConnections } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getValidTokens } from "./oauth-tokens";
 import { createTransport } from "nodemailer";
 import type { Conversation, Message, EmailConnection } from "@/lib/types/database";
@@ -26,24 +28,23 @@ export async function sendReply({
   connectionId,
   sentByAutopilot = false,
 }: SendReplyParams): Promise<string> {
-  const admin = createAdminClient();
-  const { data: connection } = await admin
-    .from("email_connections")
-    .select("*")
-    .eq("id", connectionId)
-    .single();
+  const connection = await db
+    .select()
+    .from(emailConnections)
+    .where(eq(emailConnections.id, connectionId))
+    .then((r) => r[0]);
 
   if (!connection) throw new Error("Email connection not found");
 
-  const tokens = await getValidTokens(connection as EmailConnection);
+  const tokens = await getValidTokens(connection as unknown as EmailConnection);
 
   const transport = createTransport({
-    host: connection.smtp_host,
-    port: connection.smtp_port,
+    host: connection.smtpHost,
+    port: connection.smtpPort,
     secure: false,
     auth: {
       type: "OAuth2",
-      user: connection.email_address,
+      user: connection.emailAddress,
       accessToken: tokens.access_token,
     },
   });
@@ -69,33 +70,33 @@ export async function sendReply({
   });
 
   // Create outbound message row with the sent message ID
-  const { data: outboundMsg, error } = await admin
-    .from("messages")
-    .insert({
-      conversation_id: conversation.id,
-      org_id: conversation.org_id,
+  const outboundMsg = await db
+    .insert(messages)
+    .values({
+      conversationId: conversation.id,
+      orgId: conversation.org_id,
       direction: "outbound",
-      from_email: emailAddr.email_address,
-      from_name: emailAddr.display_name,
-      to_email: conversation.customer_email,
-      body_text: replyContent,
-      body_html: replyHtml,
-      message_id: info.messageId ?? null,
-      in_reply_to: latestInboundMessage.message_id,
+      fromEmail: emailAddr.email_address,
+      fromName: emailAddr.display_name,
+      toEmail: conversation.customer_email,
+      bodyText: replyContent,
+      bodyHtml: replyHtml,
+      messageId: info.messageId ?? null,
+      inReplyTo: latestInboundMessage.message_id,
       source: "smtp",
-      connection_id: connectionId,
-      sent_by_autopilot: sentByAutopilot,
+      connectionId,
+      sentByAutopilot,
     })
-    .select("id")
-    .single();
+    .returning({ id: messages.id })
+    .then((r) => r[0]);
 
-  if (error) throw error;
+  if (!outboundMsg) throw new Error("Failed to insert outbound message");
 
   // Update conversation status to waiting
-  await admin
-    .from("conversations")
-    .update({ status: "waiting", last_message_at: new Date().toISOString() })
-    .eq("id", conversation.id);
+  await db
+    .update(conversations)
+    .set({ status: "waiting", updatedAt: new Date() })
+    .where(eq(conversations.id, conversation.id));
 
   return outboundMsg.id;
 }

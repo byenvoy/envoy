@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createHmac } from "crypto";
+import { withAuth } from "@/lib/db/helpers";
 import {
   SHOPIFY_SCOPES,
   getShopifyAuthUrl,
@@ -15,24 +15,11 @@ function signState(payload: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const auth = await withAuth();
+  if (!auth.success) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
-  }
+  const { orgId } = auth.context;
 
   const { searchParams } = new URL(request.url);
   const shop = searchParams.get("shop");
@@ -46,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   const creds = getShopifyClientCredentials();
   const statePayload = JSON.stringify({
-    orgId: profile.org_id,
+    orgId,
     shop,
   });
   const state = signState(Buffer.from(statePayload).toString("base64url"));
