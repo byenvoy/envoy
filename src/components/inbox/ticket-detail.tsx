@@ -186,7 +186,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             value={editedContent}
             onChange={(e) => handleContentChange(e.target.value)}
             rows={10}
-            className="flex-1 resize-none rounded-lg border border-l-[3px] border-l-ai-accent border-t-border border-r-border border-b-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="flex-1 resize-none rounded-lg border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
 
           {/* Sources bar */}
