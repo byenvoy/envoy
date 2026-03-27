@@ -46,6 +46,19 @@ function htmlToMarkdown(html: string, url: string): ExtractedPage {
     .querySelectorAll('[role="navigation"],[role="banner"],[role="contentinfo"]')
     .forEach((el) => el.remove());
 
+  // Resolve relative URLs to absolute before converting to markdown
+  doc.querySelectorAll("a[href]").forEach((el) => {
+    try {
+      const href = el.getAttribute("href");
+      if (href && !href.startsWith("http") && !href.startsWith("mailto:")) {
+        const absolute = new URL(href, url).href;
+        el.setAttribute("href", absolute);
+      }
+    } catch {
+      // Invalid URL — leave as-is
+    }
+  });
+
   const body = doc.body;
   if (!body || !body.textContent?.trim()) {
     return { url, title, markdown: null, contentHash: null, error: "No readable content" };
