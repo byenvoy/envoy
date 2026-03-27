@@ -55,16 +55,17 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
         />
       </div>
 
-      <div className="flex min-w-0 gap-1">
+      <div className="flex min-w-0 gap-0.5">
         {STATUS_FILTERS.map((filter) => {
           const count = statusCounts[filter.value] ?? 0;
           const isActive = activeFilter === filter.value;
+          const displayCount = count > 99 ? "99+" : count;
 
           return (
             <button
               key={filter.value}
               onClick={() => setStatus(filter.value)}
-              className={`min-w-0 whitespace-nowrap rounded-full px-1.5 py-0.5 font-display text-xs font-medium tabular-nums transition-colors ${
+              className={`inline-flex items-baseline gap-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 font-display text-[11px] font-medium tabular-nums transition-colors ${
                 isActive
                   ? "bg-primary text-white"
                   : "bg-surface text-text-secondary hover:bg-border"
@@ -72,7 +73,7 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
             >
               {filter.label}
               {count > 0 && (
-                <span className="ml-1 opacity-70">{count > 99 ? "99+" : count}</span>
+                <span className="text-[9px] opacity-50">{displayCount}</span>
               )}
             </button>
           );
