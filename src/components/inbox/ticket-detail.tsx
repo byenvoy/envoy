@@ -161,7 +161,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-display text-sm font-semibold">
               <span className="inline-block h-2 w-2 rounded-full bg-ai-accent" />
-              <span className="text-text-primary">AI Draft</span>
+              <span className="text-text-primary">Draft</span>
               {saveStatus === "saving" && (
                 <span className="font-mono text-[10px] font-normal text-text-secondary">Saving...</span>
               )}
