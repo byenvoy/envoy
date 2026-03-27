@@ -16,6 +16,14 @@ interface DraftPanelProps {
 
 export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent }: DraftPanelProps) {
   const router = useRouter();
+
+  // Extract autopilot evaluation data if present (joined via Supabase relation)
+  const autopilotEval = (draft as Record<string, unknown> | null)?.autopilot_evaluation as {
+    gate3_passed: boolean | null;
+    gate3_needs_human_reason: string | null;
+    outcome: string | null;
+  } | null;
+
   const [editedContent, setEditedContent] = useState(
     draft?.edited_content ?? draft?.draft_content ?? ""
   );
@@ -136,6 +144,19 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
       {/* Draft section */}
       {draft && isPending && (
         <div className="flex flex-1 flex-col gap-3 p-4">
+          {/* Gate 3 warning — draft flagged as needing human review */}
+          {autopilotEval?.gate3_passed === false && (
+            <div className="rounded-md border border-ai-accent/30 bg-ai-light px-3 py-2">
+              <p className="text-xs font-display font-medium text-ai">
+                Flagged for human review before sending
+              </p>
+              {autopilotEval.gate3_needs_human_reason && (
+                <p className="mt-1 text-xs text-text-secondary">
+                  {autopilotEval.gate3_needs_human_reason}
+                </p>
+              )}
+            </div>
+          )}
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-display text-sm font-semibold">

@@ -33,11 +33,12 @@ export function InboxView({
 }: InboxViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedId = searchParams.get("id");
+  const initialSelectedId = searchParams.get("id") ?? initialDetail?.conversation.id ?? null;
 
   // Detail cache — avoids re-fetching previously viewed conversations
   const detailCache = useRef<Map<string, ConversationDetailData>>(new Map());
 
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [detailData, setDetailData] = useState<ConversationDetailData | null>(initialDetail);
   const [detailLoading, setDetailLoading] = useState(false);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
@@ -96,26 +97,24 @@ export function InboxView({
     }
   }, []);
 
-  useEffect(() => {
-    if (selectedId) {
-      fetchDetail(selectedId);
-    } else {
-      setDetailData(null);
-    }
-  }, [selectedId, fetchDetail]);
 
   function handleSelectConversation(conversationId: string) {
+    setSelectedId(conversationId);
+    fetchDetail(conversationId);
+    setMobileShowDetail(true);
+    // Update URL without triggering server re-render
     const params = new URLSearchParams(searchParams.toString());
     params.set("id", conversationId);
-    router.replace(`/inbox?${params.toString()}`, { scroll: false });
-    setMobileShowDetail(true);
+    window.history.replaceState(null, "", `/inbox?${params.toString()}`);
   }
 
   function handleBack() {
     setMobileShowDetail(false);
+    setSelectedId(null);
+    setDetailData(null);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("id");
-    router.replace(`/inbox?${params.toString()}`, { scroll: false });
+    window.history.replaceState(null, "", `/inbox?${params.toString()}`);
   }
 
   function handleDetailRefresh() {
@@ -130,10 +129,11 @@ export function InboxView({
     if (selectedId) {
       detailCache.current.delete(selectedId);
     }
+    setSelectedId(null);
     setDetailData(null);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("id");
-    router.replace(`/inbox?${params.toString()}`, { scroll: false });
+    window.history.replaceState(null, "", `/inbox?${params.toString()}`);
     router.refresh();
   }
 
@@ -148,10 +148,11 @@ export function InboxView({
       });
       if (!res.ok) return;
       detailCache.current.delete(selectedId);
+      setSelectedId(null);
       setDetailData(null);
       const params = new URLSearchParams(searchParams.toString());
       params.delete("id");
-      router.replace(`/inbox?${params.toString()}`, { scroll: false });
+      window.history.replaceState(null, "", `/inbox?${params.toString()}`);
       router.refresh();
     } finally {
       setClosing(false);
@@ -189,7 +190,9 @@ export function InboxView({
     if (allConversations.length > 0 && window.innerWidth >= 768) {
       const currentStillExists = selectedId && allConversations.some((c) => c.id === selectedId);
       if (!currentStillExists) {
-        handleSelectConversation(allConversations[0].id);
+        const firstId = allConversations[0].id;
+        setSelectedId(firstId);
+        fetchDetail(firstId);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -265,6 +268,7 @@ export function InboxView({
           {showRightPanel && (
             <div className="hidden h-full w-[380px] flex-shrink-0 overflow-y-auto md:block">
               <DraftPanel
+                key={detailData.conversation.id}
                 conversation={detailData.conversation}
                 draft={hasPendingDraft ? detailData.draft! : null}
                 shopifyCustomer={detailData.shopifyCustomer}

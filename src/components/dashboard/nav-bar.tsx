@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/inbox", label: "Inbox" },
   { href: "/knowledge-base", label: "Knowledge Base" },
+  { href: "/autopilot", label: "Autopilot" },
   { href: "/playground", label: "Playground" },
   { href: "/settings", label: "Settings" },
 ];

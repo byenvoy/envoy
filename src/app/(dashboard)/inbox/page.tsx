@@ -12,7 +12,7 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<{ status?: string; search?: string; id?: string }>;
 }) {
-  const { status: statusFilter, search } = await searchParams;
+  const { status: statusFilter, search, id: selectedId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -66,10 +66,12 @@ export default async function InboxPage({
   const convoList = conversations ?? [];
   const hasMore = convoList.length === PAGE_SIZE;
 
-  // Prefetch first conversation's detail to eliminate the waterfall
+  // Prefetch selected (or first) conversation's detail to eliminate the waterfall
   let initialDetail = null;
   if (convoList.length > 0) {
-    const firstId = convoList[0].id;
+    const firstId = selectedId && convoList.some((c) => c.id === selectedId)
+      ? selectedId
+      : convoList[0].id;
 
     const [{ data: messages }, { data: draft }] = await Promise.all([
       supabase
@@ -87,12 +89,25 @@ export default async function InboxPage({
         .single(),
     ]);
 
+    // Fetch autopilot evaluation separately if draft has one
+    let autopilotEvaluation = null;
+    if (draft?.autopilot_evaluation_id) {
+      const { data: evalData } = await supabase
+        .from("autopilot_evaluations")
+        .select("gate3_passed, gate3_needs_human_reason, outcome")
+        .eq("id", draft.autopilot_evaluation_id)
+        .single();
+      autopilotEvaluation = evalData;
+    }
+
+    const selectedConvo = convoList.find((c) => c.id === firstId) ?? convoList[0];
+
     let shopifyCustomer = null;
     try {
       const shopifyClient = await createShopifyClient(orgId);
       if (shopifyClient) {
         shopifyCustomer = await shopifyClient.getCustomerContext(
-          convoList[0].customer_email
+          selectedConvo.customer_email
         );
       }
     } catch {
@@ -100,9 +115,9 @@ export default async function InboxPage({
     }
 
     initialDetail = {
-      conversation: convoList[0],
+      conversation: selectedConvo,
       messages: messages ?? [],
-      draft,
+      draft: draft ? { ...draft, autopilot_evaluation: autopilotEvaluation } : null,
       shopifyCustomer,
     };
   }
