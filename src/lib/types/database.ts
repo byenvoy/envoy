@@ -84,6 +84,7 @@ export interface Conversation {
   status: ConversationStatus;
   customer_email: string;
   customer_name: string | null;
+  autopilot_disabled: boolean;
   created_at: string;
   updated_at: string;
   last_message_at: string;
@@ -105,6 +106,7 @@ export interface Message {
   in_reply_to: string | null;
   source: "imap" | "smtp" | "manual";
   connection_id: string | null;
+  sent_by_autopilot: boolean;
   created_at: string;
 }
 
@@ -122,6 +124,9 @@ export interface Draft {
   chunks_used: { id: string; content: string; similarity: number; source_url?: string }[] | null;
   customer_context: Record<string, unknown> | null;
   classification_result: Record<string, unknown> | null;
+  autopilot_evaluation_id: string | null;
+  sent_by_autopilot: boolean;
+  is_regeneration: boolean;
   approved_at: string | null;
   approved_by: string | null;
   created_at: string;
@@ -132,11 +137,19 @@ export interface ShopifyConfig {
   shop_domain: string;
 }
 
+export type UsageCallType =
+  | "draft"
+  | "classification"
+  | "autopilot_classify"
+  | "autopilot_retrieval_judge"
+  | "autopilot_validate"
+  | "autopilot_escalation";
+
 export interface UsageLog {
   id: string;
   org_id: string;
   draft_id: string | null;
-  call_type: "draft" | "classification";
+  call_type: UsageCallType;
   model: string;
   input_tokens: number;
   output_tokens: number;
@@ -165,4 +178,52 @@ export interface Integration {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export type AutopilotMode = "off" | "shadow" | "auto";
+
+export interface AutopilotTopic {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string;
+  embedding: number[] | null;
+  mode: AutopilotMode;
+  confidence_threshold: number;
+  daily_send_limit: number;
+  daily_sends_today: number;
+  daily_sends_reset_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AutopilotOutcome = "auto_sent" | "shadow_tagged" | "human_queue";
+export type AutopilotHumanAction = "approved_no_edit" | "approved_with_edit" | "discarded";
+
+export interface AutopilotEvaluation {
+  id: string;
+  org_id: string;
+  conversation_id: string;
+  draft_id: string | null;
+  gate1_passed: boolean | null;
+  gate1_topic_id: string | null;
+  gate1_topic_name: string | null;
+  gate1_confidence: number | null;
+  gate1_embedding_similarity: number | null;
+  gate1_reasoning: string | null;
+  gate2_passed: boolean | null;
+  gate2_confidence: number | null;
+  gate2_reasoning: string | null;
+  gate3_passed: boolean | null;
+  gate3_needs_human_reason: string | null;
+  gate4_passed: boolean | null;
+  gate4_confidence: number | null;
+  gate4_checks: Record<string, { pass: boolean; note: string }> | null;
+  gate4_reasoning: string | null;
+  all_gates_passed: boolean;
+  outcome: AutopilotOutcome;
+  failure_gate: number | null;
+  human_action: AutopilotHumanAction | null;
+  edit_distance: number | null;
+  created_at: string;
 }

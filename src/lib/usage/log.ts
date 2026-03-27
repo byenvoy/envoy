@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
+import type { UsageCallType } from "@/lib/types/database";
 
 export async function logUsage({
   orgId,
@@ -11,7 +12,7 @@ export async function logUsage({
 }: {
   orgId: string;
   draftId?: string;
-  callType: "draft" | "classification";
+  callType: UsageCallType;
   model: string;
   inputTokens: number;
   outputTokens: number;
