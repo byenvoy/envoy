@@ -38,7 +38,7 @@ export async function PUT(
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
     }
 
-    await syncPageChunks(page as unknown as KnowledgeBasePage);
+    await syncPageChunks(page);
 
     return NextResponse.json({ page });
   } catch (error) {

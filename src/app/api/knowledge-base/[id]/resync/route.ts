@@ -75,9 +75,7 @@ export async function POST(
       markdownContent: markdown,
     };
 
-    const chunks = await syncPageChunks(
-      updatedPage as unknown as KnowledgeBasePage
-    );
+    const chunks = await syncPageChunks(updatedPage);
 
     return NextResponse.json({ ok: true, chunks });
   } catch (err) {

@@ -1,14 +1,20 @@
 import { db } from "@/lib/db";
 import { knowledgeBasePages, knowledgeBaseChunks } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import type { KnowledgeBasePage } from "@/lib/types/database";
 import { chunkText } from "./chunker";
 import { embedTexts } from "./embeddings";
 
+interface SyncPage {
+  id: string;
+  orgId: string;
+  markdownContent: string | null;
+  contentHash: string | null;
+}
+
 export async function syncPageChunks(
-  page: KnowledgeBasePage
+  page: SyncPage
 ): Promise<number> {
-  if (!page.markdown_content) return 0;
+  if (!page.markdownContent) return 0;
 
   // Delete existing chunks for this page
   await db
@@ -16,7 +22,7 @@ export async function syncPageChunks(
     .where(eq(knowledgeBaseChunks.pageId, page.id));
 
   // Chunk the content
-  const chunks = chunkText(page.markdown_content);
+  const chunks = chunkText(page.markdownContent);
   if (chunks.length === 0) return 0;
 
   // Generate embeddings for all chunks
@@ -25,12 +31,12 @@ export async function syncPageChunks(
   // Insert chunks with embeddings
   const rows = chunks.map((chunk, i) => ({
     pageId: page.id,
-    orgId: page.org_id,
+    orgId: page.orgId,
     chunkIndex: i,
     content: chunk.content,
     tokenCount: chunk.tokenCount,
     embedding: JSON.stringify(embeddings[i]),
-    contentHash: page.content_hash,
+    contentHash: page.contentHash,
   }));
 
   await db.insert(knowledgeBaseChunks).values(rows);
@@ -79,7 +85,7 @@ export async function syncAllPages(
 
   let totalChunks = 0;
   for (const page of pagesToProcess) {
-    const count = await syncPageChunks(page as unknown as KnowledgeBasePage);
+    const count = await syncPageChunks(page);
     totalChunks += count;
   }
 

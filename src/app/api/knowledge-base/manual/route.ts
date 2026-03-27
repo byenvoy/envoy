@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       .returning()
       .then((r) => r[0]);
 
-    await syncPageChunks(page as unknown as KnowledgeBasePage);
+    await syncPageChunks(page);
 
     return NextResponse.json({ page });
   } catch (error) {
