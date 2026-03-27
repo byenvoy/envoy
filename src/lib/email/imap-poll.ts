@@ -5,20 +5,20 @@ import { emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getValidTokens } from "./oauth-tokens";
 import { processImapEmail } from "./process-imap";
-import type { EmailConnection } from "@/lib/types/database";
+type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
 export async function pollConnection(
-  connection: EmailConnection
+  connection: EmailConnectionRow
 ): Promise<number> {
   const tokens = await getValidTokens(connection);
   let processed = 0;
 
   const client = new ImapFlow({
-    host: connection.imap_host,
-    port: connection.imap_port,
+    host: connection.imapHost,
+    port: connection.imapPort,
     secure: true,
     auth: {
-      user: connection.email_address,
+      user: connection.emailAddress,
       accessToken: tokens.access_token,
     },
     logger: false,
@@ -31,8 +31,8 @@ export async function pollConnection(
     try {
       // Search for messages newer than last_uid
       const searchCriteria: Record<string, unknown> = {};
-      if (connection.last_uid) {
-        searchCriteria.uid = `${Number(connection.last_uid) + 1}:*`;
+      if (connection.lastUid) {
+        searchCriteria.uid = `${Number(connection.lastUid) + 1}:*`;
       } else {
         // First poll: only get messages from last 24 hours
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -44,13 +44,13 @@ export async function pollConnection(
         source: true,
       });
 
-      let maxUid = connection.last_uid;
+      let maxUid = connection.lastUid;
 
       for await (const msg of messages) {
         const uid = String(msg.uid);
 
         // Skip if this is the same as last_uid (range is inclusive)
-        if (connection.last_uid && uid === connection.last_uid) continue;
+        if (connection.lastUid && uid === connection.lastUid) continue;
 
         if (!msg.source) continue;
         const parsed = await simpleParser(msg.source);
@@ -58,7 +58,7 @@ export async function pollConnection(
         const fromAddr = parsed.from?.value?.[0]?.address?.toLowerCase();
 
         // Skip own outgoing mail
-        if (fromAddr === connection.email_address.toLowerCase()) continue;
+        if (fromAddr === connection.emailAddress.toLowerCase()) continue;
 
         // TEST FILTER: only process emails from allowed senders
         const testAllowList = process.env.IMAP_ALLOW_SENDERS?.split(",").map(s => s.trim().toLowerCase());

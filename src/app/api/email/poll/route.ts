@@ -4,7 +4,6 @@ import { emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
-import type { EmailConnection } from "@/lib/types/database";
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
     let errors = 0;
     let conversationsCreated = 0;
 
-    for (const conn of connections as unknown as EmailConnection[]) {
+    for (const conn of connections) {
       try {
         const created = await pollConnection(conn);
         conversationsCreated += created ? 1 : 0;

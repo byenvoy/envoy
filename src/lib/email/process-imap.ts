@@ -1,18 +1,19 @@
 import type { ParsedMail } from "mailparser";
 import { db } from "@/lib/db";
-import { conversations, messages, drafts } from "@/lib/db/schema";
+import { conversations, messages, drafts, emailConnections } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { generateDraftForConversation } from "@/lib/email/generate-draft";
 import { checkAndEscalateThread } from "@/lib/autopilot/escalation";
-import type { EmailConnection, Conversation } from "@/lib/types/database";
+
+type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
 export async function processImapEmail(
   parsed: ParsedMail,
-  connection: EmailConnection
-): Promise<Conversation | null> {
+  connection: EmailConnectionRow
+): Promise<typeof conversations.$inferSelect | null> {
   const fromAddr = parsed.from?.value?.[0]?.address ?? "";
   const fromName = parsed.from?.value?.[0]?.name ?? null;
-  const toEmail = connection.email_address;
+  const toEmail = connection.emailAddress;
   const subject = parsed.subject ?? null;
   const messageId = parsed.messageId ?? null;
   const inReplyTo = parsed.inReplyTo
@@ -51,7 +52,7 @@ export async function processImapEmail(
     const conversation = await db
       .insert(conversations)
       .values({
-        orgId: connection.org_id,
+        orgId: connection.orgId,
         subject,
         status: "open",
         customerEmail: fromAddr,
@@ -73,7 +74,7 @@ export async function processImapEmail(
   // Insert inbound message
   await db.insert(messages).values({
     conversationId,
-    orgId: connection.org_id,
+    orgId: connection.orgId,
     direction: "inbound",
     fromEmail: fromAddr,
     fromName,
@@ -106,7 +107,7 @@ export async function processImapEmail(
         await checkAndEscalateThread({
           conversationId,
           customerMessage: bodyText,
-          orgId: connection.org_id,
+          orgId: connection.orgId,
         });
       }
     } catch {
@@ -124,5 +125,5 @@ export async function processImapEmail(
     .where(eq(conversations.id, conversationId))
     .then((r) => r[0]);
 
-  return conversation as unknown as Conversation;
+  return conversation ?? null;
 }

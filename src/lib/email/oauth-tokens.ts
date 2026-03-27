@@ -3,24 +3,24 @@ import { emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { decryptTokens, encryptTokens } from "./encryption";
 import { OAUTH_PROVIDERS, getClientCredentials } from "./oauth-config";
-import type { EmailConnection } from "@/lib/types/database";
+type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
 export async function getValidTokens(
-  connection: EmailConnection
+  connection: EmailConnectionRow
 ): Promise<{ access_token: string; refresh_token: string }> {
   const tokens = decryptTokens({
-    access_token_encrypted: connection.access_token_encrypted,
-    refresh_token_encrypted: connection.refresh_token_encrypted,
+    access_token_encrypted: connection.accessTokenEncrypted,
+    refresh_token_encrypted: connection.refreshTokenEncrypted,
   });
 
   // Refresh if within 5 minutes of expiry
-  const expiresAt = new Date(connection.token_expires_at).getTime();
+  const expiresAt = new Date(connection.tokenExpiresAt).getTime();
   const buffer = 5 * 60 * 1000;
   if (Date.now() < expiresAt - buffer) {
     return tokens;
   }
 
-  const provider = connection.provider;
+  const provider = connection.provider as "google" | "microsoft";
   const config = OAUTH_PROVIDERS[provider];
   const creds = getClientCredentials(provider);
 

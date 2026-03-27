@@ -3,7 +3,7 @@ import { messages, conversations, emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getValidTokens } from "./oauth-tokens";
 import { createTransport } from "nodemailer";
-import type { Conversation, Message, EmailConnection } from "@/lib/types/database";
+import type { Conversation, Message } from "@/lib/types/database";
 
 interface SendReplyParams {
   conversation: Conversation;
@@ -36,7 +36,7 @@ export async function sendReply({
 
   if (!connection) throw new Error("Email connection not found");
 
-  const tokens = await getValidTokens(connection as unknown as EmailConnection);
+  const tokens = await getValidTokens(connection);
 
   const transport = createTransport({
     host: connection.smtpHost,
