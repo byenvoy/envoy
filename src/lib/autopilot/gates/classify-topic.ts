@@ -1,7 +1,7 @@
 import { createLLMProvider } from "@/lib/rag/llm";
 import { logUsage } from "@/lib/usage/log";
 import { buildTopicClassificationPrompt } from "../prompts";
-import type { AutopilotTopic, TopicClassificationResult } from "../types";
+import type { TopicClassificationResult, AutopilotTopicRow } from "../types";
 
 /**
  * Gate 1: Topic Classification
@@ -19,7 +19,7 @@ export async function classifyTopic({
 }: {
   customerMessage: string;
   conversationHistory?: { role: "customer" | "agent"; content: string }[];
-  topics: AutopilotTopic[];
+  topics: AutopilotTopicRow[];
   model: string;
   orgId: string;
 }): Promise<TopicClassificationResult> {
@@ -57,7 +57,7 @@ export async function classifyTopic({
     }
 
     const matchedTopic = topics[topicIndex - 1];
-    const passed = confidence >= matchedTopic.confidence_threshold;
+    const passed = confidence >= Number(matchedTopic.confidenceThreshold);
 
     return {
       passed,

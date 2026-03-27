@@ -1,5 +1,8 @@
-import type { AutopilotTopic, AutopilotOutcome } from "@/lib/types/database";
+import type { autopilotTopics } from "@/lib/db/schema";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
+
+export type AutopilotTopicRow = typeof autopilotTopics.$inferSelect;
+export type AutopilotOutcome = "auto_sent" | "shadow_tagged" | "human_queue";
 
 export interface TopicClassificationResult {
   passed: boolean;
@@ -45,7 +48,7 @@ export interface AutopilotPipelineParams {
   customerContext: ShopifyCustomerContext | null;
   model: string;
   gate1Result?: TopicClassificationResult;
-  activeTopics?: AutopilotTopic[];
+  activeTopics?: AutopilotTopicRow[];
 }
 
 export interface AutopilotPipelineResult {
@@ -56,5 +59,3 @@ export interface AutopilotPipelineResult {
   outcome: AutopilotOutcome;
   topicMatch: { id: string; name: string; confidence: number } | null;
 }
-
-export type { AutopilotTopic };

@@ -11,8 +11,7 @@ import { retrieveAndDraft } from "@/lib/rag/retrieve";
 import { runAutopilotPipeline } from "@/lib/autopilot/pipeline";
 import { autoSendDraft } from "@/lib/autopilot/auto-send";
 import { classifyTopic } from "@/lib/autopilot/gates/classify-topic";
-import type { TopicClassificationResult } from "@/lib/autopilot/types";
-import type { AutopilotTopic } from "@/lib/types/database";
+import type { TopicClassificationResult, AutopilotTopicRow } from "@/lib/autopilot/types";
 
 export async function generateDraftForConversation(conversationId: string, isRegeneration = false): Promise<void> {
   // Fetch conversation with org name
@@ -58,7 +57,7 @@ export async function generateDraftForConversation(conversationId: string, isReg
 
   // Run Gate 1 (topic classification) before draft generation
   let gate1Result: TopicClassificationResult | null = null;
-  let activeTopicsList: AutopilotTopic[] = [];
+  let activeTopicsList: AutopilotTopicRow[] = [];
 
   // Check if conversation has autopilot disabled (per-thread escalation)
   const isEscalated = conversation.autopilotDisabled === true;
@@ -74,7 +73,7 @@ export async function generateDraftForConversation(conversationId: string, isReg
         )
       );
 
-    activeTopicsList = topics as unknown as AutopilotTopic[];
+    activeTopicsList = topics;
 
     if (activeTopicsList.length > 0) {
       try {

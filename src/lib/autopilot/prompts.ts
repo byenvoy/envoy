@@ -1,7 +1,7 @@
-import type { AutopilotTopic } from "@/lib/types/database";
+import type { AutopilotTopicRow } from "./types";
 
 export function buildTopicClassificationPrompt(
-  topics: AutopilotTopic[],
+  topics: AutopilotTopicRow[],
   customerMessage: string,
   conversationHistory?: { role: "customer" | "agent"; content: string }[]
 ): { system: string; user: string } {

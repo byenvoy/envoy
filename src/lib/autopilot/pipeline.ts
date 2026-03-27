@@ -10,7 +10,7 @@ import type {
   RetrievalJudgmentResult,
   ValidationResult,
 } from "./types";
-import type { AutopilotTopic, AutopilotOutcome } from "@/lib/types/database";
+import type { AutopilotTopicRow, AutopilotOutcome } from "./types";
 
 // Match NEEDS_HUMAN_REVIEW flag — tolerant of markdown formatting, extra whitespace
 const NEEDS_HUMAN_REVIEW_PATTERN = /\*{0,2}NEEDS_HUMAN_REVIEW\*{0,2}:\s*(.+)$/m;
@@ -64,7 +64,7 @@ export async function runAutopilotPipeline(
   let gate3Reason: string | null = null;
   let gate4Result: ValidationResult | null = null;
   let failureGate: number | null = null;
-  let matchedTopic: AutopilotTopic | null = null;
+  let matchedTopic: AutopilotTopicRow | null = null;
 
   // Compute embedding similarity for logging (using the embedding from the vector search)
   if (messageEmbedding && gate1Result.topicId) {
@@ -147,15 +147,15 @@ export async function runAutopilotPipeline(
 
   if (topicMode === "auto") {
     // Reset daily count if needed
-    if (matchedTopic && new Date(matchedTopic.daily_sends_reset_at) < startOfToday()) {
+    if (matchedTopic && new Date(matchedTopic.dailySendsResetAt) < startOfToday()) {
       await db
         .update(autopilotTopics)
         .set({ dailySendsToday: 0, dailySendsResetAt: new Date() })
         .where(eq(autopilotTopics.id, matchedTopic.id));
-      matchedTopic.daily_sends_today = 0;
+      matchedTopic.dailySendsToday = 0;
     }
 
-    if (matchedTopic && matchedTopic.daily_sends_today >= matchedTopic.daily_send_limit) {
+    if (matchedTopic && matchedTopic.dailySendsToday >= matchedTopic.dailySendLimit) {
       // Limit exceeded — treat as shadow
       outcome = "shadow_tagged";
     } else {
