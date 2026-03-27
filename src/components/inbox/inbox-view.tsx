@@ -285,11 +285,29 @@ export function InboxView({
         </div>
       ) : (
         <div className="hidden flex-1 items-center justify-center md:flex">
-          <div className="text-center">
-            <p className="font-display text-sm font-medium text-text-secondary">
-              Select a conversation to view
-            </p>
-          </div>
+          {allConversations.length === 0 ? (
+            <div className="text-center">
+              {(searchParams.get("status") ?? "open") === "open" ? (
+                <>
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success-light">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <p className="font-display text-sm font-semibold text-text-primary">All caught up!</p>
+                  <p className="mt-1 text-xs text-text-secondary">No open conversations need attention.</p>
+                </>
+              ) : (
+                <p className="text-sm text-text-secondary">No conversations yet.</p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="font-display text-sm font-medium text-text-secondary">
+                Select a conversation to view
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
