@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -93,14 +94,15 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
                   <p className="font-mono text-xs text-text-secondary">{userEmail}</p>
                 </div>
                 <div className="p-1.5">
-                  <form action="/api/auth/signout" method="post">
-                    <button
-                      type="submit"
-                      className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
-                    >
-                      Sign out
-                    </button>
-                  </form>
+                  <button
+                    onClick={async () => {
+                      await authClient.signOut();
+                      window.location.href = "/login";
+                    }}
+                    className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
+                  >
+                    Sign out
+                  </button>
                 </div>
               </div>
             )}
