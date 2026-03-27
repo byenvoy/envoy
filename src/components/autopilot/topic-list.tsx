@@ -154,28 +154,20 @@ export function TopicList({ initialTopics }: TopicListProps) {
                     {topic.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleModeChange(topic.id, "off")}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                      topic.mode === "off"
-                        ? MODE_LABELS.off.color
-                        : "text-text-secondary hover:bg-surface-alt"
+                <button
+                  role="switch"
+                  aria-checked={topic.mode !== "off"}
+                  onClick={() => handleModeChange(topic.id, topic.mode === "off" ? "shadow" : "off")}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                    topic.mode !== "off" ? "bg-primary" : "bg-border"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                      topic.mode !== "off" ? "translate-x-6" : "translate-x-1"
                     }`}
-                  >
-                    Off
-                  </button>
-                  <button
-                    onClick={() => handleModeChange(topic.id, topic.mode === "off" ? "shadow" : "off")}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                      topic.mode !== "off"
-                        ? "bg-primary text-white"
-                        : "text-text-secondary hover:bg-surface-alt"
-                    }`}
-                  >
-                    On
-                  </button>
-                </div>
+                  />
+                </button>
               </div>
 
               {/* Calibrating status */}
