@@ -1,13 +1,16 @@
 import { customType } from "drizzle-orm/pg-core";
 
-export const vector1536 = customType<{ data: string; driverParam: string }>({
+export const vector1536 = customType<{ data: number[]; driverParam: string }>({
   dataType() {
     return "vector(1536)";
   },
   toDriver(value) {
-    return value;
+    return JSON.stringify(value);
   },
   fromDriver(value) {
-    return value as string;
+    if (typeof value === "string") {
+      return JSON.parse(value) as number[];
+    }
+    return value as number[];
   },
 });

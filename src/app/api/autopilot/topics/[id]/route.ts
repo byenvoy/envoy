@@ -47,7 +47,7 @@ export async function PUT(
   if (description && description !== existing.description) {
     try {
       const embedding = await embedText(description);
-      update.embedding = JSON.stringify(embedding);
+      update.embedding = embedding;
     } catch (error) {
       console.error("Failed to re-embed topic description:", error);
     }

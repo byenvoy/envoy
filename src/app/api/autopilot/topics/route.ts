@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         orgId,
         name,
         description,
-        embedding: embedding ? JSON.stringify(embedding) : null,
+        embedding: embedding ?? null,
         mode: mode ?? "off",
         confidenceThreshold: String(confidence_threshold ?? 0.95),
         dailySendLimit: daily_send_limit ?? 100,

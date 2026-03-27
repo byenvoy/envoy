@@ -35,7 +35,7 @@ export async function syncPageChunks(
     chunkIndex: i,
     content: chunk.content,
     tokenCount: chunk.tokenCount,
-    embedding: JSON.stringify(embeddings[i]),
+    embedding: embeddings[i],
     contentHash: page.contentHash,
   }));
 
