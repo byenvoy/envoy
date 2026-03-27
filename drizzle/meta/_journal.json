@@ -8,6 +8,13 @@
       "when": 1774645501341,
       "tag": "0000_strange_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774645501342,
+      "tag": "0001_pgvector_setup",
+      "breakpoints": true
     }
   ]
 }
