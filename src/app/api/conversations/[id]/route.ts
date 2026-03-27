@@ -55,6 +55,17 @@ export async function GET(
     .limit(1)
     .single();
 
+  // Fetch autopilot evaluation separately if draft has one
+  let autopilotEvaluation = null;
+  if (draft?.autopilot_evaluation_id) {
+    const { data: evalData } = await supabase
+      .from("autopilot_evaluations")
+      .select("gate3_passed, gate3_needs_human_reason, outcome")
+      .eq("id", draft.autopilot_evaluation_id)
+      .single();
+    autopilotEvaluation = evalData;
+  }
+
   // Fetch Shopify customer context independently (if Shopify is connected)
   let shopifyCustomer = null;
   try {
@@ -71,7 +82,7 @@ export async function GET(
   return NextResponse.json({
     conversation,
     messages: messages ?? [],
-    draft,
+    draft: draft ? { ...draft, autopilot_evaluation: autopilotEvaluation } : null,
     shopifyCustomer,
   });
 }

@@ -3,6 +3,25 @@ import { createClient } from "@/lib/supabase/server";
 import { sendReply } from "@/lib/email/send-reply";
 import type { Conversation, Message } from "@/lib/types/database";
 
+/** Simple word-level edit distance (Levenshtein on word arrays). */
+function computeWordEditDistance(a: string, b: string): number {
+  const wordsA = a.trim().split(/\s+/);
+  const wordsB = b.trim().split(/\s+/);
+  const m = wordsA.length;
+  const n = wordsB.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = wordsA[i - 1] === wordsB[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -121,6 +140,22 @@ export async function POST(
         ...(editedContent ? { edited_content: editedContent } : {}),
       })
       .eq("id", draft.id);
+
+    // Record shadow mode human action if this draft was evaluated by autopilot
+    if (draft.autopilot_evaluation_id) {
+      const wasEdited = !!(editedContent && editedContent !== draft.draft_content);
+      const editDistance = wasEdited
+        ? computeWordEditDistance(draft.draft_content, editedContent!)
+        : 0;
+
+      await supabase
+        .from("autopilot_evaluations")
+        .update({
+          human_action: wasEdited ? "approved_with_edit" : "approved_no_edit",
+          edit_distance: editDistance,
+        })
+        .eq("id", draft.autopilot_evaluation_id);
+    }
 
     // If close requested, override the "waiting" status set by sendReply
     if (closeAfterSend) {

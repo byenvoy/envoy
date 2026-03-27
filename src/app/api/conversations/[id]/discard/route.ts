@@ -28,7 +28,7 @@ export async function POST(
   // Discard latest pending draft
   const { data: draft } = await supabase
     .from("drafts")
-    .select("id")
+    .select("id, autopilot_evaluation_id")
     .eq("conversation_id", id)
     .eq("org_id", profile.org_id)
     .eq("status", "pending")
@@ -41,6 +41,14 @@ export async function POST(
       .from("drafts")
       .update({ status: "discarded" })
       .eq("id", draft.id);
+
+    // Record shadow mode discard
+    if (draft.autopilot_evaluation_id) {
+      await supabase
+        .from("autopilot_evaluations")
+        .update({ human_action: "discarded" })
+        .eq("id", draft.autopilot_evaluation_id);
+    }
   }
 
   // Conversation stays open — agent can still respond manually or regenerate

@@ -39,14 +39,32 @@ export async function POST(
   }
 
   // Discard any pending drafts first (keeps history for tracking)
-  await supabase
+  const { data: pendingDrafts } = await supabase
     .from("drafts")
-    .update({ status: "discarded" })
+    .select("id, autopilot_evaluation_id")
     .eq("conversation_id", id)
     .eq("status", "pending");
 
+  if (pendingDrafts && pendingDrafts.length > 0) {
+    await supabase
+      .from("drafts")
+      .update({ status: "discarded" })
+      .eq("conversation_id", id)
+      .eq("status", "pending");
+
+    // Record discard on autopilot evaluations
+    for (const draft of pendingDrafts) {
+      if (draft.autopilot_evaluation_id) {
+        await supabase
+          .from("autopilot_evaluations")
+          .update({ human_action: "discarded" })
+          .eq("id", draft.autopilot_evaluation_id);
+      }
+    }
+  }
+
   try {
-    await generateDraftForConversation(id);
+    await generateDraftForConversation(id, true);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Failed to regenerate draft:", error);
