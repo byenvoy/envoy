@@ -158,13 +158,23 @@ export function TopicList({ initialTopics }: TopicListProps) {
                   role="switch"
                   aria-checked={topic.mode !== "off"}
                   onClick={() => handleModeChange(topic.id, topic.mode === "off" ? "shadow" : "off")}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                  className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
                     topic.mode !== "off" ? "bg-primary" : "bg-border"
                   }`}
                 >
+                  <span className={`absolute inset-y-0 left-0 w-[34px] flex items-center justify-center text-[10px] font-semibold text-white transition-opacity ${
+                    topic.mode !== "off" ? "opacity-100" : "opacity-0"
+                  }`}>
+                    On
+                  </span>
+                  <span className={`absolute inset-y-0 right-0 w-[34px] flex items-center justify-center text-[10px] font-semibold text-text-secondary transition-opacity ${
+                    topic.mode !== "off" ? "opacity-0" : "opacity-100"
+                  }`}>
+                    Off
+                  </span>
                   <span
-                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                      topic.mode !== "off" ? "translate-x-6" : "translate-x-1"
+                    className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                      topic.mode !== "off" ? "translate-x-8" : "translate-x-0.5"
                     }`}
                   />
                 </button>
