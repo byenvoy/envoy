@@ -11,6 +11,29 @@ const MODE_LABELS: Record<AutopilotMode, { label: string; color: string }> = {
 
 const MODES: AutopilotMode[] = ["off", "shadow", "auto"];
 
+const TOPIC_TEMPLATES = [
+  {
+    name: "Shipping & Order Tracking",
+    description: "Customer inquiries about order status, shipping updates, delivery timelines, tracking numbers, and estimated delivery dates.",
+  },
+  {
+    name: "Returns & Refunds",
+    description: "Requests to return an item, questions about return eligibility, refund status, return shipping instructions, and refund processing times.",
+  },
+  {
+    name: "Product Information",
+    description: "Questions about product details, sizing, materials, availability, compatibility, and general product recommendations.",
+  },
+  {
+    name: "Order Changes",
+    description: "Requests to change, cancel, or modify an existing order — including address changes, item swaps, and cancellation requests before shipment.",
+  },
+  // {
+  //   name: "Account & Password",
+  //   description: "Questions about account access, password resets, updating account details, and login issues.",
+  // },
+];
+
 interface TopicListProps {
   initialTopics: AutopilotTopic[];
 }
@@ -18,6 +41,7 @@ interface TopicListProps {
 export function TopicList({ initialTopics }: TopicListProps) {
   const [topics, setTopics] = useState<AutopilotTopic[]>(initialTopics);
   const [showForm, setShowForm] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [threshold, setThreshold] = useState(0.95);
@@ -86,12 +110,6 @@ export function TopicList({ initialTopics }: TopicListProps) {
 
   return (
     <div className="space-y-3">
-      {topics.length === 0 && !showForm && (
-        <p className="text-sm text-text-secondary">
-          No topics configured yet. Add a topic to start using autopilot.
-        </p>
-      )}
-
       {topics.map((topic) => (
         <div
           key={topic.id}
@@ -220,7 +238,8 @@ export function TopicList({ initialTopics }: TopicListProps) {
         </div>
       ))}
 
-      {showForm ? (
+      {/* Create/edit form */}
+      {showForm && (
         <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
           <div>
             <label className="mb-1 block text-sm font-display font-medium text-text-primary">
@@ -240,38 +259,10 @@ export function TopicList({ initialTopics }: TopicListProps) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the types of emails this topic covers. Be specific — this is what the AI uses to classify incoming emails."
+              placeholder="Describe the types of emails this topic covers. Be specific — this is used to classify incoming emails."
               rows={3}
               className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
             />
-          </div>
-          <div className="flex gap-4">
-            <div>
-              <label className="mb-1 block text-xs font-display font-medium text-text-secondary">
-                Confidence Threshold
-              </label>
-              <input
-                type="number"
-                min={0.5}
-                max={1}
-                step={0.05}
-                value={threshold}
-                onChange={(e) => setThreshold(Number(e.target.value))}
-                className="w-24 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-display font-medium text-text-secondary">
-                Daily Send Limit
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={dailyLimit}
-                onChange={(e) => setDailyLimit(Number(e.target.value))}
-                className="w-24 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none"
-              />
-            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -282,19 +273,57 @@ export function TopicList({ initialTopics }: TopicListProps) {
               {saving ? "Creating..." : "Create Topic"}
             </button>
             <button
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setName(""); setDescription(""); }}
               className="rounded-lg px-4 py-2 text-sm text-text-secondary hover:text-text-primary"
             >
               Cancel
             </button>
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Prebuilt templates — always visible, filtered to hide already-added ones */}
+      {!showForm && (() => {
+        const available = TOPIC_TEMPLATES.filter(
+          (t) => !topics.some((existing) => existing.name === t.name)
+        );
+        if (available.length === 0) return null;
+        return (
+          <div className="space-y-2">
+            {topics.length > 0 && (
+              <p className="text-xs font-display font-medium text-text-secondary pt-1">
+                Templates
+              </p>
+            )}
+            {available.map((template) => (
+              <button
+                key={template.name}
+                onClick={() => {
+                  setName(template.name);
+                  setDescription(template.description);
+                  setShowForm(true);
+                }}
+                className="w-full rounded-lg border border-dashed border-border bg-surface p-3 text-left transition-colors hover:border-primary"
+              >
+                <p className="font-display text-sm font-medium text-text-primary">
+                  {template.name}
+                </p>
+                <p className="mt-0.5 text-xs text-text-secondary line-clamp-2">
+                  {template.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Custom topic button */}
+      {!showForm && (
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => { setName(""); setDescription(""); setShowForm(true); }}
           className="w-full rounded-lg border border-dashed border-border py-3 text-sm font-medium text-text-secondary transition-colors hover:border-primary hover:text-primary"
         >
-          + Add Topic
+          + Create custom topic
         </button>
       )}
     </div>
