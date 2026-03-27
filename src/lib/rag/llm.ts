@@ -104,7 +104,7 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
   "deepseek-chat": {
     provider: "openai",
     label: "DeepSeek V3",
-    logo: "/logos/deepseek.png",
+    logo: "/logos/deepseek.svg",
     baseUrl: "https://api.deepseek.com/v1",
     envKey: "DEEPSEEK_API_KEY",
     costPer1kInput: 0.00014,
