@@ -31,13 +31,13 @@ export default async function LandingPage() {
           <div className="mt-10 flex items-center gap-4">
             <Link
               href="/signup"
-              className="rounded-lg bg-primary px-6 py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="rounded-lg bg-primary px-6 py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Start free trial
             </Link>
             <Link
               href="https://github.com/envoyer/envoyer"
-              className="rounded-lg border border-border px-6 py-3 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt"
+              className="rounded-lg border border-border px-6 py-3 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               View on GitHub
             </Link>
@@ -186,13 +186,13 @@ export default async function LandingPage() {
           <div className="mt-8 flex items-center justify-center gap-4">
             <Link
               href="/signup"
-              className="rounded-lg bg-primary px-6 py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="rounded-lg bg-primary px-6 py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Start free trial
             </Link>
             <Link
               href="/pricing"
-              className="rounded-lg border border-border px-6 py-3 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt"
+              className="rounded-lg border border-border px-6 py-3 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               View pricing
             </Link>
@@ -210,13 +210,13 @@ export default async function LandingPage() {
             <div className="flex items-center gap-6">
               <Link
                 href="/pricing"
-                className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 Pricing
               </Link>
               <Link
                 href="https://github.com/envoyer/envoyer"
-                className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 GitHub
               </Link>
