@@ -3,7 +3,7 @@ import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  domain: text("domain"),
+  domain: text("domain").unique(),
   preferredModel: text("preferred_model").notNull().default("claude-haiku-4-5-20251001"),
   tone: text("tone").notNull().default("professional"),
   customInstructions: text("custom_instructions"),

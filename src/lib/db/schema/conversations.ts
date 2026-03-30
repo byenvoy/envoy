@@ -57,7 +57,7 @@ export const messages = pgTable(
     toEmail: text("to_email").notNull(),
     bodyText: text("body_text"),
     bodyHtml: text("body_html"),
-    messageId: text("message_id"),
+    messageId: text("message_id").unique(),
     inReplyTo: text("in_reply_to"),
     source: text("source").notNull().default("imap"),
     connectionId: uuid("connection_id"),

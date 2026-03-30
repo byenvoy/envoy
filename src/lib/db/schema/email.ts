@@ -30,7 +30,7 @@ export const emailConnections = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     provider: text("provider").notNull(),
-    emailAddress: text("email_address").notNull(),
+    emailAddress: text("email_address").notNull().unique(),
     displayName: text("display_name"),
     accessTokenEncrypted: text("access_token_encrypted").notNull(),
     refreshTokenEncrypted: text("refresh_token_encrypted").notNull(),
