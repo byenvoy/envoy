@@ -56,7 +56,7 @@ const TIERS = [
 
 export default function PricingPage() {
   return (
-    <main className="mx-auto max-w-[1120px] px-4 pb-24 pt-20 sm:px-6">
+    <main className="mx-auto max-w-[1120px] px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-20">
       <div className="max-w-2xl">
         <h1 className="font-display text-4xl font-bold tracking-tight text-text-primary">
           Pricing

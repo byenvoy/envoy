@@ -15,7 +15,7 @@ export default async function LandingPage() {
   return (
     <main>
       {/* Hero */}
-      <section className="mx-auto max-w-[1120px] px-4 pb-24 pt-20 sm:px-6 sm:pt-28">
+      <section className="mx-auto max-w-[1120px] px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-28">
         <div className="max-w-2xl">
           <h1 className="font-display text-4xl font-bold leading-tight tracking-tight text-text-primary sm:text-5xl">
             AI customer support
@@ -46,7 +46,7 @@ export default async function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="border-t border-border bg-surface-alt py-20">
+      <section className="border-t border-border bg-surface-alt py-12 sm:py-20">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary">
             How it works
@@ -106,7 +106,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Key differentiators */}
-      <section className="py-20">
+      <section className="py-12 sm:py-20">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary">
             Why Envoyer
@@ -174,7 +174,7 @@ export default async function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-border bg-surface-alt py-20">
+      <section className="border-t border-border bg-surface-alt py-12 sm:py-20">
         <div className="mx-auto max-w-[1120px] px-4 text-center sm:px-6">
           <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary">
             Ready to try it?
