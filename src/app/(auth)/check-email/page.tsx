@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ResendVerificationButton } from "@/components/auth/resend-verification-button";
 
 export default async function CheckEmailPage({
   searchParams,
@@ -41,13 +41,19 @@ export default async function CheckEmailPage({
       </p>
       <p className="text-sm text-text-secondary">
         Didn&apos;t receive it? Check your spam folder, or{" "}
-        <Link
-          href="/signup"
-          className="font-medium text-primary hover:underline"
-        >
-          try again
-        </Link>
-        .
+        {email ? (
+          <ResendVerificationButton email={email} />
+        ) : (
+          <>
+            <a
+              href="/signup"
+              className="font-medium text-primary hover:underline"
+            >
+              try again
+            </a>
+            .
+          </>
+        )}
       </p>
     </div>
   );

@@ -34,9 +34,8 @@ export function SignupForm() {
       return;
     }
 
-    // Better Auth auto-signs in after signup (default behavior)
-    router.push("/onboarding");
-    router.refresh();
+    // Email verification required — redirect to check-email page
+    router.push(`/check-email?email=${encodeURIComponent(email)}`);
   }
 
   return (
