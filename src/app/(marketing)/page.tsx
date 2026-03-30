@@ -111,7 +111,7 @@ export default async function LandingPage() {
           <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary">
             Why Envoyer
           </h2>
-          <div className="mt-12 space-y-8">
+          <div className="mt-12 space-y-6">
             <div className="flex gap-6">
               <div className="hidden w-px shrink-0 bg-primary sm:block" />
               <div>
