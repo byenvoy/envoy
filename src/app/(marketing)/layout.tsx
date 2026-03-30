@@ -15,22 +15,22 @@ export default function MarketingLayout({
           >
             envoyer
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Link
               href="/pricing"
-              className="font-display text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+              className="rounded-md px-3 py-2 font-display text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
               Pricing
             </Link>
             <Link
               href="/login"
-              className="font-display text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+              className="rounded-md px-3 py-2 font-display text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
               Log in
             </Link>
             <Link
               href="/signup"
-              className="rounded-lg bg-primary px-4 py-1.5 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               Get started
             </Link>

@@ -93,7 +93,7 @@ export default function PricingPage() {
             </p>
             <Link
               href={tier.ctaHref}
-              className={`mt-6 block rounded-lg px-4 py-2.5 text-center font-display text-sm font-semibold transition-opacity hover:opacity-90 ${
+              className={`mt-6 block rounded-lg px-4 py-3 text-center font-display text-sm font-semibold transition-opacity hover:opacity-90 ${
                 tier.highlight
                   ? "bg-primary text-white"
                   : "border border-border bg-surface text-text-primary hover:bg-surface-alt"
