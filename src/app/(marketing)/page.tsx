@@ -112,62 +112,50 @@ export default async function LandingPage() {
             Why Envoyer
           </h2>
           <div className="mt-12 space-y-6">
-            <div className="flex gap-6">
-              <div className="hidden w-px shrink-0 bg-primary sm:block" />
-              <div>
-                <h3 className="font-display text-lg font-semibold text-text-primary">
-                  Flat price, no contracts
-                </h3>
-                <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
-                  Most support platforms lock you into annual contracts priced
-                  on usage tiers. Envoyer is a flat monthly subscription. Cancel
-                  anytime. No sales calls, no negotiation, no surprises on
-                  your invoice.
-                </p>
-              </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-text-primary">
+                Flat price, no contracts
+              </h3>
+              <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
+                Most support platforms lock you into annual contracts priced
+                on usage tiers. Envoyer is a flat monthly subscription. Cancel
+                anytime. No sales calls, no negotiation, no surprises on
+                your invoice.
+              </p>
             </div>
-            <div className="flex gap-6">
-              <div className="hidden w-px shrink-0 bg-primary sm:block" />
-              <div>
-                <h3 className="font-display text-lg font-semibold text-text-primary">
-                  Does one thing well
-                </h3>
-                <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
-                  No chatbot builder, no ticketing workflow engine, no CRM
-                  bolted on. Envoyer reads your customers&apos; emails, drafts
-                  replies from your knowledge base, and lets your team send
-                  them. That&apos;s it.
-                </p>
-              </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-text-primary">
+                Does one thing well
+              </h3>
+              <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
+                No chatbot builder, no ticketing workflow engine, no CRM
+                bolted on. Envoyer reads your customers&apos; emails, drafts
+                replies from your knowledge base, and lets your team send
+                them. That&apos;s it.
+              </p>
             </div>
-            <div className="flex gap-6">
-              <div className="hidden w-px shrink-0 bg-primary sm:block" />
-              <div>
-                <h3 className="font-display text-lg font-semibold text-text-primary">
-                  Stay close to your customers
-                </h3>
-                <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
-                  Every draft goes through a human before it reaches the
-                  customer. Your team catches what the AI misses, adds the
-                  personal touch that matters, and keeps a finger on the pulse
-                  of what customers actually need. AI handles the first draft —
-                  your people handle the relationship.
-                </p>
-              </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-text-primary">
+                Stay close to your customers
+              </h3>
+              <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
+                Every draft goes through a human before it reaches the
+                customer. Your team catches what the AI misses, adds the
+                personal touch that matters, and keeps a finger on the pulse
+                of what customers actually need. AI handles the first draft —
+                your people handle the relationship.
+              </p>
             </div>
-            <div className="flex gap-6">
-              <div className="hidden w-px shrink-0 bg-primary sm:block" />
-              <div>
-                <h3 className="font-display text-lg font-semibold text-text-primary">
-                  Pick your model, keep your margin
-                </h3>
-                <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
-                  Choose between Claude, GPT-4o, Gemini, and more — optimize
-                  for quality or cost, your call. Zero markup on model costs.
-                  Track spending per ticket, set daily limits, and get granular
-                  breakdowns of exactly where your AI budget goes.
-                </p>
-              </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-text-primary">
+                Pick your model, keep your margin
+              </h3>
+              <p className="mt-1.5 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
+                Choose between Claude, GPT-4o, Gemini, and more — optimize
+                for quality or cost, your call. Zero markup on model costs.
+                Track spending per ticket, set daily limits, and get granular
+                breakdowns of exactly where your AI budget goes.
+              </p>
             </div>
           </div>
         </div>
