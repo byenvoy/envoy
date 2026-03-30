@@ -79,7 +79,7 @@ export default async function DashboardPage() {
         .select()
         .from(conversations)
         .where(eq(conversations.orgId, orgId))
-        .orderBy(desc(conversations.updatedAt))
+        .orderBy(desc(conversations.lastMessageAt))
         .limit(10),
       db
         .select({ count: sql<number>`count(*)` })
@@ -123,7 +123,7 @@ export default async function DashboardPage() {
     autopilot_disabled: c.autopilotDisabled,
     created_at: c.createdAt.toISOString(),
     updated_at: c.updatedAt.toISOString(),
-    last_message_at: c.updatedAt.toISOString(),
+    last_message_at: c.lastMessageAt.toISOString(),
   })) as Conversation[];
 
   const stats = [

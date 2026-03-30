@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     .select()
     .from(conversations)
     .where(and(...conditions))
-    .orderBy(desc(conversations.updatedAt))
+    .orderBy(desc(conversations.lastMessageAt))
     .offset(offset)
     .limit(limit);
 
@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
       autopilot_disabled: c.autopilotDisabled,
       created_at: c.createdAt,
       updated_at: c.updatedAt,
+      last_message_at: c.lastMessageAt,
     })),
   });
 }

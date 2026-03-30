@@ -67,7 +67,7 @@ export async function processImapEmail(
     // Reopen conversation if it was waiting/closed
     await db
       .update(conversations)
-      .set({ status: "open", updatedAt: new Date() })
+      .set({ status: "open", updatedAt: new Date(), lastMessageAt: new Date() })
       .where(eq(conversations.id, conversationId));
   }
 

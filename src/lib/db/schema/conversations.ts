@@ -30,6 +30,7 @@ export const conversations = pgTable(
     customerEmail: text("customer_email").notNull(),
     customerName: text("customer_name"),
     autopilotDisabled: boolean("autopilot_disabled").notNull().default(false),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

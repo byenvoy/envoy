@@ -60,7 +60,7 @@ export default async function InboxPage({
       .select()
       .from(conversations)
       .where(and(...baseConditions))
-      .orderBy(desc(conversations.updatedAt))
+      .orderBy(desc(conversations.lastMessageAt))
       .limit(PAGE_SIZE),
     db
       .select({ status: conversations.status })
@@ -84,7 +84,7 @@ export default async function InboxPage({
     autopilot_disabled: c.autopilotDisabled,
     created_at: c.createdAt.toISOString(),
     updated_at: c.updatedAt.toISOString(),
-    last_message_at: c.updatedAt.toISOString(),
+    last_message_at: c.lastMessageAt.toISOString(),
   }));
 
   const hasMore = convoList.length === PAGE_SIZE;

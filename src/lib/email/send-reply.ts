@@ -101,7 +101,7 @@ export async function sendReply({
   // Update conversation status to waiting
   await db
     .update(conversations)
-    .set({ status: "waiting", updatedAt: new Date() })
+    .set({ status: "waiting", updatedAt: new Date(), lastMessageAt: new Date() })
     .where(eq(conversations.id, conversation.id));
 
   return outboundMsg.id;
