@@ -35,7 +35,8 @@ export default function SubscribePage() {
       </h1>
       <p className="mt-2 font-body text-sm leading-relaxed text-text-secondary">
         You&apos;re all set up. Add your payment details to start your
-        14-day free trial — you won&apos;t be charged until the trial ends.
+        14-day free trial — you won&apos;t be charged until the trial
+        ends, and we&apos;ll email you before it does.
       </p>
 
       <div className="mt-6 rounded-lg border border-border bg-surface p-4">
@@ -75,12 +76,9 @@ export default function SubscribePage() {
         disabled={loading}
         className="mt-6 w-full rounded-lg bg-primary py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        {loading ? "Redirecting to checkout…" : "Continue to checkout"}
+        {loading ? "Redirecting…" : "Start free trial"}
       </button>
 
-      <p className="mt-4 text-center font-body text-xs leading-relaxed text-text-secondary">
-        We&apos;ll email you 3 days and 1 day before billing starts.
-      </p>
     </div>
   );
 }
