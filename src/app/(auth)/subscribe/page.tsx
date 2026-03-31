@@ -25,20 +25,46 @@ export default function SubscribePage() {
   }
 
   return (
-    <div className="text-center">
-      <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">
+    <div>
+      <p className="font-display text-[15px] font-bold tracking-tight text-primary">
+        envoyer
+      </p>
+
+      <h1 className="mt-6 font-display text-2xl font-bold tracking-tight text-text-primary">
         Start your free trial
       </h1>
-      <p className="mt-3 font-body text-sm leading-relaxed text-text-secondary">
-        Enter your payment details to begin your 14-day free trial.
-        <br />
-        You won&apos;t be charged until the trial ends, and we&apos;ll
-        <br />
-        email you 3 days and 1 day before billing starts.
+      <p className="mt-2 font-body text-sm leading-relaxed text-text-secondary">
+        Try Envoyer free for 14 days. Enter your payment details to get
+        started — you won&apos;t be charged until the trial ends.
       </p>
-      <p className="mt-1 font-body text-xs text-text-secondary">
-        Pro plan — $15/mo after trial. Cancel anytime.
-      </p>
+
+      <div className="mt-6 rounded-lg border border-border bg-surface p-4">
+        <div className="flex items-baseline justify-between">
+          <p className="font-display text-sm font-semibold text-text-primary">
+            Pro
+          </p>
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-2xl font-bold tracking-tight text-text-primary">
+              $15
+            </span>
+            <span className="font-body text-sm text-text-secondary">/month</span>
+          </div>
+        </div>
+        <ul className="mt-4 space-y-2">
+          <li className="flex items-center gap-2 font-body text-sm text-text-secondary">
+            <span className="text-primary">&#10003;</span>
+            Unlimited tickets, team members, and integrations
+          </li>
+          <li className="flex items-center gap-2 font-body text-sm text-text-secondary">
+            <span className="text-primary">&#10003;</span>
+            LLM costs included — no surprise bills
+          </li>
+          <li className="flex items-center gap-2 font-body text-sm text-text-secondary">
+            <span className="text-primary">&#10003;</span>
+            14-day free trial — cancel anytime
+          </li>
+        </ul>
+      </div>
 
       {error && (
         <p className="mt-4 font-body text-sm text-error">{error}</p>
@@ -47,10 +73,14 @@ export default function SubscribePage() {
       <button
         onClick={handleSubscribe}
         disabled={loading}
-        className="mt-6 rounded-lg bg-primary px-6 py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="mt-6 w-full rounded-lg bg-primary py-3 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         {loading ? "Redirecting to checkout…" : "Continue to checkout"}
       </button>
+
+      <p className="mt-4 text-center font-body text-xs leading-relaxed text-text-secondary">
+        We&apos;ll email you 3 days and 1 day before billing starts.
+      </p>
     </div>
   );
 }
