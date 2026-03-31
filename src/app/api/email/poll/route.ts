@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers";
+import { tryAdvisoryLock, advisoryUnlock, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
+import { isCloud } from "@/lib/stripe";
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -35,6 +36,13 @@ export async function GET(request: NextRequest) {
 
     for (const conn of connections) {
       try {
+        if (isCloud()) {
+          const sub = await getOrgSubscription(conn.orgId);
+          if (!sub || !isActiveSubscription(sub.status)) {
+            continue;
+          }
+        }
+
         const created = await pollConnection(conn);
         conversationsCreated += created ? 1 : 0;
         polled++;

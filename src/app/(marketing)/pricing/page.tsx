@@ -5,13 +5,13 @@ const TIERS = [
     name: "Self-Hosted",
     price: "Free",
     priceDetail: "forever",
-    description: "Run Envoyer on your own infrastructure. Same codebase, full control.",
+    description:
+      "Run Envoyer on your own infrastructure. Same codebase, full control.",
     features: [
-      "Unlimited tickets",
-      "Unlimited knowledge base pages",
-      "Unlimited team members",
+      "Unlimited everything",
       "Bring your own LLM keys",
       "Docker Compose deployment",
+      "All integrations included",
       "Community support",
     ],
     cta: "View on GitHub",
@@ -20,37 +20,22 @@ const TIERS = [
   },
   {
     name: "Pro",
-    price: "$49",
+    price: "$15",
     priceDetail: "/month",
-    description: "Managed hosting with everything included. No infrastructure to maintain.",
+    description:
+      "Managed hosting with everything included. No infrastructure to maintain.",
     features: [
-      "Up to 1,000 tickets/month",
-      "Up to 500 knowledge base pages",
-      "Up to 5 team members",
+      "Unlimited tickets",
+      "Unlimited knowledge base pages",
+      "Unlimited team members",
       "LLM costs included",
-      "Email & chat support",
-      "Automatic updates",
+      "All integrations included",
+      "14-day free trial",
+      "Email support",
     ],
     cta: "Start free trial",
     ctaHref: "/signup",
     highlight: true,
-  },
-  {
-    name: "Team",
-    price: "$149",
-    priceDetail: "/month",
-    description: "For growing support teams with higher volume and more integrations.",
-    features: [
-      "Up to 5,000 tickets/month",
-      "Unlimited knowledge base pages",
-      "Up to 20 team members",
-      "LLM costs included",
-      "Priority support",
-      "Shopify & Stripe integrations",
-    ],
-    cta: "Start free trial",
-    ctaHref: "/signup",
-    highlight: false,
   },
 ];
 
@@ -62,12 +47,12 @@ export default function PricingPage() {
           Pricing
         </h1>
         <p className="mt-4 font-body text-lg leading-relaxed text-text-secondary">
-          Self-host for free, or let us run it for you. Paid plans include LLM
-          costs — no surprise bills from OpenAI or Anthropic.
+          Self-host for free, or let us run it for you. One flat price, no
+          contracts, no per-seat charges.
         </p>
       </div>
 
-      <div className="mt-16 grid gap-6 sm:grid-cols-3">
+      <div className="mx-auto mt-16 grid max-w-2xl gap-6 sm:grid-cols-2">
         {TIERS.map((tier) => (
           <div
             key={tier.name}
@@ -118,11 +103,11 @@ export default function PricingPage() {
 
       <div className="mt-16 rounded-lg border border-border bg-surface-alt p-6">
         <h2 className="font-display text-lg font-semibold text-text-primary">
-          Need more?
+          Questions?
         </h2>
         <p className="mt-2 font-body text-[15px] leading-relaxed text-text-secondary">
-          If your team handles more than 5,000 tickets a month or needs custom
-          integrations, reach out and we&apos;ll put together a plan that fits.
+          Have a question about pricing or need something custom? Reach out and
+          we&apos;ll help.
         </p>
         <a
           href="mailto:hello@envoyer.sh"

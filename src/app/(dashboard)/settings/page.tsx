@@ -8,6 +8,7 @@ import {
   emailConnections,
   integrations,
   teamInvites,
+  subscriptions,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { EmailConnectionPicker } from "@/components/settings/email-connection-picker";
@@ -16,7 +17,9 @@ import { ModelSelector } from "@/components/settings/model-selector";
 import { ToneSettings } from "@/components/settings/tone-settings";
 import { TeamManagement } from "@/components/settings/team-management";
 import { ApiKeySettings } from "@/components/settings/api-key-settings";
+import { BillingSection } from "@/components/settings/billing-section";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
+import { isCloud } from "@/lib/stripe";
 import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
 import type { EmailConnection, Integration, Organization, Profile, TeamInvite } from "@/lib/types/database";
 
@@ -52,7 +55,7 @@ export default async function SettingsPage() {
 
   const isOwner = profile.role === "owner";
 
-  const [orgRows, connectionRows, integrationRows, teamMemberRows, inviteRows] =
+  const [orgRows, connectionRows, integrationRows, teamMemberRows, inviteRows, subscriptionRow] =
     await Promise.all([
       db
         .select({
@@ -72,6 +75,9 @@ export default async function SettingsPage() {
       isOwner
         ? db.select().from(teamInvites).where(eq(teamInvites.orgId, profile.orgId))
         : Promise.resolve([]),
+      isCloud()
+        ? db.select().from(subscriptions).where(eq(subscriptions.orgId, profile.orgId)).then((r) => r[0] ?? null)
+        : Promise.resolve(null),
     ]);
 
   // Map Drizzle camelCase results to snake_case for components
@@ -184,6 +190,21 @@ export default async function SettingsPage() {
       </div>
 
       <div className="max-w-lg space-y-6">
+        {isOwner && subscriptionRow && (
+          <div className="rounded-lg border border-border bg-surface-alt p-6">
+            <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
+              Billing
+            </h2>
+            <BillingSection
+              plan={subscriptionRow.plan}
+              status={subscriptionRow.status}
+              trialEndsAt={subscriptionRow.trialEndsAt?.toISOString() ?? null}
+              cancelAtPeriodEnd={subscriptionRow.cancelAtPeriodEnd}
+              currentPeriodEnd={subscriptionRow.currentPeriodEnd?.toISOString() ?? null}
+            />
+          </div>
+        )}
+
         <div className="rounded-lg border border-border bg-surface-alt p-6">
           <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
             Email Address

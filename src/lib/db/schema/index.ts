@@ -7,3 +7,4 @@ export * from "./email";
 export * from "./integrations";
 export * from "./admin";
 export * from "./autopilot";
+export * from "./subscriptions";

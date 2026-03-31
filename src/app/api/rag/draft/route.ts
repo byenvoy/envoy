@@ -2,13 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { withAuth } from "@/lib/db/helpers";
+import { withAuth, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { retrieveAndDraft } from "@/lib/rag/retrieve";
+import { isCloud } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
   if (!auth.success) return auth.response;
   const { orgId } = auth.context;
+
+  if (isCloud()) {
+    const sub = await getOrgSubscription(orgId);
+    if (!sub || !isActiveSubscription(sub.status)) {
+      return NextResponse.json(
+        { error: "Active subscription required" },
+        { status: 402 }
+      );
+    }
+  }
 
   const org = await db
     .select({ name: organizations.name })

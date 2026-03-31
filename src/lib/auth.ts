@@ -4,8 +4,9 @@ import { nextCookies } from "better-auth/next-js";
 import { createAuthMiddleware } from "better-auth/api";
 import { Resend } from "resend";
 import { db } from "@/lib/db";
-import { organizations, profiles } from "@/lib/db/schema";
+import { organizations, profiles, subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { getStripe, isCloud } from "@/lib/stripe";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoyer <onboarding@resend.dev>";
@@ -73,6 +74,25 @@ export const auth = betterAuth({
           fullName: userName ?? "",
           role: "owner",
         });
+
+        if (isCloud() && user?.email) {
+          try {
+            const customer = await getStripe().customers.create({
+              email: user.email as string,
+              metadata: { orgId: org.id },
+            });
+
+            await db.insert(subscriptions).values({
+              orgId: org.id,
+              stripeCustomerId: customer.id,
+              plan: "trial",
+              status: "trialing",
+              trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+            });
+          } catch (err) {
+            console.error("Failed to create Stripe customer:", err);
+          }
+        }
       }
     }),
   },
