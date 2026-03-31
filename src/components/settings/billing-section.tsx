@@ -83,49 +83,48 @@ export function BillingSection({
   const isTrial = status === "trialing";
   const isPaid = status === "active" && plan === "pro";
 
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <p className="font-display text-sm font-semibold text-text-primary">
-          {plan === "trial" ? "Free Trial" : "Pro"}
-        </p>
-        <StatusBadge status={status} />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <p className="font-display text-sm font-semibold text-text-primary">
+            Pro
+          </p>
+          <StatusBadge status={status} />
+        </div>
+        {isTrial && trialEndsAt && (
+          <p className="font-body text-xs text-text-secondary">
+            {trialDaysRemaining(trialEndsAt)} days left
+          </p>
+        )}
+        {isPaid && !cancelAtPeriodEnd && (
+          <p className="font-mono text-xs text-text-secondary">$15/mo</p>
+        )}
       </div>
 
-      {isTrial && trialEndsAt && (
-        <div className="space-y-1">
-          <p className="font-body text-sm text-text-secondary">
-            Your 14-day free trial ends on{" "}
-            {new Date(trialEndsAt).toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}{" "}
-            ({trialDaysRemaining(trialEndsAt)} days remaining). Your Pro
-            subscription ($15/mo) will begin automatically.
-          </p>
-          <p className="font-body text-xs text-text-secondary">
-            We&apos;ll email you 3 days and 1 day before billing starts.
-          </p>
-        </div>
+      {isTrial && (
+        <p className="font-body text-sm text-text-secondary">
+          We&apos;ll email you before your subscription begins.
+        </p>
       )}
 
       {cancelAtPeriodEnd && currentPeriodEnd && (
         <p className="font-body text-sm text-text-secondary">
-          Your subscription will end on{" "}
-          {new Date(currentPeriodEnd).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-          .
+          Your subscription ends on {formatDate(currentPeriodEnd)}.
         </p>
       )}
 
       {!isActive && (
         <p className="font-body text-sm text-text-secondary">
-          Your subscription is no longer active. Upgrade to resume processing
-          emails and generating drafts.
+          Your subscription is no longer active. Subscribe to resume
+          processing emails and generating drafts.
         </p>
       )}
 
@@ -134,11 +133,9 @@ export function BillingSection({
           <button
             onClick={handleCheckout}
             disabled={loading !== null}
-            className="rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            {loading === "checkout"
-              ? "Redirecting…"
-              : "Subscribe — $15/mo"}
+            {loading === "checkout" ? "Redirecting…" : "Subscribe — $15/mo"}
           </button>
         )}
 
@@ -146,7 +143,7 @@ export function BillingSection({
           <button
             onClick={handlePortal}
             disabled={loading !== null}
-            className="rounded-lg border border-border px-4 py-2 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt disabled:opacity-50"
+            className="rounded-lg border border-border px-4 py-2 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {loading === "portal" ? "Redirecting…" : "Manage Subscription"}
           </button>
