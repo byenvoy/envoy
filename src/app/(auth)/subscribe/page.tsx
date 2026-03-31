@@ -31,11 +31,11 @@ export default function SubscribePage() {
       </p>
 
       <h1 className="mt-6 font-display text-2xl font-bold tracking-tight text-text-primary">
-        Start your free trial
+        One last step
       </h1>
       <p className="mt-2 font-body text-sm leading-relaxed text-text-secondary">
-        Try Envoyer free for 14 days. Enter your payment details to get
-        started — you won&apos;t be charged until the trial ends.
+        You&apos;re all set up. Add your payment details to start your
+        14-day free trial — you won&apos;t be charged until the trial ends.
       </p>
 
       <div className="mt-6 rounded-lg border border-border bg-surface p-4">
@@ -57,11 +57,11 @@ export default function SubscribePage() {
           </li>
           <li className="flex items-center gap-2 font-body text-sm text-text-secondary">
             <span className="text-primary">&#10003;</span>
-            LLM costs included — no surprise bills
+            Fully managed — no infrastructure to maintain
           </li>
           <li className="flex items-center gap-2 font-body text-sm text-text-secondary">
             <span className="text-primary">&#10003;</span>
-            14-day free trial — cancel anytime
+            Automatic updates — always on the latest version
           </li>
         </ul>
       </div>
