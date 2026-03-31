@@ -2,9 +2,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { profiles, organizations } from "@/lib/db/schema";
+import { profiles, organizations, subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { isCloud } from "@/lib/stripe";
+import { isActiveSubscription } from "@/lib/db/helpers";
 
 export default async function DashboardLayout({
   children,
@@ -39,6 +41,19 @@ export default async function DashboardLayout({
 
     if (org && !org.onboardingCompletedAt) {
       redirect("/onboarding");
+    }
+
+    // On cloud: redirect to /subscribe if no active subscription
+    if (isCloud() && org?.onboardingCompletedAt) {
+      const sub = await db
+        .select({ status: subscriptions.status })
+        .from(subscriptions)
+        .where(eq(subscriptions.orgId, profile.orgId))
+        .then((r) => r[0] ?? null);
+
+      if (!sub || !isActiveSubscription(sub.status)) {
+        redirect("/subscribe");
+      }
     }
   }
 

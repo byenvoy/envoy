@@ -26,6 +26,7 @@ export function OnboardingWizard({
   hasMicrosoftClientId,
   shopifyIntegration,
   hasShopifyClientId,
+  isCloud,
 }: {
   initialStep: number;
   currentModel: string;
@@ -35,6 +36,7 @@ export function OnboardingWizard({
   hasMicrosoftClientId: boolean;
   shopifyIntegration: Integration | null;
   hasShopifyClientId: boolean;
+  isCloud: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(Math.min(initialStep, 3));
@@ -49,6 +51,20 @@ export function OnboardingWizard({
 
   async function finishOnboarding() {
     await persistStep(4);
+
+    if (isCloud) {
+      try {
+        const res = await fetch("/api/stripe/checkout-trial", { method: "POST" });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to create checkout session:", err);
+      }
+    }
+
     router.push("/knowledge-base");
     router.refresh();
   }

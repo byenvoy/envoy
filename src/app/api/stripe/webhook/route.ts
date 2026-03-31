@@ -1,9 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
-import { subscriptions } from "@/lib/db/schema";
+import { subscriptions, profiles } from "@/lib/db/schema";
+import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
+import { Resend } from "resend";
 import type Stripe from "stripe";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoyer <onboarding@resend.dev>";
+
+async function getOwnerEmail(stripeCustomerId: string): Promise<string | null> {
+  const sub = await db
+    .select({ orgId: subscriptions.orgId })
+    .from(subscriptions)
+    .where(eq(subscriptions.stripeCustomerId, stripeCustomerId))
+    .then((r) => r[0] ?? null);
+  if (!sub) return null;
+
+  const owner = await db
+    .select({ userId: profiles.id })
+    .from(profiles)
+    .where(eq(profiles.orgId, sub.orgId))
+    .then((r) => r.find((p) => p.userId));
+  if (!owner) return null;
+
+  const u = await db
+    .select({ email: userTable.email })
+    .from(userTable)
+    .where(eq(userTable.id, owner.userId))
+    .then((r) => r[0] ?? null);
+  return u?.email ?? null;
+}
 
 function priceToPlan(priceId: string): string {
   if (priceId === process.env.STRIPE_PRO_PRICE_ID) return "pro";
@@ -30,6 +58,7 @@ async function upsertSubscription(sub: Stripe.Subscription) {
     status: sub.status,
     currentPeriodEnd: itemPeriodEnd ? new Date(itemPeriodEnd * 1000) : null,
     cancelAtPeriodEnd: isCanceling,
+    trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
     updatedAt: new Date(),
   };
 
@@ -109,6 +138,26 @@ export async function POST(request: NextRequest) {
           .update(subscriptions)
           .set({ status: "past_due", updatedAt: new Date() })
           .where(eq(subscriptions.stripeSubscriptionId, subId));
+      }
+      break;
+    }
+
+    case "customer.subscription.trial_will_end": {
+      const sub = event.data.object as Stripe.Subscription;
+      const customerId =
+        typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+      const ownerEmail = await getOwnerEmail(customerId);
+      if (ownerEmail && sub.trial_end) {
+        const endDate = new Date(sub.trial_end * 1000).toLocaleDateString(
+          "en-US",
+          { month: "long", day: "numeric", year: "numeric" }
+        );
+        void resend.emails.send({
+          from: fromEmail,
+          to: ownerEmail,
+          subject: "Your Envoyer trial ends in 3 days",
+          html: `<p>Your 14-day free trial ends on ${endDate}.</p><p>After that, your Pro subscription ($15/mo) will begin automatically and your card will be charged.</p><p>You can manage or cancel your subscription anytime from <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/settings">Settings</a>.</p>`,
+        });
       }
       break;
     }

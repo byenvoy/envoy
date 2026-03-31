@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
+import { isCloud } from "@/lib/stripe";
 import type {
   EmailConnection,
   Integration,
@@ -144,6 +145,7 @@ export default async function OnboardingPage() {
       hasMicrosoftClientId={!!process.env.MICROSOFT_CLIENT_ID}
       shopifyIntegration={shopifyIntegration}
       hasShopifyClientId={!!process.env.SHOPIFY_CLIENT_ID}
+      isCloud={isCloud()}
     />
   );
 }

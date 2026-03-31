@@ -93,10 +93,21 @@ export function BillingSection({
       </div>
 
       {isTrial && trialEndsAt && (
-        <p className="font-body text-sm text-text-secondary">
-          {trialDaysRemaining(trialEndsAt)} days remaining in your trial.
-          Upgrade to keep using Envoyer after your trial ends.
-        </p>
+        <div className="space-y-1">
+          <p className="font-body text-sm text-text-secondary">
+            Your 14-day free trial ends on{" "}
+            {new Date(trialEndsAt).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}{" "}
+            ({trialDaysRemaining(trialEndsAt)} days remaining). Your Pro
+            subscription ($15/mo) will begin automatically.
+          </p>
+          <p className="font-body text-xs text-text-secondary">
+            We&apos;ll email you 3 days and 1 day before billing starts.
+          </p>
+        </div>
       )}
 
       {cancelAtPeriodEnd && currentPeriodEnd && (
@@ -119,7 +130,7 @@ export function BillingSection({
       )}
 
       <div className="flex items-center gap-3">
-        {(!isPaid || !isActive || cancelAtPeriodEnd) && (
+        {!isTrial && (!isPaid || !isActive || cancelAtPeriodEnd) && (
           <button
             onClick={handleCheckout}
             disabled={loading !== null}
@@ -127,13 +138,11 @@ export function BillingSection({
           >
             {loading === "checkout"
               ? "Redirecting…"
-              : isTrial
-                ? "Upgrade to Pro — $15/mo"
-                : "Subscribe — $15/mo"}
+              : "Subscribe — $15/mo"}
           </button>
         )}
 
-        {isPaid && !cancelAtPeriodEnd && (
+        {(isPaid || isTrial) && !cancelAtPeriodEnd && (
           <button
             onClick={handlePortal}
             disabled={loading !== null}

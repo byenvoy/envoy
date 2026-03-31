@@ -13,7 +13,8 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/playground") ||
     path.startsWith("/settings") ||
     path.startsWith("/dashboard") ||
-    path.startsWith("/autopilot");
+    path.startsWith("/autopilot") ||
+    path.startsWith("/subscribe");
 
   // Redirect unauthenticated users to login
   if (!sessionCookie && isDashboardRoute) {
