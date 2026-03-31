@@ -17,6 +17,11 @@ async function upsertSubscription(sub: Stripe.Subscription) {
 
   const itemPeriodEnd = sub.items.data[0]?.current_period_end;
 
+  // Stripe uses cancel_at (timestamp) or cancel_at_period_end (boolean)
+  // If either is set, the subscription is scheduled to cancel
+  const cancelAt = (sub as unknown as { cancel_at: number | null }).cancel_at;
+  const isCanceling = sub.cancel_at_period_end || cancelAt !== null;
+
   const values = {
     stripeSubscriptionId: sub.id,
     stripeCustomerId: customerId,
@@ -24,7 +29,7 @@ async function upsertSubscription(sub: Stripe.Subscription) {
     plan: priceId ? priceToPlan(priceId) : "pro",
     status: sub.status,
     currentPeriodEnd: itemPeriodEnd ? new Date(itemPeriodEnd * 1000) : null,
-    cancelAtPeriodEnd: sub.cancel_at_period_end,
+    cancelAtPeriodEnd: isCanceling,
     updatedAt: new Date(),
   };
 
