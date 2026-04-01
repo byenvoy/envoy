@@ -44,7 +44,7 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-1.5">
+      <div className="relative flex gap-1.5">
         <input
           type="text"
           value={search}
@@ -59,8 +59,26 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
           }}
           onKeyDown={(e) => e.key === "Enter" && applySearch()}
           placeholder="Search..."
-          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 pr-7 text-xs text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
         />
+        {search && (
+          <button
+            onClick={() => {
+              setSearch("");
+              if (searchParams.has("search")) {
+                const params = new URLSearchParams(searchParams.toString());
+                params.delete("search");
+                params.delete("id");
+                router.push(`/inbox?${params.toString()}`);
+              }
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="flex min-w-0 gap-0.5">
