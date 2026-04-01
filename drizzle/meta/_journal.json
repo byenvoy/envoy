@@ -43,6 +43,13 @@
       "when": 1775063863989,
       "tag": "0005_past_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775074712744,
+      "tag": "0006_mysterious_puppet_master",
+      "breakpoints": true
     }
   ]
 }
