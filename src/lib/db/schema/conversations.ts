@@ -69,6 +69,7 @@ export const messages = pgTable(
     index("messages_org_id").on(table.orgId),
     index("messages_message_id").on(table.messageId),
     index("messages_conversation_created").on(table.conversationId, table.createdAt),
+    index("messages_body_text_search").using("gin", sql`to_tsvector('english', COALESCE(${table.bodyText}, ''))`),
   ]
 );
 

@@ -236,6 +236,7 @@ export function InboxView({
             conversations={allConversations}
             selectedId={selectedId}
             activeFilter={searchParams.get("status") ?? "open"}
+            searchQuery={searchParams.get("search")}
             onSelect={handleSelectConversation}
           />
           {hasMore && (
@@ -287,7 +288,14 @@ export function InboxView({
         <div className="hidden flex-1 items-center justify-center md:flex">
           {allConversations.length === 0 ? (
             <div className="text-center">
-              {(searchParams.get("status") ?? "open") === "open" ? (
+              {searchParams.get("search") ? (
+                <>
+                  <p className="font-display text-sm font-semibold text-text-primary">No results found</p>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    No conversations match &ldquo;{searchParams.get("search")}&rdquo;
+                  </p>
+                </>
+              ) : (searchParams.get("status") ?? "open") === "open" ? (
                 <>
                   <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success-light">
                     <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

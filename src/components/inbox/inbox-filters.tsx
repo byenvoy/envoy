@@ -48,7 +48,15 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            if (!e.target.value && searchParams.has("search")) {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete("search");
+              params.delete("id");
+              router.push(`/inbox?${params.toString()}`);
+            }
+          }}
           onKeyDown={(e) => e.key === "Enter" && applySearch()}
           placeholder="Search..."
           className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"

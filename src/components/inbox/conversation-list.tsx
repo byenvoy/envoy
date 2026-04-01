@@ -18,11 +18,22 @@ interface ConversationListProps {
   conversations: Conversation[];
   selectedId: string | null;
   activeFilter: string;
+  searchQuery: string | null;
   onSelect: (id: string) => void;
 }
 
-export function ConversationList({ conversations, selectedId, activeFilter, onSelect }: ConversationListProps) {
+export function ConversationList({ conversations, selectedId, activeFilter, searchQuery, onSelect }: ConversationListProps) {
   if (conversations.length === 0) {
+    if (searchQuery) {
+      return (
+        <div className="p-6 text-center">
+          <p className="font-display text-sm font-semibold text-text-primary">No results found</p>
+          <p className="mt-1 text-xs text-text-secondary">
+            No conversations match &ldquo;{searchQuery}&rdquo;
+          </p>
+        </div>
+      );
+    }
     if (activeFilter === "open") {
       return (
         <div className="p-6 text-center">

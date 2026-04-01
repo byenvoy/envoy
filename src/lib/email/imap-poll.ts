@@ -34,8 +34,8 @@ export async function pollConnection(
       if (connection.lastUid) {
         searchCriteria.uid = `${Number(connection.lastUid) + 1}:*`;
       } else {
-        // First poll: only get messages from last 24 hours
-        const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        // First poll: only get messages from last 2 weeks
+        const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
         searchCriteria.since = since;
       }
 

@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, desc, asc, or, ilike, sql } from "drizzle-orm";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
+import { parseSearch } from "@/lib/search/parse-search";
 import { InboxView } from "@/components/inbox/inbox-view";
 import type { Conversation, Message, Draft, ConversationStatus, MessageDirection, DraftStatus } from "@/lib/types/database";
 
@@ -45,13 +46,28 @@ export default async function InboxPage({
   }
 
   if (search) {
-    baseConditions.push(
-      or(
-        ilike(conversations.customerEmail, `%${search}%`),
-        ilike(conversations.customerName, `%${search}%`),
-        ilike(conversations.subject, `%${search}%`)
-      )!
-    );
+    const parsed = parseSearch(search);
+
+    // from: operator — narrow by sender email
+    if (parsed.from) {
+      baseConditions.push(ilike(conversations.customerEmail, `%${parsed.from}%`));
+    }
+
+    // Free-text: search metadata + message bodies
+    if (parsed.freeText) {
+      baseConditions.push(
+        or(
+          ilike(conversations.customerEmail, `%${parsed.freeText}%`),
+          ilike(conversations.customerName, `%${parsed.freeText}%`),
+          ilike(conversations.subject, `%${parsed.freeText}%`),
+          sql`EXISTS (
+            SELECT 1 FROM messages m
+            WHERE m.conversation_id = ${conversations.id}
+            AND to_tsvector('english', COALESCE(m.body_text, '')) @@ plainto_tsquery('english', ${parsed.freeText})
+          )`
+        )!
+      );
+    }
   }
 
   // Fetch conversations and all conversation statuses in parallel

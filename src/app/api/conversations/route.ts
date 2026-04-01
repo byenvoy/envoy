@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
 import { conversations } from "@/lib/db/schema";
-import { eq, and, or, desc, ilike } from "drizzle-orm";
+import { eq, and, or, desc, ilike, sql } from "drizzle-orm";
+import { parseSearch } from "@/lib/search/parse-search";
 import type { ConversationStatus } from "@/lib/types/database";
 
 export async function GET(request: NextRequest) {
@@ -23,13 +24,28 @@ export async function GET(request: NextRequest) {
   }
 
   if (search) {
-    conditions.push(
-      or(
-        ilike(conversations.customerEmail, `%${search}%`),
-        ilike(conversations.customerName, `%${search}%`),
-        ilike(conversations.subject, `%${search}%`)
-      )!
-    );
+    const parsed = parseSearch(search);
+
+    // from: operator — filter by sender email
+    if (parsed.from) {
+      conditions.push(ilike(conversations.customerEmail, `%${parsed.from}%`));
+    }
+
+    // Free-text: search metadata + message bodies
+    if (parsed.freeText) {
+      conditions.push(
+        or(
+          ilike(conversations.customerEmail, `%${parsed.freeText}%`),
+          ilike(conversations.customerName, `%${parsed.freeText}%`),
+          ilike(conversations.subject, `%${parsed.freeText}%`),
+          sql`EXISTS (
+            SELECT 1 FROM messages m
+            WHERE m.conversation_id = ${conversations.id}
+            AND to_tsvector('english', COALESCE(m.body_text, '')) @@ plainto_tsquery('english', ${parsed.freeText})
+          )`
+        )!
+      );
+    }
   }
 
   const rows = await db

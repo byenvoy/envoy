@@ -1,0 +1,2 @@
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_id_user_id_fk" FOREIGN KEY ("id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "messages_body_text_search" ON "messages" USING gin (to_tsvector('english', COALESCE("body_text", '')));
