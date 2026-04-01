@@ -25,23 +25,34 @@ export function SubscriptionBanner({ status }: { status: string }) {
 
   return (
     <div className="border-b border-warning bg-warning-light px-4 py-3 sm:px-6">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+      <div className="mx-auto max-w-5xl">
         <p className="font-body text-sm text-text-primary">
-          {isPaymentIssue
-            ? "Your payment method needs to be updated. Please update it to continue using Envoyer."
-            : "Your subscription has ended. Resubscribe to resume processing emails and generating drafts."}
+          {isPaymentIssue ? (
+            <>
+              Your payment method needs to be updated.{" "}
+              <button
+                onClick={handleAction}
+                disabled={loading}
+                className="font-semibold text-primary underline hover:opacity-80 disabled:opacity-50"
+              >
+                {loading ? "Redirecting…" : "Update payment method"}
+              </button>{" "}
+              to continue using Envoyer.
+            </>
+          ) : (
+            <>
+              Your subscription has ended.{" "}
+              <button
+                onClick={handleAction}
+                disabled={loading}
+                className="font-semibold text-primary underline hover:opacity-80 disabled:opacity-50"
+              >
+                {loading ? "Redirecting…" : "Resubscribe"}
+              </button>{" "}
+              to resume processing emails and generating drafts.
+            </>
+          )}
         </p>
-        <button
-          onClick={handleAction}
-          disabled={loading}
-          className="shrink-0 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {loading
-            ? "Redirecting…"
-            : isPaymentIssue
-              ? "Update payment method"
-              : "Resubscribe"}
-        </button>
       </div>
     </div>
   );
