@@ -18,7 +18,9 @@ export function PageCard({ page }: PageCardProps) {
     ? page.markdown_content.slice(0, 150).replace(/[#*_\[\]]/g, "") + "..."
     : "No content";
 
-  const updatedAt = new Date(page.updated_at).toLocaleDateString("en-US", {
+  const lastChecked = new Date(
+    page.last_recrawled_at ?? page.updated_at
+  ).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -69,7 +71,7 @@ export function PageCard({ page }: PageCardProps) {
       </p>
       <div className="flex items-center justify-between">
         <p className="text-xs font-mono text-text-secondary">
-          Updated {updatedAt}
+          Synced {lastChecked}
         </p>
         <div className="flex items-center gap-2">
           <Link

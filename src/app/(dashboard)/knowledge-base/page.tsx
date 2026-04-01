@@ -50,6 +50,7 @@ export default async function KnowledgeBasePage() {
     markdown_content: p.markdownContent,
     content_hash: p.contentHash,
     is_active: p.isActive,
+    last_recrawled_at: p.lastRecrawledAt?.toISOString() ?? null,
     created_at: p.createdAt.toISOString(),
     updated_at: p.updatedAt.toISOString(),
   })) as KnowledgeBasePage[];
