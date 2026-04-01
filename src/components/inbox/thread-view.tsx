@@ -100,10 +100,7 @@ function MessageRow({
     : null;
 
   return (
-    <div
-      className="cursor-pointer py-3"
-      onClick={() => setExpanded(!expanded)}
-    >
+    <div className="py-3">
       <div className="flex gap-3">
         {/* Avatar */}
         <div
@@ -116,8 +113,11 @@ function MessageRow({
         </div>
 
         <div className="min-w-0 flex-1">
-          {/* Header line: name, time */}
-          <div className="flex items-center gap-2">
+          {/* Header line: name, time — clickable to toggle */}
+          <div
+            className="flex cursor-pointer items-center gap-2"
+            onClick={() => setExpanded(!expanded)}
+          >
             <span className={`font-display text-sm font-semibold ${isOutbound ? "text-primary" : "text-text-primary"}`}>
               {name}
             </span>
@@ -134,11 +134,14 @@ function MessageRow({
             </span>
           </div>
 
-          {/* Collapsed: one-line preview */}
+          {/* Collapsed: one-line preview — clickable to expand */}
           {!expanded && (() => {
             const preview = getPreview(message.body_text);
             return (
-              <p className="mt-0.5 truncate text-sm text-text-secondary">
+              <p
+                className="mt-0.5 cursor-pointer truncate text-sm text-text-secondary"
+                onClick={() => setExpanded(true)}
+              >
                 {preview.text}{preview.truncated && "..."}
               </p>
             );
