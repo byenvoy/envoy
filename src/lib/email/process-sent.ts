@@ -6,21 +6,19 @@ import { eq, inArray } from "drizzle-orm";
 type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
 /**
- * Ingest an inbound email into the database.
- * Only handles message storage and conversation threading.
- * Returns the conversation ID if processed, null if skipped (duplicate).
- *
- * Draft generation and escalation checks are handled separately
- * by the caller after all messages have been ingested.
+ * Ingest a sent email from the Sent folder.
+ * Only adds to existing conversations (no new conversation creation).
+ * Returns the conversation ID if processed, null if skipped.
  */
-export async function processImapEmail(
+export async function processSentEmail(
   parsed: ParsedMail,
   connection: EmailConnectionRow
 ): Promise<string | null> {
   const fromAddr = parsed.from?.value?.[0]?.address ?? "";
   const fromName = parsed.from?.value?.[0]?.name ?? null;
-  const toEmail = connection.emailAddress;
-  const subject = parsed.subject ?? null;
+  const toAddr = parsed.to
+    ? (Array.isArray(parsed.to) ? parsed.to[0] : parsed.to).value?.[0]?.address ?? ""
+    : "";
   const messageId = parsed.messageId ?? null;
   const inReplyTo = parsed.inReplyTo
     ? (Array.isArray(parsed.inReplyTo) ? parsed.inReplyTo[0] : parsed.inReplyTo)
@@ -39,8 +37,9 @@ export async function processImapEmail(
     if (existing) return null;
   }
 
-  // Resolve conversation via in_reply_to, falling back to references chain
+  // Find existing conversation via in_reply_to
   let conversationId: string | null = null;
+
   if (inReplyTo) {
     const parentMessage = await db
       .select({ conversationId: messages.conversationId })
@@ -70,38 +69,17 @@ export async function processImapEmail(
     }
   }
 
-  // Create new conversation if no thread found
-  if (!conversationId) {
-    const conversation = await db
-      .insert(conversations)
-      .values({
-        orgId: connection.orgId,
-        subject,
-        status: "open",
-        customerEmail: fromAddr,
-        customerName: fromName,
-      })
-      .returning()
-      .then((r) => r[0]);
+  // Only add to existing conversations
+  if (!conversationId) return null;
 
-    if (!conversation) throw new Error("Failed to create conversation");
-    conversationId = conversation.id;
-  } else {
-    // Reopen conversation if it was waiting/closed
-    await db
-      .update(conversations)
-      .set({ status: "open", updatedAt: new Date(), lastMessageAt: new Date() })
-      .where(eq(conversations.id, conversationId));
-  }
-
-  // Insert inbound message
+  // Insert outbound message
   await db.insert(messages).values({
     conversationId,
     orgId: connection.orgId,
-    direction: "inbound",
+    direction: "outbound",
     fromEmail: fromAddr,
     fromName,
-    toEmail,
+    toEmail: toAddr,
     bodyText,
     bodyHtml,
     messageId,
@@ -109,6 +87,12 @@ export async function processImapEmail(
     source: "imap",
     connectionId: connection.id,
   });
+
+  // Update conversation timestamp
+  await db
+    .update(conversations)
+    .set({ updatedAt: new Date(), lastMessageAt: new Date() })
+    .where(eq(conversations.id, conversationId));
 
   return conversationId;
 }

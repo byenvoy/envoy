@@ -6,6 +6,7 @@ export interface OAuthProviderConfig {
   imapPort: number;
   smtpHost: string;
   smtpPort: number;
+  sentFolder: string;
 }
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -24,6 +25,7 @@ export const OAUTH_PROVIDERS: Record<"google" | "microsoft", OAuthProviderConfig
     imapPort: 993,
     smtpHost: "smtp.gmail.com",
     smtpPort: 587,
+    sentFolder: "[Gmail]/Sent Mail",
   },
   microsoft: {
     authUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
@@ -40,6 +42,7 @@ export const OAUTH_PROVIDERS: Record<"google" | "microsoft", OAuthProviderConfig
     imapPort: 993,
     smtpHost: "smtp.office365.com",
     smtpPort: 587,
+    sentFolder: "Sent Items",
   },
 };
 
