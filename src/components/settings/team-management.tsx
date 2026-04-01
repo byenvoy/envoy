@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface TeamMember {
   id: string;
@@ -32,6 +33,7 @@ export function TeamManagement({
   const [invites, setInvites] = useState(initialInvites);
   const [inviting, setInviting] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -53,12 +55,13 @@ export function TeamManagement({
     }
   }
 
-  async function handleRemove(profileId: string) {
-    if (!confirm("Remove this team member?")) return;
+  async function handleRemove() {
+    if (!removeTarget) return;
+    setRemoveTarget(null);
     await fetch("/api/settings/team/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profile_id: profileId }),
+      body: JSON.stringify({ profile_id: removeTarget }),
     });
     window.location.reload();
   }
@@ -92,7 +95,7 @@ export function TeamManagement({
               {member.id !== currentUserId && member.role !== "owner" && (
                 <button
                   type="button"
-                  onClick={() => handleRemove(member.id)}
+                  onClick={() => setRemoveTarget(member.id)}
                   className="text-xs text-error hover:text-error"
                 >
                   Remove
@@ -159,6 +162,15 @@ export function TeamManagement({
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={removeTarget !== null}
+        title="Remove team member"
+        description="This person will lose access to the organization immediately."
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={handleRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }
