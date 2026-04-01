@@ -31,6 +31,8 @@ export default async function DashboardLayout({
     .where(eq(profiles.id, session.user.id))
     .then((rows) => rows[0]);
 
+  let subscriptionStatus: string | null = null;
+
   // Check onboarding status
   if (profile) {
     const org = await db
@@ -43,7 +45,7 @@ export default async function DashboardLayout({
       redirect("/onboarding");
     }
 
-    // On cloud: redirect to /subscribe if no active subscription
+    // On cloud: check subscription status
     if (isCloud() && org?.onboardingCompletedAt) {
       const sub = await db
         .select({ status: subscriptions.status })
@@ -51,8 +53,14 @@ export default async function DashboardLayout({
         .where(eq(subscriptions.orgId, profile.orgId))
         .then((r) => r[0] ?? null);
 
-      if (!sub || !isActiveSubscription(sub.status)) {
+      // No subscription row at all — first-time user who skipped checkout
+      if (!sub) {
         redirect("/subscribe");
+      }
+
+      // Subscription exists but inactive — pass status to shell for banner
+      if (sub && !isActiveSubscription(sub.status)) {
+        subscriptionStatus = sub.status;
       }
     }
   }
@@ -70,6 +78,7 @@ export default async function DashboardLayout({
       userInitials={initials}
       userName={fullName}
       userEmail={session.user.email ?? ""}
+      subscriptionStatus={subscriptionStatus}
     >
       {children}
     </DashboardShell>

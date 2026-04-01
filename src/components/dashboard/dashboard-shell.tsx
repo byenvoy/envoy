@@ -4,15 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { NavBar } from "./nav-bar";
 import { CommandPalette } from "./command-palette";
+import { SubscriptionBanner } from "./subscription-banner";
 
 interface DashboardShellProps {
   userInitials: string;
   userName: string;
   userEmail: string;
+  subscriptionStatus?: string | null;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ userInitials, userName, userEmail, children }: DashboardShellProps) {
+export function DashboardShell({ userInitials, userName, userEmail, subscriptionStatus, children }: DashboardShellProps) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const pathname = usePathname();
   const isInbox = pathname.startsWith("/inbox");
@@ -40,6 +42,7 @@ export function DashboardShell({ userInitials, userName, userEmail, children }: 
         userEmail={userEmail}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
       />
+      {subscriptionStatus && <SubscriptionBanner status={subscriptionStatus} />}
       <main className={isInbox ? "min-h-0 flex-1" : "mx-auto max-w-5xl px-4 py-8 sm:px-6"}>
         {children}
       </main>
