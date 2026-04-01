@@ -109,7 +109,7 @@ export function BillingSection({
         )}
       </div>
 
-      {isTrial && (
+      {isTrial && !cancelAtPeriodEnd && (
         <p className="font-body text-sm text-text-secondary">
           We&apos;ll email you before your subscription begins.
         </p>
@@ -117,7 +117,7 @@ export function BillingSection({
 
       {cancelAtPeriodEnd && currentPeriodEnd && (
         <p className="font-body text-sm text-text-secondary">
-          Your subscription ends on {formatDate(currentPeriodEnd)}.
+          Your trial has been canceled. Access ends on {formatDate(currentPeriodEnd)}.
         </p>
       )}
 
@@ -139,7 +139,7 @@ export function BillingSection({
           </button>
         )}
 
-        {(isPaid || isTrial) && !cancelAtPeriodEnd && (
+        {(isPaid || isTrial) && (
           <button
             onClick={handlePortal}
             disabled={loading !== null}
