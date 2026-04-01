@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      customer_update: { address: "auto" },
       mode: "subscription",
       automatic_tax: { enabled: true },
       line_items: [{ price: priceId, quantity: 1 }],
