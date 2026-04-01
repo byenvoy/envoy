@@ -39,7 +39,7 @@ export function ConfirmDialog({
     <dialog
       ref={dialogRef}
       onClose={onCancel}
-      className="m-auto max-w-sm rounded-lg border border-border bg-surface p-0 shadow-lg backdrop:bg-black/40 backdrop:backdrop-blur-[2px]"
+      className="mx-4 my-auto max-w-sm rounded-lg border border-border bg-surface p-0 shadow-lg sm:mx-auto backdrop:bg-black/40 backdrop:backdrop-blur-[2px]"
     >
       <div className="p-6">
         <h2 className="text-base font-display font-semibold text-text-primary">
@@ -51,17 +51,17 @@ export function ConfirmDialog({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+          className="rounded-md px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
         >
           {cancelLabel}
         </button>
         <button
           type="button"
           onClick={onConfirm}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium text-white transition-colors ${
+          className={`rounded-md px-4 py-2.5 text-sm font-medium text-white transition-colors focus-visible:ring-2 focus-visible:ring-offset-1 ${
             variant === "danger"
-              ? "bg-error hover:bg-error/90"
-              : "bg-primary hover:bg-primary-dark"
+              ? "bg-error hover:bg-error/90 focus-visible:ring-error"
+              : "bg-primary hover:bg-primary-dark focus-visible:ring-primary"
           }`}
         >
           {confirmLabel}
