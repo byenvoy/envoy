@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { KnowledgeBasePage } from "@/lib/types/database";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface PageCardProps {
   page: KnowledgeBasePage;
@@ -11,6 +12,7 @@ interface PageCardProps {
 export function PageCard({ page }: PageCardProps) {
   const [syncing, setSyncing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const preview = page.markdown_content
     ? page.markdown_content.slice(0, 150).replace(/[#*_\[\]]/g, "") + "..."
@@ -33,7 +35,7 @@ export function PageCard({ page }: PageCardProps) {
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this page? Its chunks will be removed.")) return;
+    setShowDeleteConfirm(false);
     setDeleting(true);
     try {
       await fetch(`/api/knowledge-base/${page.id}`, { method: "DELETE" });
@@ -88,7 +90,7 @@ export function PageCard({ page }: PageCardProps) {
           )}
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={deleting}
             className="text-xs text-error hover:text-error disabled:opacity-50"
           >
@@ -96,6 +98,15 @@ export function PageCard({ page }: PageCardProps) {
           </button>
         </div>
       </div>
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete page"
+        description="This page and its chunks will be permanently removed from the knowledge base."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }
