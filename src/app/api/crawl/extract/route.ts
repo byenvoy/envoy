@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { knowledgeBasePages } from "@/lib/db/schema";
 import { withAuth } from "@/lib/db/helpers";
 import { extractPages } from "@/lib/crawl/extract";
+import { checkPage } from "@/lib/crawl/check-page";
 
 export async function POST(request: Request) {
   const auth = await withAuth();
@@ -33,6 +34,9 @@ export async function POST(request: Request) {
     }
 
     try {
+      // Capture ETag/Last-Modified headers for future recrawl optimization
+      const headers = await checkPage({ url: page.url });
+
       await db
         .insert(knowledgeBasePages)
         .values({
@@ -41,6 +45,8 @@ export async function POST(request: Request) {
           title: page.title,
           markdownContent: page.markdown,
           contentHash: page.contentHash,
+          etag: headers.etag,
+          lastModifiedHeader: headers.lastModified,
           isActive: true,
         })
         .onConflictDoUpdate({
@@ -49,6 +55,8 @@ export async function POST(request: Request) {
             title: page.title,
             markdownContent: page.markdown,
             contentHash: page.contentHash,
+            etag: headers.etag,
+            lastModifiedHeader: headers.lastModified,
             isActive: true,
             updatedAt: new Date(),
           },
