@@ -39,7 +39,7 @@ export function ConfirmDialog({
     <dialog
       ref={dialogRef}
       onClose={onCancel}
-      className="mx-4 my-auto max-w-sm rounded-lg border border-border bg-surface p-0 shadow-lg sm:mx-auto backdrop:bg-black/40 backdrop:backdrop-blur-[2px]"
+      className="mx-4 my-auto max-w-sm rounded-lg border border-border bg-surface p-0 shadow-lg sm:mx-auto backdrop:bg-black/40"
     >
       <div className="p-6">
         <h2 className="text-base font-display font-semibold text-text-primary">
