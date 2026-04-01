@@ -1,4 +1,5 @@
 import { ResendVerificationButton } from "@/components/auth/resend-verification-button";
+import { EmailVerificationPoller } from "@/components/auth/email-verification-poller";
 
 export default async function CheckEmailPage({
   searchParams,
@@ -9,6 +10,7 @@ export default async function CheckEmailPage({
 
   return (
     <div className="text-center">
+      <EmailVerificationPoller />
       <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-success-light">
         <svg
           xmlns="http://www.w3.org/2000/svg"

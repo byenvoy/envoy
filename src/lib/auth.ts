@@ -16,7 +16,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // TODO: re-enable after testing
+    requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
       void resend.emails.send({
         from: fromEmail,
