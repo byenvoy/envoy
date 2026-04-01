@@ -10,7 +10,7 @@ import {
   drafts,
   autopilotEvaluations,
 } from "@/lib/db/schema";
-import { eq, and, desc, asc, or, ilike, sql } from "drizzle-orm";
+import { eq, and, desc, asc, or, ilike, sql, getTableColumns } from "drizzle-orm";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
 import { parseSearch } from "@/lib/search/parse-search";
 import { InboxView } from "@/components/inbox/inbox-view";
@@ -45,8 +45,11 @@ export default async function InboxPage({
     baseConditions.push(eq(conversations.status, effectiveStatus as ConversationStatus));
   }
 
+  let searchFreeText: string | null = null;
+
   if (search) {
     const parsed = parseSearch(search);
+    searchFreeText = parsed.freeText || null;
 
     // from: operator — narrow by sender email
     if (parsed.from) {
@@ -71,9 +74,25 @@ export default async function InboxPage({
   }
 
   // Fetch conversations and all conversation statuses in parallel
+  const snippetSelect = searchFreeText
+    ? {
+        ...getTableColumns(conversations),
+        searchSnippet: sql<string | null>`(
+          SELECT ts_headline('english', m.body_text,
+            plainto_tsquery('english', ${searchFreeText}),
+            'MaxWords=15, MinWords=8, MaxFragments=1, StartSel=<<HL>>, StopSel=<</HL>>'
+          )
+          FROM messages m
+          WHERE m.conversation_id = "conversations"."id"
+          AND to_tsvector('english', COALESCE(m.body_text, '')) @@ plainto_tsquery('english', ${searchFreeText})
+          LIMIT 1
+        )`,
+      }
+    : { ...getTableColumns(conversations), searchSnippet: sql<string | null>`NULL` };
+
   const [convoRows, allConvoRows] = await Promise.all([
     db
-      .select()
+      .select(snippetSelect)
       .from(conversations)
       .where(and(...baseConditions))
       .orderBy(desc(conversations.lastMessageAt))
@@ -101,6 +120,7 @@ export default async function InboxPage({
     created_at: c.createdAt.toISOString(),
     updated_at: c.updatedAt.toISOString(),
     last_message_at: c.lastMessageAt.toISOString(),
+    search_snippet: c.searchSnippet ?? null,
   }));
 
   const hasMore = convoList.length === PAGE_SIZE;

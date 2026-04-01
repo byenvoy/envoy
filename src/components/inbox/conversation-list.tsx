@@ -87,6 +87,9 @@ export function ConversationList({ conversations, selectedId, activeFilter, sear
                 <StatusLabel status={convo.status} />
               )}
             </div>
+            {convo.search_snippet && (
+              <SearchSnippet text={convo.search_snippet} />
+            )}
           </button>
         );
       })}
@@ -106,5 +109,21 @@ function StatusLabel({ status }: { status: ConversationStatus }) {
     <span className={`rounded px-1.5 py-0.5 font-display text-[10px] font-medium ${config.className}`}>
       {config.label}
     </span>
+  );
+}
+
+function SearchSnippet({ text }: { text: string }) {
+  // Split on <<HL>>...<<\/HL>> markers, alternating between plain text and highlighted segments
+  const segments = text.split(/(<<HL>>.*?<<\/HL>>)/);
+
+  return (
+    <p className="mt-1 line-clamp-2 text-xs text-text-secondary">
+      {segments.map((segment, i) => {
+        if (segment.startsWith("<<HL>>")) {
+          return <mark key={i} className="bg-warning-light text-text-primary">{segment.slice(6, -7)}</mark>;
+        }
+        return segment;
+      })}
+    </p>
   );
 }

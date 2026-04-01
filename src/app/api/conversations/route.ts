@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
 import { conversations } from "@/lib/db/schema";
-import { eq, and, or, desc, ilike, sql } from "drizzle-orm";
+import { eq, and, or, desc, ilike, sql, getTableColumns } from "drizzle-orm";
 import { parseSearch } from "@/lib/search/parse-search";
 import type { ConversationStatus } from "@/lib/types/database";
 
@@ -23,8 +23,11 @@ export async function GET(request: NextRequest) {
     conditions.push(eq(conversations.status, status as ConversationStatus));
   }
 
+  let searchFreeText: string | null = null;
+
   if (search) {
     const parsed = parseSearch(search);
+    searchFreeText = parsed.freeText || null;
 
     // from: operator — filter by sender email
     if (parsed.from) {
@@ -48,8 +51,24 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const snippetSelect = searchFreeText
+    ? {
+        ...getTableColumns(conversations),
+        searchSnippet: sql<string | null>`(
+          SELECT ts_headline('english', m.body_text,
+            plainto_tsquery('english', ${searchFreeText}),
+            'MaxWords=15, MinWords=8, MaxFragments=1, StartSel=<<HL>>, StopSel=<</HL>>'
+          )
+          FROM messages m
+          WHERE m.conversation_id = "conversations"."id"
+          AND to_tsvector('english', COALESCE(m.body_text, '')) @@ plainto_tsquery('english', ${searchFreeText})
+          LIMIT 1
+        )`,
+      }
+    : { ...getTableColumns(conversations), searchSnippet: sql<string | null>`NULL` };
+
   const rows = await db
-    .select()
+    .select(snippetSelect)
     .from(conversations)
     .where(and(...conditions))
     .orderBy(desc(conversations.lastMessageAt))
@@ -68,6 +87,7 @@ export async function GET(request: NextRequest) {
       created_at: c.createdAt,
       updated_at: c.updatedAt,
       last_message_at: c.lastMessageAt,
+      search_snippet: c.searchSnippet ?? null,
     })),
   });
 }

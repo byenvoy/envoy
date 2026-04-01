@@ -88,6 +88,7 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
   last_message_at: string;
+  search_snippet?: string | null;
 }
 
 export type MessageDirection = "inbound" | "outbound";
