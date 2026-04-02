@@ -82,9 +82,6 @@ export function ProcessingBanner() {
             Syncing knowledge base...
           </p>
         </div>
-        <p className="text-sm font-mono text-info">
-          {activeJob.pagesEmbedded}/{activeJob.totalPages} pages
-        </p>
       </div>
       <div className="mt-2 h-1.5 w-full rounded-full bg-info-light">
         <div
