@@ -19,7 +19,7 @@ export function PageCard({ page }: PageCardProps) {
     : "No content";
 
   const lastChecked = new Date(
-    page.last_recrawled_at ?? page.updated_at
+    page.last_crawled_at ?? page.updated_at
   ).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",

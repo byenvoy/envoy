@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
         contentHash: extracted.contentHash,
         etag: headers.etag,
         lastModifiedHeader: headers.lastModified,
+        lastCrawledAt: new Date(),
         source: "url",
         isActive: true,
       })
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
           contentHash: extracted.contentHash,
           etag: headers.etag,
           lastModifiedHeader: headers.lastModified,
+          lastCrawledAt: new Date(),
           isActive: true,
           updatedAt: new Date(),
         },

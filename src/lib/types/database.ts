@@ -28,7 +28,7 @@ export interface KnowledgeBasePage {
   markdown_content: string | null;
   content_hash: string | null;
   is_active: boolean;
-  last_recrawled_at: string | null;
+  last_crawled_at: string | null;
   created_at: string;
   updated_at: string;
 }

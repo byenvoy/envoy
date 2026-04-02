@@ -54,7 +54,7 @@ export async function POST(
         .set({
           etag: check.etag,
           lastModifiedHeader: check.lastModified,
-          lastRecrawledAt: now,
+          lastCrawledAt: now,
         })
         .where(eq(knowledgeBasePages.id, id));
 
@@ -78,7 +78,7 @@ export async function POST(
         .set({
           etag: check.etag,
           lastModifiedHeader: check.lastModified,
-          lastRecrawledAt: now,
+          lastCrawledAt: now,
         })
         .where(eq(knowledgeBasePages.id, id));
 
@@ -93,7 +93,7 @@ export async function POST(
         contentHash: extracted.contentHash,
         etag: check.etag,
         lastModifiedHeader: check.lastModified,
-        lastRecrawledAt: now,
+        lastCrawledAt: now,
         updatedAt: now,
       })
       .where(eq(knowledgeBasePages.id, id));

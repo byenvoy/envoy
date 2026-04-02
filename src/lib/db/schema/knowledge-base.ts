@@ -26,7 +26,7 @@ export const knowledgeBasePages = pgTable(
     source: text("source").notNull().default("crawled"),
     etag: text("etag"),
     lastModifiedHeader: text("last_modified_header"),
-    lastRecrawledAt: timestamp("last_recrawled_at", { withTimezone: true }),
+    lastCrawledAt: timestamp("last_crawled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

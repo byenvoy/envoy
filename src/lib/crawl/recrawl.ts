@@ -67,7 +67,7 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
           .set({
             etag: check.etag,
             lastModifiedHeader: check.lastModified,
-            lastRecrawledAt: new Date(),
+            lastCrawledAt: new Date(),
           })
           .where(eq(knowledgeBasePages.id, page.id));
         continue;
@@ -118,7 +118,7 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
           .set({
             etag,
             lastModifiedHeader: lastModified,
-            lastRecrawledAt: now,
+            lastCrawledAt: now,
           })
           .where(eq(knowledgeBasePages.id, page.id));
         continue;
@@ -133,7 +133,7 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
           contentHash: ext.contentHash,
           etag,
           lastModifiedHeader: lastModified,
-          lastRecrawledAt: now,
+          lastCrawledAt: now,
           updatedAt: now,
         })
         .where(eq(knowledgeBasePages.id, page.id));

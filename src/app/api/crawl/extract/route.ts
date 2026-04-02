@@ -47,6 +47,7 @@ export async function POST(request: Request) {
           contentHash: page.contentHash,
           etag: headers.etag,
           lastModifiedHeader: headers.lastModified,
+          lastCrawledAt: new Date(),
           isActive: true,
         })
         .onConflictDoUpdate({
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
             contentHash: page.contentHash,
             etag: headers.etag,
             lastModifiedHeader: headers.lastModified,
+            lastCrawledAt: new Date(),
             isActive: true,
             updatedAt: new Date(),
           },
