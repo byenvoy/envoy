@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, getOrgSubscription } from "@/lib/db/helpers";
-import { getStripe, isCloud } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   if (!isCloud()) {

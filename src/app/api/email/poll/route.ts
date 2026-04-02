@@ -4,7 +4,7 @@ import { emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { tryAdvisoryLock, advisoryUnlock, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;

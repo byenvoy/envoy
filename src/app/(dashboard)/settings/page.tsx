@@ -19,7 +19,7 @@ import { TeamManagement } from "@/components/settings/team-management";
 import { ApiKeySettings } from "@/components/settings/api-key-settings";
 import { BillingSection } from "@/components/settings/billing-section";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
 import type { EmailConnection, Integration, Organization, Profile, TeamInvite } from "@/lib/types/database";
 

@@ -10,7 +10,7 @@ import {
   getOrgSubscription,
   isActiveSubscription,
 } from "@/lib/db/helpers";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;

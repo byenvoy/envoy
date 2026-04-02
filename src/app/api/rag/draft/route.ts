@@ -4,7 +4,7 @@ import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { withAuth, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { retrieveAndDraft } from "@/lib/rag/retrieve";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, getOrgSubscription } from "@/lib/db/helpers";
-import { getStripe, isCloud } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";

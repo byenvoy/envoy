@@ -5,7 +5,7 @@ import { checkPage } from "./check-page";
 import { extractPages, type ExtractedPage } from "./extract";
 import { syncPageChunks } from "@/lib/rag/sync";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers/plan-limits";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 
 export interface RecrawlOrgResult {
   pagesChecked: number;

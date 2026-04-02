@@ -11,6 +11,3 @@ export function getStripe(): Stripe {
   return _stripe;
 }
 
-export function isCloud(): boolean {
-  return process.env.ENVOYER_CLOUD === "true";
-}

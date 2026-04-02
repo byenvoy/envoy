@@ -10,7 +10,7 @@ import {
 } from "@/lib/db/helpers/crawl-jobs";
 import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers/advisory-lock";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers/plan-limits";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 import { processInitialCrawlJob, processRecrawlJob } from "@/lib/crawl/process-job";
 
 const RECRAWL_LOCK_ID = 73502;

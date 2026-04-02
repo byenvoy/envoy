@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { profiles, organizations, subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 import { isActiveSubscription } from "@/lib/db/helpers";
 
 export default async function DashboardLayout({

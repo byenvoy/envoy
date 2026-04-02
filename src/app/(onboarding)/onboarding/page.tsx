@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
-import { isCloud } from "@/lib/stripe";
+import { isCloud } from "@/lib/config";
 import type {
   EmailConnection,
   Integration,
