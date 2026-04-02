@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { knowledgeBasePages } from "@/lib/db/schema";
 import { updateJobProgress, completeJob, failJob } from "@/lib/db/helpers/crawl-jobs";
-import { extractPages } from "./extract";
+import { extractPages, type ExtractedPage } from "./extract";
 import { checkPage } from "./check-page";
 import { syncPageChunks } from "@/lib/rag/sync";
 import { recrawlOrg } from "./recrawl";
@@ -22,22 +22,30 @@ export async function processInitialCrawlJob(job: CrawlJob) {
 
   const failedUrls: string[] = [];
 
-  try {
-    await extractPages(job.urls, async (page) => {
-      if (page.error || !page.markdown) {
-        failedUrls.push(page.url);
-        await updateJobProgress(job.id, { pagesExtracted: 1 });
-        return;
-      }
+  async function savePage(page: ExtractedPage): Promise<boolean> {
+    if (page.error || !page.markdown) {
+      return false;
+    }
 
-      try {
-        const headers = await checkPage({ url: page.url });
+    try {
+      const headers = await checkPage({ url: page.url });
 
-        const [savedPage] = await db
-          .insert(knowledgeBasePages)
-          .values({
-            orgId: job.orgId,
-            url: page.url,
+      const [savedPage] = await db
+        .insert(knowledgeBasePages)
+        .values({
+          orgId: job.orgId,
+          url: page.url,
+          title: page.title,
+          markdownContent: page.markdown,
+          contentHash: page.contentHash,
+          etag: headers.etag,
+          lastModifiedHeader: headers.lastModified,
+          lastCrawledAt: new Date(),
+          isActive: true,
+        })
+        .onConflictDoUpdate({
+          target: [knowledgeBasePages.orgId, knowledgeBasePages.url],
+          set: {
             title: page.title,
             markdownContent: page.markdown,
             contentHash: page.contentHash,
@@ -45,32 +53,47 @@ export async function processInitialCrawlJob(job: CrawlJob) {
             lastModifiedHeader: headers.lastModified,
             lastCrawledAt: new Date(),
             isActive: true,
-          })
-          .onConflictDoUpdate({
-            target: [knowledgeBasePages.orgId, knowledgeBasePages.url],
-            set: {
-              title: page.title,
-              markdownContent: page.markdown,
-              contentHash: page.contentHash,
-              etag: headers.etag,
-              lastModifiedHeader: headers.lastModified,
-              lastCrawledAt: new Date(),
-              isActive: true,
-              updatedAt: new Date(),
-            },
-          })
-          .returning();
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
 
-        await updateJobProgress(job.id, { pagesExtracted: 1 });
+      await syncPageChunks(savedPage);
+      return true;
+    } catch (err) {
+      console.error(`[job ${job.id}] Failed to save/embed ${page.url}:`, err);
+      return false;
+    }
+  }
 
-        await syncPageChunks(savedPage);
-        await updateJobProgress(job.id, { pagesEmbedded: 1 });
-      } catch (err) {
-        console.error(`[job ${job.id}] Failed to save/embed ${page.url}:`, err);
+  try {
+    // First pass
+    await extractPages(job.urls, async (page) => {
+      const ok = await savePage(page);
+      if (ok) {
+        await updateJobProgress(job.id, { pagesExtracted: 1, pagesEmbedded: 1 });
+      } else {
         failedUrls.push(page.url);
         await updateJobProgress(job.id, { pagesExtracted: 1 });
       }
     });
+
+    // Retry failed URLs once
+    if (failedUrls.length > 0) {
+      console.log(`[job ${job.id}] Retrying ${failedUrls.length} failed URLs`);
+      const retryUrls = [...failedUrls];
+      failedUrls.length = 0;
+
+      await extractPages(retryUrls, async (page) => {
+        const ok = await savePage(page);
+        if (ok) {
+          await updateJobProgress(job.id, { pagesEmbedded: 1 });
+        } else {
+          console.error(`[job ${job.id}] Retry failed for ${page.url}: ${page.error}`);
+          failedUrls.push(page.url);
+        }
+      });
+    }
 
     await completeJob(job.id, failedUrls);
   } catch (err) {
