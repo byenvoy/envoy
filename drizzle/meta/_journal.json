@@ -50,6 +50,13 @@
       "when": 1775074712744,
       "tag": "0006_mysterious_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775145790417,
+      "tag": "0007_flashy_black_bird",
+      "breakpoints": true
     }
   ]
 }

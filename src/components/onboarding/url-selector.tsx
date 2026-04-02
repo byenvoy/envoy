@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -24,14 +24,6 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
-  const [extractedCount, setExtractedCount] = useState(0);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
 
   const domain = useMemo(() => {
     if (urls.length === 0) return "";
@@ -151,20 +143,6 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
     if (selected.size === 0) return;
     setError(null);
     setLoading(true);
-    setExtractedCount(0);
-
-    // Poll for incremental progress as pages are saved to DB
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch("/api/embeddings/status");
-        if (res.ok) {
-          const data = await res.json();
-          setExtractedCount(data.totalPages ?? 0);
-        }
-      } catch {
-        // Ignore polling errors
-      }
-    }, 2000);
 
     try {
       const res = await fetch("/api/crawl/extract", {
@@ -176,10 +154,12 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to extract pages");
+        setError(data.error || "Failed to enqueue crawl");
+        setLoading(false);
         return;
       }
 
+      // Job enqueued — redirect immediately, progress shown on KB page
       if (onComplete) {
         onComplete();
       } else {
@@ -188,8 +168,6 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
       }
     } catch {
       setError("Network error. Please try again.");
-    } finally {
-      if (pollRef.current) clearInterval(pollRef.current);
       setLoading(false);
     }
   }
@@ -295,7 +273,7 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
         className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
       >
         {loading
-          ? `Crawling... ${extractedCount} of ${selected.size} pages extracted`
+          ? "Starting crawl..."
           : `Import ${selected.size} page${selected.size === 1 ? "" : "s"}`}
       </button>
     </div>

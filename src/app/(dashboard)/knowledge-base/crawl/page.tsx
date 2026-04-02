@@ -13,7 +13,6 @@ export default function CrawlPage() {
   >(null);
 
   function handleComplete() {
-    fetch("/api/embeddings/generate", { method: "POST" });
     router.push("/knowledge-base");
     router.refresh();
   }

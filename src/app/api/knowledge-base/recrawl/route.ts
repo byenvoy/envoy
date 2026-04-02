@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers";
-import { recrawlAllOrgs } from "@/lib/crawl/recrawl";
+import { db } from "@/lib/db";
+import { knowledgeBasePages } from "@/lib/db/schema";
+import { eq, and, inArray, isNotNull } from "drizzle-orm";
+import {
+  tryAdvisoryLock,
+  advisoryUnlock,
+  enqueueCrawlJob,
+  hasActiveRecrawlJob,
+  getOrgSubscription,
+  isActiveSubscription,
+} from "@/lib/db/helpers";
+import { isCloud } from "@/lib/stripe";
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -19,14 +29,39 @@ export async function GET(request: NextRequest) {
   const lockAcquired = await tryAdvisoryLock(73502);
   if (!lockAcquired) {
     return NextResponse.json(
-      { error: "Recrawl already in progress" },
+      { error: "Recrawl enqueue already in progress" },
       { status: 409 }
     );
   }
 
   try {
-    const result = await recrawlAllOrgs();
-    return NextResponse.json(result);
+    const orgs = await db
+      .selectDistinct({ orgId: knowledgeBasePages.orgId })
+      .from(knowledgeBasePages)
+      .where(
+        and(
+          eq(knowledgeBasePages.isActive, true),
+          isNotNull(knowledgeBasePages.url),
+          inArray(knowledgeBasePages.source, ["crawled", "url"])
+        )
+      );
+
+    let jobsEnqueued = 0;
+
+    for (const { orgId } of orgs) {
+      if (isCloud()) {
+        const sub = await getOrgSubscription(orgId);
+        if (!sub || !isActiveSubscription(sub.status)) continue;
+      }
+
+      const hasActive = await hasActiveRecrawlJob(orgId);
+      if (hasActive) continue;
+
+      await enqueueCrawlJob(orgId, "recrawl");
+      jobsEnqueued++;
+    }
+
+    return NextResponse.json({ jobsEnqueued });
   } finally {
     await advisoryUnlock(73502);
   }

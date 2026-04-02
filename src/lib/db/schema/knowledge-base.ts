@@ -55,3 +55,28 @@ export const knowledgeBaseChunks = pgTable(
     index("knowledge_base_chunks_org_id_idx").on(table.orgId),
   ]
 );
+
+export const crawlJobs = pgTable(
+  "crawl_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // "initial" | "recrawl"
+    status: text("status").notNull().default("pending"), // "pending" | "running" | "completed" | "failed"
+    urls: text("urls").array(),
+    totalPages: integer("total_pages").notNull().default(0),
+    pagesExtracted: integer("pages_extracted").notNull().default(0),
+    pagesEmbedded: integer("pages_embedded").notNull().default(0),
+    failedUrls: text("failed_urls").array(),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("crawl_jobs_status_idx").on(table.status),
+    index("crawl_jobs_org_id_idx").on(table.orgId),
+  ]
+);

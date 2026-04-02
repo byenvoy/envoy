@@ -4,7 +4,7 @@ import { eq, and, inArray, isNotNull, sql } from "drizzle-orm";
 import { checkPage } from "./check-page";
 import { extractPages, type ExtractedPage } from "./extract";
 import { syncPageChunks } from "@/lib/rag/sync";
-import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
+import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers/plan-limits";
 import { isCloud } from "@/lib/stripe";
 
 export interface RecrawlOrgResult {
@@ -21,7 +21,16 @@ export interface RecrawlAllResult {
   errors: number;
 }
 
-export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
+export interface RecrawlProgressUpdate {
+  totalPages?: number;
+  pagesChecked?: number;
+  pagesUpdated?: number;
+}
+
+export async function recrawlOrg(
+  orgId: string,
+  onProgress?: (update: RecrawlProgressUpdate) => Promise<void>
+): Promise<RecrawlOrgResult> {
   const result: RecrawlOrgResult = {
     pagesChecked: 0,
     pagesUpdated: 0,
@@ -42,6 +51,8 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
     );
 
   if (pages.length === 0) return result;
+
+  if (onProgress) await onProgress({ totalPages: pages.length });
 
   // Phase 1: cheap HTTP checks to find which pages may have changed
   const possiblyChanged: Array<{
@@ -70,6 +81,7 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
             lastCrawledAt: new Date(),
           })
           .where(eq(knowledgeBasePages.id, page.id));
+        if (onProgress) await onProgress({ pagesChecked: 1 });
         continue;
       }
 
@@ -108,6 +120,7 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
       if (ext.error || !ext.markdown) {
         console.error(`Extract error for ${page.url}: ${ext.error}`);
         result.errors++;
+        if (onProgress) await onProgress({ pagesChecked: 1 });
         continue;
       }
 
@@ -121,6 +134,7 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
             lastCrawledAt: now,
           })
           .where(eq(knowledgeBasePages.id, page.id));
+        if (onProgress) await onProgress({ pagesChecked: 1 });
         continue;
       }
 
@@ -146,6 +160,7 @@ export async function recrawlOrg(orgId: string): Promise<RecrawlOrgResult> {
       });
 
       result.pagesUpdated++;
+      if (onProgress) await onProgress({ pagesChecked: 1, pagesUpdated: 1 });
     } catch (err) {
       console.error(`Sync failed for ${page.url}:`, err);
       result.errors++;
