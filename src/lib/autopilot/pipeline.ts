@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
-import { autopilotTopics, autopilotEvaluations } from "@/lib/db/schema";
+import { autopilotTopics, autopilotEvaluations, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { isCloud } from "@/lib/config";
 import { judgeRetrievalQuality } from "./gates/judge-retrieval";
 import { validateDraft } from "./gates/validate-draft";
 import type {
@@ -54,8 +55,17 @@ export async function runAutopilotPipeline(
 
   const activeTopics = precomputedTopics;
 
-  // Use Haiku for gate calls (cheap + fast)
-  const gateModel = "claude-haiku-4-5-20251001";
+  // Cloud: use Haiku for consistent eval quality (platform pays).
+  // Self-hosted: use the org's preferred model (they provide their own keys).
+  let gateModel = "claude-haiku-4-5-20251001";
+  if (!isCloud()) {
+    const org = await db
+      .select({ preferredModel: organizations.preferredModel })
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .then((r) => r[0]);
+    if (org?.preferredModel) gateModel = org.preferredModel;
+  }
 
   // Track gate results for the evaluation row
   let gate1Result: TopicClassificationResult = precomputedGate1;

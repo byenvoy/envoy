@@ -11,6 +11,7 @@ import { retrieveAndDraft } from "@/lib/rag/retrieve";
 import { runAutopilotPipeline } from "@/lib/autopilot/pipeline";
 import { autoSendDraft } from "@/lib/autopilot/auto-send";
 import { classifyTopic } from "@/lib/autopilot/gates/classify-topic";
+import { isCloud } from "@/lib/config";
 import type { TopicClassificationResult, AutopilotTopicRow } from "@/lib/autopilot/types";
 
 export async function generateDraftForConversation(conversationId: string, isRegeneration = false): Promise<void> {
@@ -24,7 +25,7 @@ export async function generateDraftForConversation(conversationId: string, isReg
   if (!conversation) throw new Error("Conversation not found");
 
   const org = await db
-    .select({ name: organizations.name })
+    .select({ name: organizations.name, preferredModel: organizations.preferredModel })
     .from(organizations)
     .where(eq(organizations.id, conversation.orgId))
     .then((r) => r[0]);
@@ -81,7 +82,7 @@ export async function generateDraftForConversation(conversationId: string, isReg
           customerMessage,
           conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
           topics: activeTopicsList,
-          model: "claude-haiku-4-5-20251001",
+          model: isCloud() ? "claude-haiku-4-5-20251001" : (org?.preferredModel ?? "claude-haiku-4-5-20251001"),
           orgId: conversation.orgId,
         });
       } catch (error) {

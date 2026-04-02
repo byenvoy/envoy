@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { conversations } from "@/lib/db/schema";
+import { conversations, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { createLLMProvider } from "@/lib/rag/llm";
 import { logUsage } from "@/lib/usage/log";
+import { isCloud } from "@/lib/config";
 
 const ESCALATION_MODEL = "claude-haiku-4-5-20251001";
 
@@ -35,7 +36,16 @@ Output ONLY the JSON object, no markdown or extra text.`;
 ${customerMessage}`;
 
   try {
-    const llm = await createLLMProvider(ESCALATION_MODEL, orgId);
+    let model = ESCALATION_MODEL;
+    if (!isCloud()) {
+      const org = await db
+        .select({ preferredModel: organizations.preferredModel })
+        .from(organizations)
+        .where(eq(organizations.id, orgId))
+        .then((r) => r[0]);
+      if (org?.preferredModel) model = org.preferredModel;
+    }
+    const llm = await createLLMProvider(model, orgId);
     const response = await llm.generateDraft(system, user);
 
     await logUsage({

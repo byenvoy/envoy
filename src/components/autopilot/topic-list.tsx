@@ -36,9 +36,10 @@ const TOPIC_TEMPLATES = [
 
 interface TopicListProps {
   initialTopics: AutopilotTopic[];
+  isCloud: boolean;
 }
 
-export function TopicList({ initialTopics }: TopicListProps) {
+export function TopicList({ initialTopics, isCloud }: TopicListProps) {
   const [topics, setTopics] = useState<AutopilotTopic[]>(initialTopics);
   const [showForm, setShowForm] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -157,7 +158,7 @@ export function TopicList({ initialTopics }: TopicListProps) {
                 <button
                   role="switch"
                   aria-checked={topic.mode !== "off"}
-                  onClick={() => handleModeChange(topic.id, topic.mode === "off" ? "shadow" : "off")}
+                  onClick={() => handleModeChange(topic.id, topic.mode === "off" ? (isCloud ? "shadow" : "auto") : "off")}
                   className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
                     topic.mode !== "off" ? "bg-primary" : "bg-border"
                   }`}

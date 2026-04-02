@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { profiles, autopilotTopics } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { TopicList } from "@/components/autopilot/topic-list";
+import { isCloud } from "@/lib/config";
 import type { AutopilotTopic } from "@/lib/types/database";
 
 export default async function AutopilotPage() {
@@ -60,8 +61,10 @@ export default async function AutopilotPage() {
           Autopilot
         </h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Define topics that can be automatically responded to. New topics will
-          calibrate before becoming active.
+          Define topics that can be automatically responded to.{" "}
+          {isCloud()
+            ? "New topics will calibrate before becoming active."
+            : "Enable a topic to start auto-responding."}
         </p>
       </div>
 
@@ -69,7 +72,7 @@ export default async function AutopilotPage() {
         <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
           Topics
         </h2>
-        <TopicList initialTopics={topics} />
+        <TopicList initialTopics={topics} isCloud={isCloud()} />
       </div>
     </div>
   );
