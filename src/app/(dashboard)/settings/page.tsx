@@ -24,18 +24,21 @@ import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
 import type { EmailConnection, Integration, Organization, Profile, TeamInvite } from "@/lib/types/database";
 
 
-/** Derive unique provider entries from SUPPORTED_MODELS for the API key UI. */
+/** Display labels for each provider env key. */
+const PROVIDER_LABELS: Record<string, string> = {
+  ANTHROPIC_API_KEY: "Anthropic",
+  OPENAI_API_KEY: "OpenAI",
+  GOOGLE_AI_KEY: "Google",
+  MISTRAL_API_KEY: "Mistral",
+  DEEPSEEK_API_KEY: "DeepSeek",
+};
+
+/** Collect unique providers from SUPPORTED_MODELS for the API key UI. */
 function getUniqueProviders() {
   const seen = new Map<string, string>();
   for (const config of Object.values(SUPPORTED_MODELS)) {
     if (config.envKey && !seen.has(config.envKey)) {
-      // Derive a human label from the envKey: "ANTHROPIC_API_KEY" -> "Anthropic"
-      const label = config.envKey
-        .replace(/_API_KEY$/, "")
-        .split("_")
-        .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-        .join(" ");
-      seen.set(config.envKey, label);
+      seen.set(config.envKey, PROVIDER_LABELS[config.envKey] ?? config.envKey);
     }
   }
   return seen;
