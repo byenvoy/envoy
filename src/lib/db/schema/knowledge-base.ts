@@ -7,7 +7,9 @@ import {
   timestamp,
   index,
   unique,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { organizations } from "./organizations";
 import { vector1536 } from "./columns";
 
@@ -30,7 +32,13 @@ export const knowledgeBasePages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [unique("knowledge_base_pages_org_url_unique").on(table.orgId, table.url)]
+  (table) => [
+    unique("knowledge_base_pages_org_url_unique").on(table.orgId, table.url),
+    check(
+      "knowledge_base_pages_source_check",
+      sql`${table.source} IN ('crawled', 'manual', 'url', 'upload', 'notion', 'confluence')`
+    ),
+  ]
 );
 
 export const knowledgeBaseChunks = pgTable(
