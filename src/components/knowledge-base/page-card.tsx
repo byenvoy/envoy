@@ -76,7 +76,7 @@ export function PageCard({ page }: PageCardProps) {
         <div className="flex items-center gap-2">
           <Link
             href={`/knowledge-base/${page.id}/edit`}
-            className="text-xs text-text-secondary hover:text-text-primary"
+            className="rounded px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
             Edit
           </Link>
@@ -85,7 +85,7 @@ export function PageCard({ page }: PageCardProps) {
               type="button"
               onClick={handleResync}
               disabled={syncing}
-              className="text-xs text-text-secondary hover:text-text-primary disabled:opacity-50"
+              className="cursor-pointer rounded px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               {syncing ? "Syncing..." : "Re-sync"}
             </button>
@@ -94,7 +94,7 @@ export function PageCard({ page }: PageCardProps) {
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
             disabled={deleting}
-            className="text-xs text-error hover:text-error disabled:opacity-50"
+            className="cursor-pointer rounded px-2 py-1 text-xs text-error transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {deleting ? "Deleting..." : "Delete"}
           </button>
