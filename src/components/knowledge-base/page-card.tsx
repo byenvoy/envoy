@@ -49,7 +49,7 @@ export function PageCard({ page }: PageCardProps) {
 
   return (
     <div className="rounded-lg border border-border bg-surface-alt p-4 transition-colors hover:border-border">
-      <h3 className="mb-1 truncate text-sm font-medium font-display text-text-primary">
+      <h3 className="mb-1 truncate text-base font-semibold font-display text-text-primary">
         {page.title || "Untitled"}
       </h3>
       {page.url ? (
