@@ -25,10 +25,10 @@ const TOPIC_TEMPLATES = [
     name: "Product Information",
     description: "Questions about product details, sizing, materials, availability, compatibility, and general product recommendations.",
   },
-  {
-    name: "Order Changes",
-    description: "Requests to change, cancel, or modify an existing order — including address changes, item swaps, and cancellation requests before shipment.",
-  },
+  // {
+  //   name: "Order Changes",
+  //   description: "Requests to change, cancel, or modify an existing order — including address changes, item swaps, and cancellation requests before shipment.",
+  // },
   // {
   //   name: "Account & Password",
   //   description: "Questions about account access, password resets, updating account details, and login issues.",
