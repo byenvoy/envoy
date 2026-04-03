@@ -22,7 +22,7 @@ interface PromptOutput {
 
 const TONE_DESCRIPTIONS: Record<string, string> = {
   professional:
-    "Write in a professional, polished tone. Use clear and precise language. Be courteous but not overly familiar. Avoid slang, contractions, and casual phrasing.",
+    "Write in a professional, polished tone. Use clear and precise language. Be courteous but not overly familiar. Avoid slang and casual phrasing.",
   casual:
     "Write in a casual, conversational tone. Use contractions freely, keep sentences short, and sound approachable — like a helpful colleague, not a corporate representative.",
   technical:
