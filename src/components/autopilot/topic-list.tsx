@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AutopilotTopic, AutopilotMode } from "@/lib/types/database";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const MODE_LABELS: Record<AutopilotMode, { label: string; color: string }> = {
   off: { label: "Off", color: "bg-surface text-text-secondary" },
@@ -51,6 +52,7 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [deleteTopicId, setDeleteTopicId] = useState<string | null>(null);
 
   async function handleCreate() {
     if (!name.trim() || !description.trim()) return;
@@ -230,7 +232,7 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(topic.id)}
+                  onClick={() => setDeleteTopicId(topic.id)}
                   className="text-error hover:text-error/80"
                 >
                   Delete
@@ -329,6 +331,19 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
           + Create custom topic
         </button>
       )}
+
+      <ConfirmDialog
+        open={deleteTopicId !== null}
+        title="Delete topic"
+        description="Are you sure you want to delete this topic? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteTopicId) handleDelete(deleteTopicId);
+          setDeleteTopicId(null);
+        }}
+        onCancel={() => setDeleteTopicId(null)}
+      />
     </div>
   );
 }
