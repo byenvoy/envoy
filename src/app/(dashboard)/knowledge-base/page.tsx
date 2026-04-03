@@ -65,7 +65,7 @@ export default async function KnowledgeBasePage() {
       <ProcessingBanner />
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold font-display tracking-tight text-text-primary">
+          <h1 className="text-2xl font-bold font-display tracking-tight text-text-primary">
             Knowledge Base
           </h1>
           {hasPages && (
