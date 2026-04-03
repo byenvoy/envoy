@@ -72,7 +72,7 @@ export function EmailConnectionPicker({
           <button
             onClick={() => handleDisconnect(activeConnection.provider)}
             disabled={disconnecting}
-            className="rounded-lg border border-error px-3 py-1.5 text-xs font-medium text-error transition-colors hover:bg-error-light disabled:opacity-50"
+            className="rounded px-2 py-1.5 text-[13px] font-medium text-error transition-colors hover:text-error/80 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-1"
           >
             {disconnecting ? "Disconnecting..." : "Disconnect"}
           </button>
