@@ -24,9 +24,15 @@ export function ProcessingBanner() {
         if (!res.ok) return;
 
         const data = await res.json();
-        setActiveJob(data.job);
+        // Only show banner for initial/recrawl jobs, not per-page resyncs
+        const bannerJob = (data.jobs ?? []).find(
+          (j: ActiveJob) =>
+            j.type !== "resync" &&
+            (j.status === "pending" || j.status === "running")
+        ) ?? null;
+        setActiveJob(bannerJob);
 
-        const hasWork = data.job && (data.job.status === "pending" || data.job.status === "running");
+        const hasWork = !!bannerJob;
 
         if (hasWork) {
           router.refresh();
@@ -36,7 +42,7 @@ export function ProcessingBanner() {
           router.refresh();
         }
 
-        prevHadWork.current = !!hasWork;
+        prevHadWork.current = hasWork;
       } catch {
         // Silently ignore polling errors
       }

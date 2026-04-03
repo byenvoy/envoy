@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { knowledgeBasePages } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { withAuth } from "@/lib/db/helpers";
-import { syncPageChunks } from "@/lib/rag/sync";
-import { checkPage } from "@/lib/crawl/check-page";
-import { extractPages } from "@/lib/crawl/extract";
+import { knowledgeBasePages, crawlJobs } from "@/lib/db/schema";
+import { eq, and, inArray, sql } from "drizzle-orm";
+import { withAuth, enqueueCrawlJob } from "@/lib/db/helpers";
 
 export async function POST(
   _request: NextRequest,
@@ -38,81 +35,24 @@ export async function POST(
     );
   }
 
-  try {
-    // Phase 1: cheap HTTP check with cached ETag/Last-Modified
-    const check = await checkPage({
-      url: page.url,
-      etag: page.etag,
-      lastModified: page.lastModifiedHeader,
-    });
+  // Check for existing active resync job for this specific URL
+  const [existingJob] = await db
+    .select({ id: crawlJobs.id })
+    .from(crawlJobs)
+    .where(
+      and(
+        eq(crawlJobs.orgId, orgId),
+        eq(crawlJobs.type, "resync"),
+        inArray(crawlJobs.status, ["pending", "running"]),
+        sql`${crawlJobs.urls} @> ARRAY[${page.url}]`
+      )
+    )
+    .limit(1);
 
-    const now = new Date();
-
-    if (!check.changed) {
-      await db
-        .update(knowledgeBasePages)
-        .set({
-          etag: check.etag,
-          lastModifiedHeader: check.lastModified,
-          lastCrawledAt: now,
-        })
-        .where(eq(knowledgeBasePages.id, id));
-
-      return NextResponse.json({ ok: true, unchanged: true });
-    }
-
-    // Phase 2: full Puppeteer extraction (consistent with initial crawl)
-    const [extracted] = await extractPages([page.url]);
-
-    if (extracted.error || !extracted.markdown) {
-      return NextResponse.json(
-        { error: extracted.error ?? "Failed to extract page content" },
-        { status: 422 }
-      );
-    }
-
-    // Phase 3: compare hash and sync if changed
-    if (extracted.contentHash === page.contentHash) {
-      await db
-        .update(knowledgeBasePages)
-        .set({
-          etag: check.etag,
-          lastModifiedHeader: check.lastModified,
-          lastCrawledAt: now,
-        })
-        .where(eq(knowledgeBasePages.id, id));
-
-      return NextResponse.json({ ok: true, unchanged: true });
-    }
-
-    await db
-      .update(knowledgeBasePages)
-      .set({
-        title: extracted.title || page.title,
-        markdownContent: extracted.markdown,
-        contentHash: extracted.contentHash,
-        etag: check.etag,
-        lastModifiedHeader: check.lastModified,
-        lastCrawledAt: now,
-        updatedAt: now,
-      })
-      .where(eq(knowledgeBasePages.id, id));
-
-    const updatedPage = {
-      ...page,
-      title: extracted.title || page.title,
-      markdownContent: extracted.markdown,
-      contentHash: extracted.contentHash,
-    };
-
-    const chunks = await syncPageChunks(updatedPage);
-
-    return NextResponse.json({ ok: true, chunks });
-  } catch (err) {
-    console.error("Resync failed:", err);
-    return NextResponse.json(
-      { error: "Failed to re-sync page" },
-      { status: 500 }
-    );
+  if (existingJob) {
+    return NextResponse.json({ jobId: existingJob.id });
   }
+
+  const jobId = await enqueueCrawlJob(orgId, "resync", [page.url]);
+  return NextResponse.json({ jobId });
 }

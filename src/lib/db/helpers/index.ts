@@ -14,4 +14,5 @@ export {
   getActiveJobForOrg,
   resetStaleJobs,
   hasActiveRecrawlJob,
+  getActiveResyncUrlsForOrg,
 } from "./crawl-jobs";

@@ -4,7 +4,7 @@ import { eq, and, sql, inArray } from "drizzle-orm";
 
 export async function enqueueCrawlJob(
   orgId: string,
-  type: "initial" | "recrawl",
+  type: "initial" | "recrawl" | "resync",
   urls?: string[]
 ): Promise<string> {
   const [job] = await db
@@ -54,7 +54,7 @@ export async function claimNextJob() {
   return {
     id: row.id,
     orgId: row.org_id,
-    type: row.type as "initial" | "recrawl",
+    type: row.type as "initial" | "recrawl" | "resync",
     status: row.status,
     urls: row.urls,
     totalPages: row.total_pages,
@@ -162,4 +162,19 @@ export async function hasActiveRecrawlJob(orgId: string): Promise<boolean> {
     .limit(1);
 
   return !!job;
+}
+
+export async function getActiveResyncUrlsForOrg(orgId: string): Promise<string[]> {
+  const jobs = await db
+    .select({ urls: crawlJobs.urls })
+    .from(crawlJobs)
+    .where(
+      and(
+        eq(crawlJobs.orgId, orgId),
+        eq(crawlJobs.type, "resync"),
+        inArray(crawlJobs.status, ["pending", "running"])
+      )
+    );
+
+  return jobs.flatMap((j) => j.urls ?? []);
 }

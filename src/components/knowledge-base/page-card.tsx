@@ -7,10 +7,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface PageCardProps {
   page: KnowledgeBasePage;
+  syncing?: boolean;
 }
 
-export function PageCard({ page }: PageCardProps) {
-  const [syncing, setSyncing] = useState(false);
+export function PageCard({ page, syncing = false }: PageCardProps) {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -27,13 +27,7 @@ export function PageCard({ page }: PageCardProps) {
   });
 
   async function handleResync() {
-    setSyncing(true);
-    try {
-      await fetch(`/api/knowledge-base/${page.id}/resync`, { method: "POST" });
-      window.location.reload();
-    } finally {
-      setSyncing(false);
-    }
+    await fetch(`/api/knowledge-base/${page.id}/resync`, { method: "POST" });
   }
 
   async function handleDelete() {
@@ -85,7 +79,7 @@ export function PageCard({ page }: PageCardProps) {
             type="button"
             onClick={handleResync}
             disabled={syncing}
-            className="cursor-pointer rounded px-1.5 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded px-1.5 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-text-secondary"
           >
             {syncing ? "Syncing..." : "Re-sync"}
           </button>
