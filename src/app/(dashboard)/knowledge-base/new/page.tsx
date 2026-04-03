@@ -64,8 +64,9 @@ export default function NewManualEntryPage() {
 
         <div>
           <label className="mb-1 block text-sm font-medium font-display text-text-primary">
-            Content (Markdown)
+            Content
           </label>
+          <p className="mb-1 text-xs text-text-secondary">Markdown supported</p>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
