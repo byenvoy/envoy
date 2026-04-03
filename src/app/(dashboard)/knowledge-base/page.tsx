@@ -68,18 +68,6 @@ export default async function KnowledgeBasePage() {
           <h1 className="text-2xl font-bold font-display tracking-tight text-text-primary">
             Knowledge Base
           </h1>
-          {hasPages && (
-            <p className="mt-1 text-sm text-text-secondary">
-              <span className="font-mono">{pages.length}</span> page{pages.length === 1 ? "" : "s"} indexed
-              {chunkCount != null && chunkCount > 0 && (
-                <span>
-                  {" "}
-                  &middot; <span className="font-mono">{chunkCount}</span> chunk{chunkCount === 1 ? "" : "s"}{" "}
-                  embedded
-                </span>
-              )}
-            </p>
-          )}
         </div>
         <div className="flex items-center gap-3">
           <Link
