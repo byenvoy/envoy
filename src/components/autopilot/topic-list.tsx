@@ -220,20 +220,20 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
                 </div>
               )}
 
-              <div className="mt-2 flex items-center justify-end gap-2 text-xs">
+              <div className="mt-2 flex items-center justify-end gap-1 text-[13px] font-medium">
                 <button
                   onClick={() => {
                     setEditingId(topic.id);
                     setEditName(topic.name);
                     setEditDescription(topic.description);
                   }}
-                  className="text-text-secondary hover:text-text-primary"
+                  className="rounded px-2 py-1.5 text-text-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => setDeleteTopicId(topic.id)}
-                  className="text-error hover:text-error/80"
+                  className="rounded px-2 py-1.5 text-error hover:text-error/80 focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-1"
                 >
                   Delete
                 </button>
