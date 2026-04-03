@@ -70,34 +70,34 @@ export function PageCard({ page }: PageCardProps) {
         {preview}
       </p>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-mono text-text-secondary">
+        <p className="text-[11px] font-mono text-text-secondary">
           Synced {lastChecked}
         </p>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/knowledge-base/${page.id}/edit`}
-            className="rounded px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
-          >
-            Edit
-          </Link>
-          {(page.source === "crawled" || page.source === "url") && page.url && (
-            <button
-              type="button"
-              onClick={handleResync}
-              disabled={syncing}
-              className="cursor-pointer rounded px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {syncing ? "Syncing..." : "Re-sync"}
-            </button>
-          )}
+        <div className="flex items-center gap-1">
+        <Link
+          href={`/knowledge-base/${page.id}/edit`}
+          className="rounded px-1.5 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
+        >
+          Edit
+        </Link>
+        {(page.source === "crawled" || page.source === "url") && page.url && (
           <button
             type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={deleting}
-            className="cursor-pointer rounded px-2 py-1 text-xs text-error transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleResync}
+            disabled={syncing}
+            className="cursor-pointer rounded px-1.5 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {deleting ? "Deleting..." : "Delete"}
+            {syncing ? "Syncing..." : "Re-sync"}
           </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={deleting}
+          className="cursor-pointer rounded px-1.5 py-1 text-xs text-error transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deleting ? "Deleting..." : "Delete"}
+        </button>
         </div>
       </div>
       <ConfirmDialog
