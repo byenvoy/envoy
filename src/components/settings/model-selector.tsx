@@ -102,9 +102,6 @@ export function ModelSelector({
 
   return (
     <div>
-      <label className="mb-3 block text-sm font-display font-medium text-text-primary">
-        AI Model
-      </label>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {models.map((m) => {
           const isActive = m.id === activeId;
