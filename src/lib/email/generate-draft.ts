@@ -97,6 +97,7 @@ export async function generateDraftForConversation(conversationId: string, isReg
     customerMessage,
     customerEmail: conversation.customerEmail,
     conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
+    customerName: conversation.customerName,
     injectConstrainedPrompt: gate1Result?.passed === true,
   });
 

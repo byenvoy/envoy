@@ -32,12 +32,15 @@ const TONES = [
 export function ToneSettings({
   currentTone,
   currentInstructions,
+  currentGreeting,
 }: {
   currentTone: string;
   currentInstructions: string | null;
+  currentGreeting: string | null;
 }) {
   const [tone, setTone] = useState(currentTone);
   const [instructions, setInstructions] = useState(currentInstructions ?? "");
+  const [greeting, setGreeting] = useState(currentGreeting ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -51,6 +54,7 @@ export function ToneSettings({
         body: JSON.stringify({
           tone,
           custom_instructions: instructions || null,
+          greeting_template: greeting || null,
         }),
       });
       setSaved(true);
@@ -87,6 +91,22 @@ export function ToneSettings({
             {TONES.find((t) => t.value === tone)!.description}
           </p>
         )}
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-display font-medium text-text-primary">
+          Greeting
+        </label>
+        <input
+          type="text"
+          value={greeting}
+          onChange={(e) => setGreeting(e.target.value)}
+          placeholder="Hi {name},"
+          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-text-secondary">
+          Use {"{name}"} to include the customer&apos;s name. Leave blank for no greeting.
+        </p>
       </div>
 
       <div>

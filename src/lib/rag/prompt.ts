@@ -13,6 +13,8 @@ interface PromptInput {
   customerContext?: ShopifyCustomerContext | null;
   tone?: string;
   customInstructions?: string | null;
+  greeting?: string | null;
+  customerName?: string | null;
 }
 
 interface PromptOutput {
@@ -46,14 +48,25 @@ function buildSystemPrompt(
   hasCustomerContext: boolean,
   tone?: string,
   customInstructions?: string | null,
+  greeting?: string | null,
+  customerName?: string | null,
 ): string {
   const toneInstruction = TONE_DESCRIPTIONS[tone ?? "professional"] ?? `Write in a ${tone} tone.`;
+
+  let greetingRule: string;
+  if (greeting && customerName) {
+    const firstName = customerName.split(" ")[0];
+    const resolvedGreeting = greeting.replace("{name}", firstName);
+    greetingRule = `Output only the email body text — no subject line, no sign-off. Begin responses with "${resolvedGreeting}". If the customer uses a different name or nickname in their email, use that instead.`;
+  } else {
+    greetingRule = "Output only the email body text — no subject line, no sign-off. Do not include a greeting.";
+  }
 
   const rules = [
     `Only use information from the provided knowledge base context${hasCustomerContext ? " and customer context" : ""} to answer questions.`,
     "If the knowledge base does not contain enough information to answer the question, say so honestly and let the customer know you'll look into it and follow up.",
     toneInstruction,
-    "Output only the email body text — no subject line, no sign-off. Begin with the provided greeting if one is given, otherwise start directly with the response.",
+    greetingRule,
     "Keep responses concise and to the point.",
   ];
 
@@ -184,11 +197,13 @@ export function buildDraftPrompt({
   customerContext,
   tone,
   customInstructions,
+  greeting,
+  customerName,
 }: PromptInput): PromptOutput {
   const hasCustomerContext = !!(customerContext && (customerContext.customer || customerContext.recent_orders.length > 0));
 
   return {
-    system: buildSystemPrompt(companyName, hasCustomerContext, tone, customInstructions),
+    system: buildSystemPrompt(companyName, hasCustomerContext, tone, customInstructions, greeting, customerName),
     user: buildUserPrompt(chunks, customerMessage, hasCustomerContext, conversationHistory, customerContext),
   };
 }

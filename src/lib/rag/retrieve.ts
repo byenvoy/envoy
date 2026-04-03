@@ -69,11 +69,13 @@ export async function retrieveAndDraft({
   customerEmail,
   conversationHistory,
   injectConstrainedPrompt,
+  customerName,
 }: {
   orgId: string;
   companyName: string;
   customerMessage: string;
   customerEmail?: string;
+  customerName?: string | null;
   conversationHistory?: { role: "customer" | "agent"; content: string }[];
   injectConstrainedPrompt?: boolean;
 }): Promise<RetrieveResult> {
@@ -83,6 +85,7 @@ export async function retrieveAndDraft({
       preferredModel: organizations.preferredModel,
       tone: organizations.tone,
       customInstructions: organizations.customInstructions,
+      greetingTemplate: organizations.greetingTemplate,
     })
     .from(organizations)
     .where(eq(organizations.id, orgId))
@@ -91,6 +94,7 @@ export async function retrieveAndDraft({
   const model = org?.preferredModel ?? "claude-haiku-4-5-20251001";
   const tone = org?.tone ?? "professional";
   const customInstructions = org?.customInstructions ?? null;
+  const greetingTemplate = org?.greetingTemplate ?? null;
 
   // Check if Shopify is connected
   const shopifyClient = await createShopifyClient(orgId);
@@ -137,6 +141,8 @@ export async function retrieveAndDraft({
     customerContext,
     tone,
     customInstructions: effectiveInstructions,
+    greeting: greetingTemplate,
+    customerName,
   });
 
   const llm = await createLLMProvider(model, orgId);

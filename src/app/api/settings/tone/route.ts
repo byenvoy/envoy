@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Only owners can change settings" }, { status: 403 });
   }
 
-  const { tone, custom_instructions } = await request.json();
+  const { tone, custom_instructions, greeting_template } = await request.json();
 
   if (tone && !VALID_TONES.includes(tone)) {
     return NextResponse.json({ error: "Invalid tone" }, { status: 400 });
@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
   const update: Record<string, unknown> = {};
   if (tone) update.tone = tone;
   if (custom_instructions !== undefined) update.customInstructions = custom_instructions;
+  if (greeting_template !== undefined) update.greetingTemplate = greeting_template;
 
   try {
     await db

@@ -7,6 +7,7 @@ export const organizations = pgTable("organizations", {
   preferredModel: text("preferred_model").notNull().default("claude-haiku-4-5-20251001"),
   tone: text("tone").notNull().default("professional"),
   customInstructions: text("custom_instructions"),
+  greetingTemplate: text("greeting_template"),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
   onboardingStep: integer("onboarding_step").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
