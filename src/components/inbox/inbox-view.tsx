@@ -219,28 +219,35 @@ export function InboxView({
   return (
     <div className="flex h-full flex-col">
       {showNudge && (
-        <div className="flex items-center justify-between border-b border-ai-accent/30 bg-ai-light px-4 py-2.5">
-          <p className="font-body text-sm text-text-primary">
-            Set up Autopilot topics to start calibration — every email you handle teaches it.{" "}
+        <div className="flex items-center justify-between bg-primary px-4 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <svg className="h-4 w-4 shrink-0 text-primary-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <p className="font-body text-sm text-white">
+              Set up Autopilot topics early to start calibration — every email you handle teaches it.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 ml-4 shrink-0">
             <a
               href="/autopilot"
-              className="font-semibold text-ai-accent underline decoration-ai-accent/40 hover:decoration-ai-accent"
+              className="rounded-full bg-white px-3.5 py-1 text-xs font-display font-semibold text-primary hover:bg-white/90 transition-colors"
             >
               Get started
             </a>
-          </p>
-          <button
-            onClick={() => {
-              setNudgeDismissed(true);
-              localStorage.setItem("autopilot-nudge-dismissed", "1");
-            }}
-            className="ml-4 shrink-0 rounded p-1 text-text-secondary hover:text-text-primary"
-            aria-label="Dismiss"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+            <button
+              onClick={() => {
+                setNudgeDismissed(true);
+                localStorage.setItem("autopilot-nudge-dismissed", "1");
+              }}
+              className="rounded p-1 text-white/60 hover:text-white"
+              aria-label="Dismiss"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
       <div className="flex min-h-0 flex-1">
