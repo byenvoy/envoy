@@ -78,11 +78,12 @@ export function ShopifyConnection({
 
   return (
     <div className="space-y-4">
+      <h3 className="text-sm font-display font-medium text-text-primary">Shopify</h3>
       <p className="text-sm text-text-secondary">
         Connect your Shopify store to pull order details, customer history, and product data into customer context to enhance drafted and auto-sent support emails.
       </p>
       {hasShopifyClientId && !showManual && (
-        <div className="space-y-3">
+        <div className="space-y-1">
           <label
             htmlFor="shop-domain-oauth"
             className="mb-1 block font-display text-sm font-medium text-text-primary"
@@ -108,7 +109,7 @@ export function ShopifyConnection({
           <button
             type="button"
             onClick={() => setShowManual(true)}
-            className="text-xs text-text-secondary/60 transition-colors hover:text-text-primary"
+            className="rounded px-2 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             Or enter access token manually
           </button>
@@ -130,7 +131,7 @@ export function ShopifyConnection({
               placeholder="your-store.myshopify.com"
               value={shopDomain}
               onChange={(e) => setShopDomain(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             />
           </div>
           <div>
@@ -146,7 +147,7 @@ export function ShopifyConnection({
               placeholder="shpat_..."
               value={accessToken}
               onChange={(e) => setAccessToken(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+              className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             />
           </div>
           {error && (
@@ -163,7 +164,7 @@ export function ShopifyConnection({
             <button
               type="button"
               onClick={() => setShowManual(false)}
-              className="ml-3 text-xs text-text-secondary underline hover:text-text-primary"
+              className="ml-1 rounded px-2 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             >
               Use OAuth instead
             </button>
