@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { knowledgeBasePages, knowledgeBaseChunks } from "@/lib/db/schema";
+import { knowledgeBasePages } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { withAuth } from "@/lib/db/helpers";
 import { syncPageChunks } from "@/lib/rag/sync";
@@ -57,15 +57,9 @@ export async function DELETE(
   const { orgId } = auth.context;
 
   try {
-    // Delete chunks first
+    // Chunks cascade-delete via FK
     await db
-      .delete(knowledgeBaseChunks)
-      .where(eq(knowledgeBaseChunks.pageId, id));
-
-    // Mark page as inactive
-    await db
-      .update(knowledgeBasePages)
-      .set({ isActive: false, updatedAt: new Date() })
+      .delete(knowledgeBasePages)
       .where(
         and(
           eq(knowledgeBasePages.id, id),
