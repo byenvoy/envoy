@@ -9,6 +9,7 @@ import {
   messages,
   drafts,
   autopilotEvaluations,
+  autopilotTopics,
 } from "@/lib/db/schema";
 import { eq, and, desc, asc, or, ilike, sql, getTableColumns } from "drizzle-orm";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
@@ -28,7 +29,7 @@ export default async function InboxPage({
   if (!session) redirect("/login");
 
   const profile = await db
-    .select({ orgId: profiles.orgId })
+    .select({ orgId: profiles.orgId, role: profiles.role })
     .from(profiles)
     .where(eq(profiles.id, session.user.id))
     .then((r) => r[0]);
@@ -90,7 +91,7 @@ export default async function InboxPage({
       }
     : { ...getTableColumns(conversations), searchSnippet: sql<string | null>`NULL` };
 
-  const [convoRows, allConvoRows] = await Promise.all([
+  const [convoRows, allConvoRows, topicCount] = await Promise.all([
     db
       .select(snippetSelect)
       .from(conversations)
@@ -101,6 +102,11 @@ export default async function InboxPage({
       .select({ status: conversations.status })
       .from(conversations)
       .where(eq(conversations.orgId, orgId)),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(autopilotTopics)
+      .where(eq(autopilotTopics.orgId, orgId))
+      .then((r) => r[0]?.count ?? 0),
   ]);
 
   const counts: Record<string, number> = { all: allConvoRows.length };
@@ -246,6 +252,7 @@ export default async function InboxPage({
         initialDetail={initialDetail}
         hasMore={hasMore}
         pageSize={PAGE_SIZE}
+        showAutopilotNudge={profile.role === "owner" && topicCount === 0}
       />
     </Suspense>
   );
