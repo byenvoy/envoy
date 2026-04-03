@@ -51,9 +51,9 @@ function buildSystemPrompt(
 
   const rules = [
     `Only use information from the provided knowledge base context${hasCustomerContext ? " and customer context" : ""} to answer questions.`,
-    "If the knowledge base does not contain enough information to answer the question, say so honestly and suggest the customer contact support directly for further help.",
+    "If the knowledge base does not contain enough information to answer the question, say so honestly and let the customer know you'll look into it and follow up.",
     toneInstruction,
-    "Output only the email body text — no subject line, no greeting preamble like \"Dear Customer\", just the helpful response content ready to send.",
+    "Output only the email body text — no subject line, no sign-off. Begin with the provided greeting if one is given, otherwise start directly with the response.",
     "Keep responses concise and to the point.",
   ];
 
