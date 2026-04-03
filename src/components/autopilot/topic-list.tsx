@@ -49,28 +49,48 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
   const [threshold, setThreshold] = useState(0.95);
   const [dailyLimit, setDailyLimit] = useState(100);
   const [saving, setSaving] = useState(false);
+  const [addingTemplate, setAddingTemplate] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [deleteTopicId, setDeleteTopicId] = useState<string | null>(null);
 
+  async function createTopic(opts: {
+    name: string;
+    description: string;
+    confidence_threshold?: number;
+    daily_send_limit?: number;
+    mode?: AutopilotMode;
+  }) {
+    const res = await fetch("/api/autopilot/topics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: opts.name,
+        description: opts.description,
+        confidence_threshold: opts.confidence_threshold ?? 0.95,
+        daily_send_limit: opts.daily_send_limit ?? 100,
+        mode: opts.mode,
+      }),
+    });
+    const data = await res.json();
+    if (data.topic) {
+      setTopics((prev) => [...prev, data.topic]);
+    }
+    return data.topic ?? null;
+  }
+
   async function handleCreate() {
     if (!name.trim() || !description.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/autopilot/topics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
-          confidence_threshold: threshold,
-          daily_send_limit: dailyLimit,
-        }),
+      const topic = await createTopic({
+        name: name.trim(),
+        description: description.trim(),
+        confidence_threshold: threshold,
+        daily_send_limit: dailyLimit,
       });
-      const data = await res.json();
-      if (data.topic) {
-        setTopics([...topics, data.topic]);
+      if (topic) {
         setName("");
         setDescription("");
         setThreshold(0.95);
@@ -303,15 +323,23 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
             {available.map((template) => (
               <button
                 key={template.name}
-                onClick={() => {
-                  setName(template.name);
-                  setDescription(template.description);
-                  setShowForm(true);
+                disabled={addingTemplate === template.name}
+                onClick={async () => {
+                  setAddingTemplate(template.name);
+                  try {
+                    await createTopic({
+                      name: template.name,
+                      description: template.description,
+                      mode: isCloud ? "shadow" : "auto",
+                    });
+                  } finally {
+                    setAddingTemplate(null);
+                  }
                 }}
-                className="w-full rounded-lg border border-dashed border-border bg-surface p-3 text-left transition-colors hover:border-primary"
+                className="w-full rounded-lg border border-dashed border-border bg-surface p-3 text-left transition-colors hover:border-primary disabled:opacity-50"
               >
                 <p className="font-display text-sm font-medium text-text-primary">
-                  {template.name}
+                  {addingTemplate === template.name ? "Adding..." : template.name}
                 </p>
                 <p className="mt-0.5 text-xs text-text-secondary line-clamp-2">
                   {template.description}
