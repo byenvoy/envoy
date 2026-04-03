@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { marked, Renderer } from "marked";
 import { StatusBadge } from "./status-badge";
 import { stripQuotedReply } from "@/lib/email/strip-quotes";
 import type { Conversation, Message } from "@/lib/types/database";
+
+const threadRenderer = new Renderer();
+threadRenderer.link = ({ href, text }) =>
+  `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 
 function getInitials(name: string | null, email: string): string {
   if (name) {
@@ -99,6 +104,11 @@ function MessageRow({
     ? stripQuotedReply(message.body_text)
     : null;
 
+  const renderedHtml = useMemo(() => {
+    if (!displayBody) return null;
+    return marked.parse(displayBody, { breaks: true, async: false, renderer: threadRenderer }) as string;
+  }, [displayBody]);
+
   return (
     <div className="py-3">
       <div className="flex gap-3">
@@ -150,9 +160,16 @@ function MessageRow({
           {/* Expanded: full body */}
           {expanded && (
             <div className="mt-2">
-              <p className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-text-primary">
-                {displayBody || "(empty)"}
-              </p>
+              {renderedHtml ? (
+                <div
+                  className="font-mono text-[13px] leading-relaxed text-text-primary [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: renderedHtml }}
+                />
+              ) : (
+                <p className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-text-primary">
+                  {displayBody || "(empty)"}
+                </p>
+              )}
             </div>
           )}
         </div>
