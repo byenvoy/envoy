@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { marked } from "marked";
+import { marked, Renderer } from "marked";
+
+const draftRenderer = new Renderer();
+draftRenderer.link = ({ href, text }) =>
+  `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 import { useRouter } from "next/navigation";
 import type { Conversation, Draft } from "@/lib/types/database";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
@@ -37,7 +41,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const renderedHtml = useMemo(
-    () => marked.parse(editedContent, { breaks: true, async: false }) as string,
+    () => marked.parse(editedContent, { breaks: true, async: false, renderer: draftRenderer }) as string,
     [editedContent]
   );
 
@@ -208,8 +212,13 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             />
           ) : (
             <div
-              onClick={() => setIsEditing(true)}
-              className="flex-1 cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-4 py-3 text-[13px] leading-relaxed text-text-primary hover:border-primary/50 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest("a")) return;
+                const selection = window.getSelection();
+                if (selection && selection.toString().length > 0) return;
+                setIsEditing(true);
+              }}
+              className="flex-1 cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
               dangerouslySetInnerHTML={{ __html: renderedHtml }}
             />
           )}
