@@ -3,8 +3,8 @@ import Link from "next/link";
 const ITEMS = [
   {
     key: "crawled",
-    label: "Crawl your website",
-    description: "Import pages from your domain automatically",
+    label: "Import your website",
+    description: "Pull in pages from your domain automatically",
     href: "/knowledge-base/crawl",
   },
   {
