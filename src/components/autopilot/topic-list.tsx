@@ -273,7 +273,7 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
               disabled={saving || !name.trim() || !description.trim()}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
-              {saving ? "Creating..." : "Create Topic"}
+              {saving ? "Adding..." : "Add Topic"}
             </button>
             <button
               onClick={() => { setShowForm(false); setName(""); setDescription(""); }}
