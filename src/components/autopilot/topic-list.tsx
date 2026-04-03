@@ -206,10 +206,10 @@ export function TopicList({ initialTopics, isCloud }: TopicListProps) {
               {topic.mode === "auto" && (
                 <div className="mt-3 rounded-md bg-success-light/50 px-3 py-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex h-2 w-2 rounded-full bg-primary" />
-                    <p className="text-xs font-display font-medium text-primary">
+                    <p className="text-xs font-display font-semibold text-primary">
                       Active
                     </p>
+                    <span className="inline-flex h-2 w-2 rounded-full bg-primary" />
                   </div>
                   <p className="mt-1 text-xs text-text-secondary">
                     Emails matching this topic are being automatically responded to.
