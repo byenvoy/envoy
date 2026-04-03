@@ -108,7 +108,7 @@ export function TeamManagement({
 
       <div>
         <h3 className="mb-3 text-sm font-display font-medium text-text-primary">
-          Invite Agent
+          Invite Team Member
         </h3>
         <form onSubmit={handleInvite} className="flex gap-2">
           <input
