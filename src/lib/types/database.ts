@@ -109,6 +109,7 @@ export interface Message {
   source: "imap" | "smtp" | "manual";
   connection_id: string | null;
   sent_by_autopilot: boolean;
+  sent_at: string;
   created_at: string;
 }
 

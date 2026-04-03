@@ -80,6 +80,7 @@ export async function processImapEmail(
         status: "open",
         customerEmail: fromAddr,
         customerName: fromName,
+        lastMessageAt: parsed.date ?? new Date(),
       })
       .returning()
       .then((r) => r[0]);
@@ -90,7 +91,7 @@ export async function processImapEmail(
     // Reopen conversation if it was waiting/closed
     await db
       .update(conversations)
-      .set({ status: "open", updatedAt: new Date(), lastMessageAt: new Date() })
+      .set({ status: "open", updatedAt: new Date(), lastMessageAt: parsed.date ?? new Date() })
       .where(eq(conversations.id, conversationId));
   }
 
@@ -108,6 +109,7 @@ export async function processImapEmail(
     inReplyTo,
     source: "imap",
     connectionId: connection.id,
+    sentAt: parsed.date ?? new Date(),
   });
 
   return conversationId;

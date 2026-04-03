@@ -62,6 +62,7 @@ export const messages = pgTable(
     source: text("source").notNull().default("imap"),
     connectionId: uuid("connection_id"),
     sentByAutopilot: boolean("sent_by_autopilot").notNull().default(false),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

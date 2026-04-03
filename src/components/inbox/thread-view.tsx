@@ -130,7 +130,7 @@ function MessageRow({
               </span>
             )}
             <span className="font-mono text-xs text-text-secondary">
-              {new Date(message.created_at).toLocaleString()}
+              {new Date(message.sent_at).toLocaleString()}
             </span>
           </div>
 

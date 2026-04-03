@@ -86,12 +86,13 @@ export async function processSentEmail(
     inReplyTo,
     source: "imap",
     connectionId: connection.id,
+    sentAt: parsed.date ?? new Date(),
   });
 
   // Update conversation timestamp
   await db
     .update(conversations)
-    .set({ updatedAt: new Date(), lastMessageAt: new Date() })
+    .set({ updatedAt: new Date(), lastMessageAt: parsed.date ?? new Date() })
     .where(eq(conversations.id, conversationId));
 
   return conversationId;

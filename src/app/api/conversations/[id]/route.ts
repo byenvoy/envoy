@@ -118,6 +118,7 @@ export async function GET(
       source: m.source,
       connection_id: m.connectionId,
       sent_by_autopilot: m.sentByAutopilot,
+      sent_at: m.sentAt,
       created_at: m.createdAt,
     })),
     draft: draftSnake,

@@ -190,6 +190,7 @@ export default async function InboxPage({
       source: m.source as "imap" | "smtp" | "manual",
       connection_id: m.connectionId,
       sent_by_autopilot: m.sentByAutopilot,
+      sent_at: m.sentAt.toISOString(),
       created_at: m.createdAt.toISOString(),
     }));
 
