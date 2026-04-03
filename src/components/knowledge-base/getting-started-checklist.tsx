@@ -94,7 +94,7 @@ export function GettingStartedChecklist({
                 >
                   {item.label}
                 </p>
-                <p className="text-xs text-text-secondary">
+                <p className="text-[13px] text-text-secondary">
                   {item.description}
                 </p>
               </div>
