@@ -101,7 +101,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-xs text-text-secondary hover:text-text-primary"
+              className="rounded px-2 py-1.5 text-[13px] font-medium text-text-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             >
               {isConfigured ? "Update" : "Add Key"}
             </button>
@@ -111,7 +111,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
               type="button"
               onClick={handleRemove}
               disabled={removing}
-              className="text-xs text-error hover:text-error disabled:opacity-50"
+              className="rounded px-2 py-1.5 text-[13px] font-medium text-error hover:text-error/80 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-1"
             >
               {removing ? "Removing..." : "Remove"}
             </button>
@@ -142,7 +142,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
               setEditing(false);
               setKey("");
             }}
-            className="text-xs text-text-secondary hover:text-text-primary"
+            className="rounded px-2 py-1.5 text-[13px] font-medium text-text-secondary hover:text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             Cancel
           </button>
