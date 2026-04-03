@@ -79,6 +79,10 @@ export const autopilotEvaluations = pgTable(
     outcome: text("outcome").notNull().default("human_queue"),
     failureGate: integer("failure_gate"),
 
+    // Model tracking
+    gateModel: text("gate_model"),
+    generationModel: text("generation_model"),
+
     // Shadow mode tracking
     humanAction: text("human_action"),
     editDistance: integer("edit_distance"),

@@ -93,6 +93,7 @@ export async function runAutopilotPipeline(
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
+      gateModel, generationModel: params.model ?? null,
     });
   }
 
@@ -113,6 +114,7 @@ export async function runAutopilotPipeline(
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
+      gateModel, generationModel: params.model ?? null,
     });
   }
 
@@ -127,6 +129,7 @@ export async function runAutopilotPipeline(
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
+      gateModel, generationModel: params.model ?? null,
     });
   }
 
@@ -146,6 +149,7 @@ export async function runAutopilotPipeline(
       orgId, conversationId, draftId, failureGate,
       gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
       outcome: "human_queue", allGatesPassed: false,
+      gateModel, generationModel: params.model ?? null,
     });
   }
 
@@ -179,6 +183,7 @@ export async function runAutopilotPipeline(
     orgId, conversationId, draftId, failureGate: null,
     gate1Result, gate2Result, gate3Passed, gate3Reason, gate4Result,
     outcome, allGatesPassed: true,
+    gateModel, generationModel: params.model ?? null,
   });
 }
 
@@ -200,6 +205,8 @@ interface InsertEvaluationParams {
   gate4Result: ValidationResult | null;
   outcome: AutopilotOutcome;
   allGatesPassed: boolean;
+  gateModel: string;
+  generationModel: string | null;
 }
 
 async function insertEvaluation(
@@ -229,6 +236,8 @@ async function insertEvaluation(
       allGatesPassed: p.allGatesPassed,
       outcome: p.outcome,
       failureGate: p.failureGate,
+      gateModel: p.gateModel,
+      generationModel: p.generationModel,
     })
     .returning({ id: autopilotEvaluations.id })
     .then((r) => r[0]);
