@@ -89,7 +89,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
               </span>
             ) : provider.hasEnvKey ? (
               <span className="text-primary">
-                Using server key
+                Reading from environment variable
               </span>
             ) : (
               <span>Not configured</span>
