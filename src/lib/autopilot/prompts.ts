@@ -132,7 +132,6 @@ export function getConstrainedGenerationAddendum(): string {
   return `
 
 IMPORTANT CONSTRAINT: You are generating a response that may be automatically sent without human review. Follow these rules strictly:
-- Only use information present in the provided knowledge base context.
 - Do not speculate or infer information not explicitly stated in the provided context.
 - Always write your best attempt at a complete, helpful reply.
 - If you cannot fully answer the customer's question from the provided context, still write your best attempt, then on a NEW line at the very end add:
