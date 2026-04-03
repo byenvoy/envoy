@@ -79,7 +79,7 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenCommandPalette}
-            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 font-mono text-xs text-text-secondary transition-colors hover:border-text-secondary"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 font-mono text-xs text-text-secondary transition-colors hover:border-text-secondary"
           >
             Search...
             <kbd className="rounded border border-border bg-surface-alt px-1.5 py-0.5 font-mono text-[10px]">
@@ -90,7 +90,7 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-white transition-opacity hover:opacity-90"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-white transition-opacity hover:opacity-90"
             >
               {userInitials}
             </button>
