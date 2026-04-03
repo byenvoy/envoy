@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { conversations, messages, drafts, emailAddresses, autopilotEvaluations } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { sendReply } from "@/lib/email/send-reply";
+import { marked } from "marked";
 
 
 /** Simple word-level edit distance (Levenshtein on word arrays). */
@@ -106,7 +107,7 @@ export async function POST(
   }
 
   const replyContent = editedContent ?? draft.editedContent ?? draft.draftContent;
-  const replyHtml = replyContent.replace(/\n/g, "<br>");
+  const replyHtml = await marked.parse(replyContent, { breaks: true });
 
   try {
     const outboundMessageId = await sendReply({

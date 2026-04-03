@@ -8,6 +8,7 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { incrementAutopilotDailySends } from "@/lib/db/helpers";
 import { sendReply } from "@/lib/email/send-reply";
+import { marked } from "marked";
 
 
 /**
@@ -73,7 +74,7 @@ export async function autoSendDraft({
   const connectionId = latestInbound.connectionId;
   if (!connectionId) throw new Error("No email connection found for auto-send");
 
-  const replyHtml = draftContent.replace(/\n/g, "<br>");
+  const replyHtml = await marked.parse(draftContent, { breaks: true });
 
   // Send via SMTP (same function as manual approve)
   const outboundMessageId = await sendReply({
