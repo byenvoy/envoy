@@ -39,7 +39,9 @@ ${historyText}
   }
 
   user += `Latest customer email:
-${customerMessage}`;
+${customerMessage}
+
+Classify this email into one of the topic categories above, or "none" if it does not clearly fit any category.`;
 
   return { system, user };
 }
