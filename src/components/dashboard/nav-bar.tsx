@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/inbox", label: "Inbox" },
   { href: "/autopilot", label: "Autopilot" },
-  { href: "/knowledge-base", label: "Knowledge Base" },
+  { href: "/knowledge-base", label: "Knowledge Base", shortLabel: "KB" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -63,7 +63,14 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
                       : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
-                  {item.label}
+                  {"shortLabel" in item ? (
+                    <>
+                      <span className="sm:hidden">{item.shortLabel}</span>
+                      <span className="hidden sm:inline">{item.label}</span>
+                    </>
+                  ) : (
+                    item.label
+                  )}
                 </Link>
               );
             })}
