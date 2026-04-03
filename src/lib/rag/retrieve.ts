@@ -86,6 +86,7 @@ export async function retrieveAndDraft({
       tone: organizations.tone,
       customInstructions: organizations.customInstructions,
       greetingTemplate: organizations.greetingTemplate,
+      signOff: organizations.signOff,
     })
     .from(organizations)
     .where(eq(organizations.id, orgId))
@@ -95,6 +96,7 @@ export async function retrieveAndDraft({
   const tone = org?.tone ?? "professional";
   const customInstructions = org?.customInstructions ?? null;
   const greetingTemplate = org?.greetingTemplate ?? null;
+  const signOff = org?.signOff ?? null;
 
   // Check if Shopify is connected
   const shopifyClient = await createShopifyClient(orgId);
@@ -158,7 +160,7 @@ export async function retrieveAndDraft({
   });
 
   return {
-    draft: response.text,
+    draft: signOff ? `${response.text}\n\n${signOff}` : response.text,
     chunks,
     messageEmbedding,
     customerContext,

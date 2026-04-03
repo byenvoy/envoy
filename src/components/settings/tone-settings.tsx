@@ -33,14 +33,17 @@ export function ToneSettings({
   currentTone,
   currentInstructions,
   currentGreeting,
+  currentSignOff,
 }: {
   currentTone: string;
   currentInstructions: string | null;
   currentGreeting: string | null;
+  currentSignOff: string | null;
 }) {
   const [tone, setTone] = useState(currentTone);
   const [instructions, setInstructions] = useState(currentInstructions ?? "");
   const [greeting, setGreeting] = useState(currentGreeting ?? "");
+  const [signOff, setSignOff] = useState(currentSignOff ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -55,6 +58,7 @@ export function ToneSettings({
           tone,
           custom_instructions: instructions || null,
           greeting_template: greeting || null,
+          sign_off: signOff || null,
         }),
       });
       setSaved(true);
@@ -111,13 +115,28 @@ export function ToneSettings({
 
       <div>
         <label className="mb-2 block text-sm font-display font-medium text-text-primary">
+          Sign-off
+        </label>
+        <textarea
+          value={signOff}
+          onChange={(e) => setSignOff(e.target.value)}
+          placeholder={"Best,\nThe Acme Team"}
+          rows={2}
+          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-text-secondary">
+          Appended to the end of every draft. Leave blank for no sign-off.
+        </p>
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-display font-medium text-text-primary">
           Custom Instructions
         </label>
         <textarea
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          // placeholder="Add any specific instructions for how the AI should respond..."
-          placeholder="Add any specific instructions such as prefered sign off method, etc."
+          placeholder="Add any specific instructions for how the AI should respond..."
           rows={3}
           className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
         />

@@ -6,6 +6,7 @@ export interface Organization {
   tone: "professional" | "casual" | "technical" | "friendly";
   custom_instructions: string | null;
   greeting_template: string | null;
+  sign_off: string | null;
   onboarding_step: number;
   onboarding_completed_at: string | null;
   created_at: string;

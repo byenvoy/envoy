@@ -66,6 +66,7 @@ export default async function SettingsPage() {
           tone: organizations.tone,
           customInstructions: organizations.customInstructions,
           greetingTemplate: organizations.greetingTemplate,
+          signOff: organizations.signOff,
         })
         .from(organizations)
         .where(eq(organizations.id, profile.orgId))
@@ -128,7 +129,8 @@ export default async function SettingsPage() {
         tone: orgRows.tone,
         custom_instructions: orgRows.customInstructions,
         greeting_template: orgRows.greetingTemplate,
-      } as Pick<Organization, "preferred_model" | "tone" | "custom_instructions" | "greeting_template">)
+        sign_off: orgRows.signOff,
+      } as Pick<Organization, "preferred_model" | "tone" | "custom_instructions" | "greeting_template" | "sign_off">)
     : null;
 
   // Fetch org-level API key status (provider_key -> last 4 chars)
@@ -261,6 +263,7 @@ export default async function SettingsPage() {
               currentTone={orgData?.tone ?? "professional"}
               currentInstructions={orgData?.custom_instructions ?? null}
               currentGreeting={orgData?.greeting_template ?? null}
+              currentSignOff={orgData?.sign_off ?? null}
             />
           </div>
         )}

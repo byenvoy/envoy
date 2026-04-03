@@ -8,6 +8,7 @@ export const organizations = pgTable("organizations", {
   tone: text("tone").notNull().default("professional"),
   customInstructions: text("custom_instructions"),
   greetingTemplate: text("greeting_template"),
+  signOff: text("sign_off"),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
   onboardingStep: integer("onboarding_step").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
