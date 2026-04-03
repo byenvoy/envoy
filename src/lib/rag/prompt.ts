@@ -31,6 +31,50 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
     "Write in a warm, friendly tone. Be empathetic and personable. Use the customer's name when available. Show genuine care about their issue while staying helpful and solution-focused.",
 };
 
+// --- Section builders ---
+
+function buildCustomerDataRules(): string {
+  return `- Use customer-specific data when provided to give personalized, accurate answers.
+- Never fabricate order numbers, tracking numbers, or customer data — only reference what is provided in the Customer Context section.
+- If the customer asks about an order, try to identify which order they mean from any clues they provide (dates, product names, order numbers). If they give no identifying details, default to their most recent order. Always clearly state which order you are referring to (e.g., "Regarding your order #1001 from March 11th...") so the customer can correct you if it's the wrong one. Do NOT ask the customer to clarify which order they mean — just answer about the most likely one.
+- When referencing fulfillment statuses, explain them in plain language. For example: "partially fulfilled" means some items have shipped but others are still being prepared; "unfulfilled" means the order is being processed and hasn't shipped yet; "fulfilled" means all items have shipped.
+- When tracking information is available, always include both the tracking number and the tracking URL so the customer can easily check their shipment status.`;
+}
+
+function buildSystemPrompt(
+  companyName: string,
+  hasCustomerContext: boolean,
+  tone?: string,
+  customInstructions?: string | null,
+): string {
+  const toneInstruction = TONE_DESCRIPTIONS[tone ?? "professional"] ?? `Write in a ${tone} tone.`;
+
+  const rules = [
+    `Only use information from the provided knowledge base context${hasCustomerContext ? " and customer context" : ""} to answer questions.`,
+    "If the knowledge base does not contain enough information to answer the question, say so honestly and suggest the customer contact support directly for further help.",
+    toneInstruction,
+    "Output only the email body text — no subject line, no greeting preamble like \"Dear Customer\", just the helpful response content ready to send.",
+    "Keep responses concise and to the point.",
+  ];
+
+  if (hasCustomerContext) {
+    rules.push(buildCustomerDataRules());
+  }
+
+  const sections = [
+    `You are a customer support agent for ${companyName}. Your job is to draft helpful, concise, and professional email replies to customer inquiries.`,
+    "",
+    "Rules:",
+    ...rules.map((r) => (r.startsWith("- ") ? r : `- ${r}`)),
+  ];
+
+  if (customInstructions) {
+    sections.push("", `Additional instructions:\n${customInstructions}`);
+  }
+
+  return sections.join("\n");
+}
+
 function formatCustomerContext(ctx: ShopifyCustomerContext): string {
   const lines: string[] = [];
 
@@ -86,66 +130,65 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
   return lines.join("\n");
 }
 
-export function buildDraftPrompt({ companyName, chunks, customerMessage, conversationHistory, customerContext, tone, customInstructions }: PromptInput): PromptOutput {
-  const hasCustomerContext = customerContext && (customerContext.customer || customerContext.recent_orders.length > 0);
+function buildKnowledgeBaseSection(chunks: { content: string; sourceUrl?: string }[]): string {
+  const contextBlocks = chunks.map((chunk, i) => {
+    const source = chunk.sourceUrl ? ` (Source: ${chunk.sourceUrl})` : "";
+    return `--- Context ${i + 1}${source} ---\n${chunk.content}`;
+  });
 
-  const customerDataRules = hasCustomerContext
-    ? `
-- Use customer-specific data when provided to give personalized, accurate answers.
-- Never fabricate order numbers, tracking numbers, or customer data — only reference what is provided in the Customer Context section.
-- If the customer asks about an order, try to identify which order they mean from any clues they provide (dates, product names, order numbers). If they give no identifying details, default to their most recent order. Always clearly state which order you are referring to (e.g., "Regarding your order #1001 from March 11th...") so the customer can correct you if it's the wrong one. Do NOT ask the customer to clarify which order they mean — just answer about the most likely one.
-- When referencing fulfillment statuses, explain them in plain language. For example: "partially fulfilled" means some items have shipped but others are still being prepared; "unfulfilled" means the order is being processed and hasn't shipped yet; "fulfilled" means all items have shipped.
-- When tracking information is available, always include both the tracking number and the tracking URL so the customer can easily check their shipment status.`
-    : "";
+  return `## Knowledge Base Context\n\n${contextBlocks.join("\n\n")}`;
+}
 
-  const system = `You are a customer support agent for ${companyName}. Your job is to draft helpful, concise, and professional email replies to customer inquiries.
+function buildCustomerContextSection(customerContext?: ShopifyCustomerContext | null): string {
+  const hasContext = customerContext && (customerContext.customer || customerContext.recent_orders.length > 0);
+  if (!hasContext) return "";
 
-Rules:
-- Only use information from the provided knowledge base context${hasCustomerContext ? " and customer context" : ""} to answer questions.
-- If the knowledge base does not contain enough information to answer the question, say so honestly and suggest the customer contact support directly for further help.
-- ${TONE_DESCRIPTIONS[tone ?? "professional"] ?? `Write in a ${tone} tone.`}
-- Output only the email body text — no subject line, no greeting preamble like "Dear Customer", just the helpful response content ready to send.
-- Keep responses concise and to the point.${customerDataRules}${customInstructions ? `\n\nAdditional instructions:\n${customInstructions}` : ""}`;
+  return `## Customer Context\n\n${formatCustomerContext(customerContext!)}`;
+}
 
-  const contextSection = chunks
-    .map((chunk, i) => {
-      const source = chunk.sourceUrl ? ` (Source: ${chunk.sourceUrl})` : "";
-      return `--- Context ${i + 1}${source} ---\n${chunk.content}`;
-    })
+function buildConversationHistorySection(history?: ConversationMessage[]): string {
+  if (!history || history.length === 0) return "";
+
+  const formatted = history
+    .map((msg) => `[${msg.role === "customer" ? "Customer" : "Agent"}]: ${msg.content}`)
     .join("\n\n");
 
-  const customerSection =
-    hasCustomerContext
-      ? `## Customer Context
+  return `## Conversation History\n\n${formatted}`;
+}
 
-${formatCustomerContext(customerContext!)}
+function buildUserPrompt(
+  chunks: { content: string; sourceUrl?: string }[],
+  customerMessage: string,
+  hasCustomerContext: boolean,
+  conversationHistory?: ConversationMessage[],
+  customerContext?: ShopifyCustomerContext | null,
+): string {
+  const sections = [
+    buildKnowledgeBaseSection(chunks),
+    buildCustomerContextSection(customerContext),
+    buildConversationHistorySection(conversationHistory),
+    `## Customer Email\n\n${customerMessage}`,
+    `Please draft a reply to this customer email using the knowledge base context${hasCustomerContext ? " and customer context" : ""} provided above.`,
+  ].filter(Boolean);
 
-`
-      : "";
+  return sections.join("\n\n");
+}
 
-  const historySection =
-    conversationHistory && conversationHistory.length > 0
-      ? `## Conversation History
+// --- Main export ---
 
-${conversationHistory
-  .map(
-    (msg) =>
-      `[${msg.role === "customer" ? "Customer" : "Agent"}]: ${msg.content}`
-  )
-  .join("\n\n")}
+export function buildDraftPrompt({
+  companyName,
+  chunks,
+  customerMessage,
+  conversationHistory,
+  customerContext,
+  tone,
+  customInstructions,
+}: PromptInput): PromptOutput {
+  const hasCustomerContext = !!(customerContext && (customerContext.customer || customerContext.recent_orders.length > 0));
 
-`
-      : "";
-
-  const user = `## Knowledge Base Context
-
-${contextSection}
-
-${customerSection}${historySection}## Customer Email
-
-${customerMessage}
-
-Please draft a reply to this customer email using the knowledge base context${hasCustomerContext ? " and customer context" : ""} provided above.`;
-
-  return { system, user };
+  return {
+    system: buildSystemPrompt(companyName, hasCustomerContext, tone, customInstructions),
+    user: buildUserPrompt(chunks, customerMessage, hasCustomerContext, conversationHistory, customerContext),
+  };
 }
