@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { marked } from "marked";
 import { useRouter } from "next/navigation";
 import type { Conversation, Draft } from "@/lib/types/database";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
@@ -31,7 +32,14 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [isEditing, setIsEditing] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const renderedHtml = useMemo(
+    () => marked.parse(editedContent, { breaks: true, async: false }) as string,
+    [editedContent]
+  );
 
   // Auto-save with debounce
   const autoSave = useCallback(
@@ -67,6 +75,13 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => autoSave(value), 800);
   }
+
+  // Auto-focus textarea when entering edit mode
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isEditing]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -181,13 +196,23 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             <p className="text-xs text-error">{error}</p>
           )}
 
-          {/* Draft textarea */}
-          <textarea
-            value={editedContent}
-            onChange={(e) => handleContentChange(e.target.value)}
-            rows={10}
-            className="flex-1 resize-none rounded-lg border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+          {/* Draft preview / edit */}
+          {isEditing ? (
+            <textarea
+              ref={textareaRef}
+              value={editedContent}
+              onChange={(e) => handleContentChange(e.target.value)}
+              onBlur={() => setIsEditing(false)}
+              rows={10}
+              className="flex-1 resize-none rounded-lg border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          ) : (
+            <div
+              onClick={() => setIsEditing(true)}
+              className="flex-1 cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-4 py-3 text-[13px] leading-relaxed text-text-primary hover:border-primary/50 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+            />
+          )}
 
           {/* Sources bar */}
           {(chunks.length > 0 || draftUsedCustomerData) && (
