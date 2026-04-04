@@ -141,6 +141,7 @@ export async function runAutopilotPipeline(
     draftContent,
     chunks,
     customerContext,
+    conversationHistory,
     model: gateModel,
     orgId,
   });

@@ -17,6 +17,7 @@ export async function validateDraft({
   draftContent,
   chunks,
   customerContext,
+  conversationHistory,
   model,
   orgId,
 }: {
@@ -24,6 +25,7 @@ export async function validateDraft({
   draftContent: string;
   chunks: { content: string }[];
   customerContext: ShopifyCustomerContext | null;
+  conversationHistory?: { role: "customer" | "agent"; content: string }[];
   model: string;
   orgId: string;
 }): Promise<ValidationResult> {
@@ -35,7 +37,8 @@ export async function validateDraft({
     customerMessage,
     draftContent,
     chunks.map((c) => c.content),
-    customerContextStr
+    customerContextStr,
+    conversationHistory
   );
 
   const defaultChecks = {

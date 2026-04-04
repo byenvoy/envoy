@@ -101,7 +101,8 @@ export function buildValidationPrompt(
   customerMessage: string,
   draftContent: string,
   chunks: string[],
-  customerContext: string | null
+  customerContext: string | null,
+  conversationHistory?: { role: "customer" | "agent"; content: string }[]
 ): { system: string; user: string } {
   const system = `You are a critical evaluator reviewing an AI-generated customer support email draft before it is automatically sent. Your job is to find problems, not to be helpful. Evaluate the draft against the following criteria:
 
@@ -124,10 +125,16 @@ Output ONLY the JSON object, no markdown or extra text.`;
     .join("\n\n");
 
   let user = `Customer email:
-${customerMessage}
+${customerMessage}`;
 
-AI-generated draft reply:
-${draftContent}
+  if (conversationHistory && conversationHistory.length > 0) {
+    const historyText = conversationHistory
+      .map((msg) => `[${msg.role === "customer" ? "Customer" : "Agent"}]: ${msg.content}`)
+      .join("\n\n");
+    user += `\n\nConversation history:\n${historyText}`;
+  }
+
+  user += `\n\nAI-generated draft reply:\n${draftContent}
 
 Knowledge base context used:
 ${formattedChunks}`;
