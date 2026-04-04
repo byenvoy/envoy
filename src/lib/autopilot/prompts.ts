@@ -6,7 +6,7 @@ export function buildTopicClassificationPrompt(
   conversationHistory?: { role: "customer" | "agent"; content: string }[]
 ): { system: string; user: string } {
   const topicList = topics
-    .map((t, i) => `${i + 1}. "${t.name}" — ${t.description}`)
+    .map((t) => `- "${t.name}" — ${t.description}`)
     .join("\n");
 
   const system = `You are a customer support email classifier. You will be given a customer email (and optionally prior conversation history) and a list of topic categories. Classify the conversation into exactly one topic or "none" if it does not clearly fit any category.
@@ -14,8 +14,7 @@ export function buildTopicClassificationPrompt(
 When conversation history is provided, use the full context to understand what the customer is asking about — not just the latest message in isolation.
 
 Output valid JSON with these fields:
-- topic_index: the 1-based index of the matched topic, or 0 if none match
-- topic_name: the name of the matched topic, or "none"
+- topic_name: the name of the matched topic (exactly as written above), or "none"
 - confidence: a number from 0.0 to 1.0 representing how confident you are in the classification
 - reasoning: one sentence explaining your classification
 

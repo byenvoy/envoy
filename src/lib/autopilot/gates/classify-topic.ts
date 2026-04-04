@@ -41,22 +41,25 @@ export async function classifyTopic({
     const cleaned = response.text.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
-    const topicIndex = parsed.topic_index ?? 0;
+    const topicName = parsed.topic_name ?? "none";
     const confidence = parsed.confidence ?? 0;
     const reasoning = parsed.reasoning ?? "";
 
-    if (topicIndex === 0 || topicIndex > topics.length) {
+    const matchedTopic = topicName !== "none"
+      ? topics.find((t) => t.name === topicName)
+      : undefined;
+
+    if (!matchedTopic) {
       return {
         passed: false,
         topicId: null,
-        topicName: parsed.topic_name ?? "none",
+        topicName,
         confidence,
         embeddingSimilarity: null,
         reasoning,
       };
     }
 
-    const matchedTopic = topics[topicIndex - 1];
     const passed = confidence >= Number(matchedTopic.confidenceThreshold);
 
     return {
