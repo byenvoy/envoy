@@ -85,6 +85,8 @@ ${formattedChunks}`;
     user += `\n\nCustomer context: None available (no customer data integration connected or no matching customer found).`;
   }
 
+  user += `\n\nJudge whether the context above is sufficient to write a complete, accurate response to this customer's question.`;
+
   return { system, user };
 }
 
