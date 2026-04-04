@@ -136,6 +136,8 @@ ${formattedChunks}`;
     user += `\n\nCustomer context:\n${customerContext}`;
   }
 
+  user += `\n\nEvaluate the draft reply against the criteria above and determine whether it is safe to auto-send.`;
+
   return { system, user };
 }
 
