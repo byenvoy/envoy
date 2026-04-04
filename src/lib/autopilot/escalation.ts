@@ -33,7 +33,9 @@ Be sensitive to subtle signals of dissatisfaction. When in doubt, escalate.
 Output ONLY the JSON object, no markdown or extra text.`;
 
   const user = `Customer reply:
-${customerMessage}`;
+${customerMessage}
+
+Determine whether this reply indicates dissatisfaction or a desire to speak with a human agent.`;
 
   try {
     let model = ESCALATION_MODEL;
