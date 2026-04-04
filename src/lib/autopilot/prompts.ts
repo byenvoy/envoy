@@ -108,7 +108,7 @@ export function buildValidationPrompt(
 
 1. **Responsiveness**: Does the draft actually address what the customer asked?
 2. **Accuracy**: Does the draft contain any information not supported by the provided context? Look for hallucinated details, numbers, dates, or policies. Only flag inaccuracies for claims the draft actually makes — do not penalize the draft for information that exists in the context but was not included.
-3. **Scope**: Does the draft make any promises, commitments, or take any actions that should require human approval (refunds, account changes, legal language)?
+3. **Scope**: Does the draft make new commitments or exceptions on behalf of the company (e.g., "I've processed your refund," "I'll make an exception in your case," "I've updated your account")? Stating existing company policy from the knowledge base (e.g., "Our return policy allows refunds within 30 days") is NOT a scope issue — only flag when the draft commits to a specific action or grants an exception that hasn't been approved.
 4. **Completeness**: Does the draft fully resolve the customer's inquiry, or does it leave open questions?
 
 Output valid JSON with these fields:
