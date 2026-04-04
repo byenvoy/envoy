@@ -64,7 +64,7 @@ Important distinctions:
 - General guidance (e.g., "here's how to track your order") is a valid answer when the KB contains the relevant instructions, even if no customer-specific data is available.
 
 Output valid JSON with these fields:
-- confidence: a number from 0.0 to 1.0 where 1.0 means "the context is definitely sufficient to write a complete, accurate response" and 0.0 means "the context is definitely NOT sufficient." A score of 0.8+ means sufficient.
+- confidence: a number from 0.0 to 1.0 where 1.0 means "the context is definitely sufficient to write a complete, accurate response" and 0.0 means "the context is definitely NOT sufficient."
 - reasoning: one sentence explaining your judgment
 
 Output ONLY the JSON object, no markdown or extra text.`;
