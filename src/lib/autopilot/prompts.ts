@@ -49,7 +49,8 @@ Classify this email into one of the topic categories above, or "none" if it does
 export function buildRetrievalJudgePrompt(
   customerMessage: string,
   chunks: string[],
-  customerContext: string | null
+  customerContext: string | null,
+  conversationHistory?: { role: "customer" | "agent"; content: string }[]
 ): { system: string; user: string } {
   const system = `You are evaluating whether the available context is sufficient to write a helpful, accurate response to a customer's question. You are NOT answering the question — you are judging whether the provided context is enough.
 
@@ -74,10 +75,16 @@ Output ONLY the JSON object, no markdown or extra text.`;
     .join("\n\n");
 
   let user = `Customer question:
-${customerMessage}
+${customerMessage}`;
 
-Retrieved knowledge base context:
-${formattedChunks}`;
+  if (conversationHistory && conversationHistory.length > 0) {
+    const historyText = conversationHistory
+      .map((msg) => `[${msg.role === "customer" ? "Customer" : "Agent"}]: ${msg.content}`)
+      .join("\n\n");
+    user += `\n\nConversation history:\n${historyText}`;
+  }
+
+  user += `\n\nRetrieved knowledge base context:\n${formattedChunks}`;
 
   if (customerContext) {
     user += `\n\nCustomer context (from integrated data source):\n${customerContext}`;

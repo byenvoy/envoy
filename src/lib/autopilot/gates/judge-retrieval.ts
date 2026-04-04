@@ -16,12 +16,14 @@ export async function judgeRetrievalQuality({
   customerMessage,
   chunks,
   customerContext,
+  conversationHistory,
   model,
   orgId,
 }: {
   customerMessage: string;
   chunks: { content: string; similarity: number }[];
   customerContext: ShopifyCustomerContext | null;
+  conversationHistory?: { role: "customer" | "agent"; content: string }[];
   model: string;
   orgId: string;
 }): Promise<RetrievalJudgmentResult> {
@@ -40,7 +42,8 @@ export async function judgeRetrievalQuality({
   const { system, user } = buildRetrievalJudgePrompt(
     customerMessage,
     chunks.map((c) => c.content),
-    customerContextStr
+    customerContextStr,
+    conversationHistory
   );
 
   try {

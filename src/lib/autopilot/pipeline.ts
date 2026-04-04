@@ -41,6 +41,7 @@ export async function runAutopilotPipeline(
     conversationId,
     draftId,
     customerMessage,
+    conversationHistory,
     draftContent,
     messageEmbedding,
     chunks,
@@ -104,6 +105,7 @@ export async function runAutopilotPipeline(
     customerMessage,
     chunks,
     customerContext,
+    conversationHistory,
     model: gateModel,
     orgId,
   });
