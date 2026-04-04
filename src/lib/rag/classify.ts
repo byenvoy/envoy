@@ -39,7 +39,9 @@ Output ONLY the JSON object, no markdown or extra text.`;
   const user = `Customer email: ${customerEmail ?? "unknown"}
 
 Customer message:
-${customerMessage}`;
+${customerMessage}
+
+Classify this message and determine whether customer-specific data is needed to answer it.`;
 
   try {
     const llm = await createLLMProvider(model, orgId);
