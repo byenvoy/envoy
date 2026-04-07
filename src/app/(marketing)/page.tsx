@@ -2,12 +2,10 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
+import Image from "next/image";
 import { DemoInbox } from "@/components/marketing/demo-inbox";
-import { DemoDashboardStats } from "@/components/marketing/demo-dashboard-stats";
 import { DemoSetupSteps } from "@/components/marketing/demo-setup-steps";
 import { DemoSetupStepsHorizontal } from "@/components/marketing/demo-setup-steps-horizontal";
-import { DemoCustomerContext } from "@/components/marketing/demo-customer-context";
-import { IntegrationLogos } from "@/components/marketing/integration-logos";
 import { DemoAutopilot } from "@/components/marketing/demo-autopilot";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
 import { HeroBackground } from "@/components/marketing/hero-background";
@@ -185,22 +183,19 @@ export default async function LandingPage() {
       {/* ── Pricing ── */}
       <section className="py-24">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
-          <div className="max-w-2xl">
+          <div className="grid items-center gap-14 lg:grid-cols-2">
             <ScrollReveal>
               <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-[40px] sm:leading-[1.15]">
                 Pricing that makes sense.
               </h2>
               <p className="mt-6 font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
-                No per-seat fees. No per-resolution charges. No contracts. Just
-                pay for what the AI costs to run.
+                No per-seat fees. No per-resolution charges. No upfront contracts.
               </p>
-            </ScrollReveal>
-            <ScrollReveal delay={0.1}>
-              <p className="mt-8 max-w-xl font-body text-base leading-relaxed text-text-secondary">
+              <p className="mt-8 max-w-md font-body text-base leading-relaxed text-text-secondary">
                 Most AI support tools mark up model costs 5-10x and hide it
                 behind per-outcome pricing. Envoyer passes through model costs
-                directly with zero markup. You pick the model. You see exactly
-                what each response costs. You set your own spend limits.
+                directly with zero markup. Pick your own model based on your needs. You see exactly
+                what each response costs. Set your own spend limits.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-4">
                 <Link
@@ -214,178 +209,71 @@ export default async function LandingPage() {
                 </span>
               </div>
             </ScrollReveal>
+            <ScrollReveal delay={0.2}>
+              <div className="relative h-80">
+                {[
+                  { name: "Claude", src: "/logos/anthropic.svg", top: "8%", left: "12%" },
+                  { name: "GPT-4o", src: "/logos/openai.svg", top: "2%", left: "58%" },
+                  { name: "Gemini", src: "/logos/gemini-icon.png", top: "38%", left: "35%" },
+                  { name: "Mistral", src: "/logos/mistral.svg", top: "62%", left: "8%" },
+                  { name: "DeepSeek", src: "/logos/deepseek.svg", top: "55%", left: "62%" },
+                ].map((model) => (
+                  <div
+                    key={model.name}
+                    className="absolute flex h-24 w-24 items-center justify-center rounded-2xl border border-border bg-white shadow-sm"
+                    style={{ top: model.top, left: model.left }}
+                  >
+                    <Image
+                      src={model.src}
+                      alt={model.name}
+                      width={44}
+                      height={44}
+                      className="h-11 w-11 object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
 
       {/* ── Integrations ── */}
       <section className="bg-surface-alt py-24">
-        <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
-          <ScrollReveal>
-            <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-              Connects to your existing setup
-            </h2>
-            <p className="mt-3 max-w-md font-body text-base leading-relaxed text-text-secondary">
-              Envoyer works with the tools you already use. No migration
-              required.
-            </p>
-          </ScrollReveal>
-          <ScrollReveal delay={0.2} className="mt-10 flex flex-wrap items-center gap-4">
-            {[
-              {
-                name: "Gmail",
-                icon: (
-                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none">
-                    <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6Z" stroke="#EA4335" strokeWidth="1.5" fill="none" />
-                    <path d="M22 6L12 13L2 6" stroke="#EA4335" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Outlook",
-                icon: (
-                  <svg className="h-6 w-6" viewBox="0 0 21 21" fill="none">
-                    <rect fill="#0078D4" x="1" y="1" width="9" height="9" rx="1" />
-                    <rect fill="#0078D4" x="11" y="1" width="9" height="9" rx="1" opacity="0.7" />
-                    <rect fill="#0078D4" x="1" y="11" width="9" height="9" rx="1" opacity="0.5" />
-                    <rect fill="#0078D4" x="11" y="11" width="9" height="9" rx="1" opacity="0.3" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Shopify",
-                icon: (
-                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none">
-                    <path d="M15.34 5.47C15.34 5.47 15.13 5.53 14.81 5.63C14.75 5.39 14.65 5.11 14.5 4.83C14.07 4.05 13.4 3.63 12.6 3.63C12.47 3.63 12.34 3.64 12.2 3.67C12.16 3.62 12.12 3.57 12.08 3.53C11.74 3.17 11.31 3 10.81 3.01C9.83 3.04 8.86 3.75 8.07 4.97C7.51 5.84 7.09 6.93 6.96 7.77L15.49 5.45C15.43 5.46 15.38 5.47 15.34 5.47Z" fill="#95BF47" />
-                    <path d="M21 7.5L19.5 19L15.49 21.5V5.45L17.16 5C17.16 5 17.49 6.87 17.5 6.95C17.55 7.14 17.68 7.23 17.83 7.23C17.98 7.23 21 7.5 21 7.5Z" fill="#5E8E3E" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Stripe",
-                icon: (
-                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none">
-                    <rect x="2" y="4" width="20" height="16" rx="3" fill="#635BFF" />
-                    <path d="M11.5 10.5C10.5 10.1 9.9 9.8 9.9 9.3C9.9 8.9 10.3 8.6 10.9 8.6C11.8 8.6 12.6 9 12.6 9L13.1 7.5C13.1 7.5 12.4 7 10.9 7C9.2 7 8 8 8 9.4C8 10.5 8.8 11.2 10 11.6C10.9 11.9 11.2 12.2 11.2 12.7C11.2 13.2 10.7 13.5 10.1 13.5C9.1 13.5 8.1 13 8.1 13L7.6 14.5C7.6 14.5 8.5 15.1 10.1 15.1C11.9 15.1 13.1 14.1 13.1 12.6C13.1 11.4 12.3 10.8 11.5 10.5Z" fill="white" />
-                  </svg>
-                ),
-                comingSoon: true,
-              },
-            ].map((item) => (
-              <div
-                key={item.name}
-                className="flex items-center gap-2.5 rounded-lg border border-border bg-white px-4 py-3"
-              >
-                {item.icon}
-                <span className="font-display text-sm font-medium text-text-primary">
-                  {item.name}
-                </span>
-                {"comingSoon" in item && (
-                  <span className="font-mono text-[10px] text-text-secondary">
-                    soon
-                  </span>
-                )}
-              </div>
-            ))}
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ── Feature: Customer Context ── */}
-      <section className="py-24">
-        <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
-          <div className="grid items-center gap-14 lg:grid-cols-2">
-            <ScrollReveal>
-              <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-                Customer context, built in
-              </h2>
-              <p className="mt-4 max-w-md font-body text-base leading-relaxed text-text-secondary">
-                Pull in customer data from Shopify and Stripe. Every draft is
-                grounded in who the customer is and what they&apos;ve bought.
-              </p>
-              <div className="mt-8">
-                <IntegrationLogos />
-              </div>
-            </ScrollReveal>
-            <ScrollReveal delay={0.2}>
-              <DemoCustomerContext />
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Feature: Full Visibility ── */}
-      <section className="bg-surface-alt py-24">
         <div className="mx-auto max-w-[1120px] px-4 text-center sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-              Full visibility
-            </h2>
-            <p className="mx-auto mt-3 max-w-md font-body text-base leading-relaxed text-text-secondary">
-              Pick your model, track every dollar. Real-time metrics on what
-              your AI is doing and what it costs.
-            </p>
-          </ScrollReveal>
-          <ScrollReveal delay={0.2} className="mx-auto mt-10 max-w-3xl">
-            <div className="overflow-hidden rounded-xl border border-border shadow-[0_2px_4px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.05)]">
-              <DemoDashboardStats />
-            </div>
-          </ScrollReveal>
-          <ScrollReveal
-            delay={0.3}
-            className="mt-6 flex flex-wrap items-center justify-center gap-3"
-          >
-            {["Claude", "GPT-4o", "Gemini", "Mistral", "DeepSeek"].map(
-              (model) => (
-                <span
-                  key={model}
-                  className="rounded-md border border-border bg-surface px-4 py-2 font-mono text-xs font-medium text-text-secondary"
-                >
-                  {model}
-                </span>
-              )
-            )}
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ── Your Terms ── */}
-      <section className="py-24">
-        <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
-          <ScrollReveal>
-            <h2 className="text-center font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-              Your terms
+              Envoyer works with the tools you already use
             </h2>
           </ScrollReveal>
-          <div className="mt-12 grid grid-cols-1 gap-6 text-center sm:grid-cols-2 lg:grid-cols-4">
+          <ScrollReveal delay={0.2} className="mt-12 flex items-center justify-center gap-5">
             {[
-              {
-                title: "No contracts",
-                desc: "Month-to-month. Cancel anytime.",
-              },
-              {
-                title: "Your tone",
-                desc: "Customize voice, style, and guardrails.",
-              },
-              {
-                title: "Open source",
-                desc: "MIT licensed. Read every line.",
-              },
-              {
-                title: "Self-hosted",
-                desc: "Docker Compose, your infra, your data.",
-              },
-            ].map((term, i) => (
-              <ScrollReveal key={term.title} delay={i * 0.1}>
-                <h3 className="font-display text-base font-bold text-text-primary">
-                  {term.title}
-                </h3>
-                <p className="mt-1 font-body text-sm text-text-secondary">
-                  {term.desc}
-                </p>
-              </ScrollReveal>
+              { name: "Google", src: "/logos/google.jpg", large: true },
+              { name: "Microsoft", src: "/logos/microsoft.svg" },
+              { name: "Shopify", src: "/logos/shopify.svg" },
+              { name: "Stripe", src: "/logos/stripe.svg", comingSoon: true },
+            ].map((item) => (
+              <div key={item.name} className="flex flex-col items-center gap-2">
+                <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-border bg-white shadow-sm">
+                  <Image
+                    src={item.src}
+                    alt={item.name}
+                    width={"large" in item ? 40 : 32}
+                    height={"large" in item ? 40 : 32}
+                    className={"large" in item ? "h-10 w-10 object-contain" : "h-8 w-8 object-contain"}
+                  />
+                </div>
+                <span className="font-body text-xs text-text-secondary">
+                  {item.name}
+                  {"comingSoon" in item && (
+                    <span className="ml-1 text-[10px] text-text-secondary/50">
+                      soon
+                    </span>
+                  )}
+                </span>
+              </div>
             ))}
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
