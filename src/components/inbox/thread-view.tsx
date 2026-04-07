@@ -37,17 +37,18 @@ interface ThreadPanelProps {
   messages: Message[];
   onClose?: () => void;
   closing?: boolean;
+  hideMobileHeader?: boolean;
 }
 
-export function ThreadPanel({ conversation, messages, onClose, closing }: ThreadPanelProps) {
+export function ThreadPanel({ conversation, messages, onClose, closing, hideMobileHeader }: ThreadPanelProps) {
   // Most recent message starts expanded, others collapsed
   const lastIndex = messages.length - 1;
   const canClose = conversation.status !== "closed";
 
   return (
     <div>
-      {/* Thread header */}
-      <div className="mb-4">
+      {/* Thread header — hidden on mobile when parent provides unified header bar */}
+      <div className={`mb-4 ${hideMobileHeader ? "hidden md:block" : ""}`}>
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-display text-lg font-bold tracking-tight text-text-primary">
             {conversation.subject || "(no subject)"}

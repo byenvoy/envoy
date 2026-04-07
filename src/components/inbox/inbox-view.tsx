@@ -6,6 +6,7 @@ import { ConversationList } from "./conversation-list";
 import { ThreadPanel } from "./thread-view";
 import { DraftPanel } from "./ticket-detail";
 import { InboxFilters } from "./inbox-filters";
+import { StatusBadge } from "./status-badge";
 import type { Conversation, Message, Draft } from "@/lib/types/database";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
 
@@ -251,17 +252,6 @@ export function InboxView({
         </div>
       )}
       <div className="flex min-h-0 flex-1">
-      {/* Mobile: back button */}
-      {mobileShowDetail && selectedId && (
-        <div className="fixed left-0 right-0 top-14 z-10 border-b border-border bg-surface p-3 md:hidden">
-          <button
-            onClick={handleBack}
-            className="text-sm text-text-secondary hover:text-text-primary"
-          >
-            &larr; Back to list
-          </button>
-        </div>
-      )}
 
       {/* Left column: conversation list */}
       <div
@@ -298,13 +288,47 @@ export function InboxView({
           } flex-col md:flex-row`}
         >
             {/* Thread panel */}
-            <div className={`min-w-0 flex-1 overflow-y-auto p-5 md:h-full ${showRightPanel ? "md:border-r md:border-border" : ""}`}>
-              <ThreadPanel
-                conversation={detailData.conversation}
-                messages={detailData.messages}
-                onClose={handleClose}
-                closing={closing}
-              />
+            <div className={`min-w-0 flex-1 overflow-y-auto md:h-full ${showRightPanel ? "md:border-r md:border-border" : ""}`}>
+              {/* Mobile: unified header bar — back + subject + status + close */}
+              <div className="flex items-center gap-2 border-b border-border px-3 py-2 md:hidden">
+                <button
+                  onClick={handleBack}
+                  className="shrink-0 text-sm text-text-secondary hover:text-text-primary"
+                >
+                  &larr;
+                </button>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-display text-sm font-semibold text-text-primary">
+                      {detailData.conversation.subject || "(no subject)"}
+                    </span>
+                    <StatusBadge status={detailData.conversation.status} />
+                  </div>
+                  <p className="truncate font-mono text-[11px] text-text-secondary">
+                    {detailData.conversation.customer_name || detailData.conversation.customer_email}
+                    {" \u00B7 "}
+                    {detailData.messages.length} msg{detailData.messages.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                {detailData.conversation.status !== "closed" && (
+                  <button
+                    onClick={handleClose}
+                    disabled={closing}
+                    className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-alt disabled:opacity-50"
+                  >
+                    {closing ? "..." : "Close"}
+                  </button>
+                )}
+              </div>
+              <div className="p-4 md:p-5">
+                <ThreadPanel
+                  conversation={detailData.conversation}
+                  messages={detailData.messages}
+                  onClose={handleClose}
+                  closing={closing}
+                  hideMobileHeader
+                />
+              </div>
             </div>
             {/* Right panel — customer context + draft */}
             {showRightPanel && (
