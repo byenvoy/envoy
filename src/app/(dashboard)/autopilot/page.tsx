@@ -55,7 +55,7 @@ export default async function AutopilotPage() {
   })) as AutopilotTopic[];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-4 sm:px-6 sm:py-8">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">
           Autopilot

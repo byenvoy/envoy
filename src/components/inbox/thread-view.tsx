@@ -54,7 +54,7 @@ export function ThreadPanel({ conversation, messages, onClose, closing, hideMobi
             {conversation.subject || "(no subject)"}
           </h2>
           <div className="flex items-center gap-2">
-            {canClose && onClose && (
+            {canClose && onClose ? (
               <button
                 onClick={onClose}
                 disabled={closing}
@@ -62,8 +62,9 @@ export function ThreadPanel({ conversation, messages, onClose, closing, hideMobi
               >
                 {closing ? "Closing..." : "Close"}
               </button>
+            ) : (
+              <StatusBadge status={conversation.status} />
             )}
-            <StatusBadge status={conversation.status} />
           </div>
         </div>
         <p className="mt-1 font-mono text-xs text-text-secondary">

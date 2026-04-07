@@ -229,7 +229,6 @@ export function InboxView({
       shell.setMobileNavContent(
         <InboxThreadMobileNav
           conversation={detailData.conversation}
-          messageCount={detailData.messages.length}
           onBack={handleBack}
           onClose={handleClose}
           closing={closing}
@@ -400,9 +399,8 @@ function InboxListMobileNav({ userName, userEmail }: { userName: string; userEma
 }
 
 /** Mobile nav for thread detail view: back + subject + status + close */
-function InboxThreadMobileNav({ conversation, messageCount, onBack, onClose, closing }: {
+function InboxThreadMobileNav({ conversation, onBack, onClose, closing }: {
   conversation: Conversation;
-  messageCount: number;
   onBack: () => void;
   onClose: () => void;
   closing: boolean;
@@ -411,21 +409,22 @@ function InboxThreadMobileNav({ conversation, messageCount, onBack, onClose, clo
     <>
       <button
         onClick={onBack}
-        className="shrink-0 text-sm text-text-secondary hover:text-text-primary"
+        className="shrink-0 p-1 text-text-secondary hover:text-text-primary"
+        aria-label="Back to list"
       >
-        &larr;
+        <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
       </button>
       <div className="min-w-0 flex-1 ml-1">
         <div className="flex items-center gap-1.5">
           <span className="truncate font-display text-sm font-semibold text-text-primary">
             {conversation.subject || "(no subject)"}
           </span>
-          <StatusBadge status={conversation.status} />
+          {conversation.status === "closed" && <StatusBadge status={conversation.status} />}
         </div>
         <p className="truncate font-mono text-[11px] text-text-secondary">
-          {conversation.customer_name || conversation.customer_email}
-          {" \u00B7 "}
-          {messageCount} msg{messageCount !== 1 ? "s" : ""}
+          {conversation.customer_email}
         </p>
       </div>
       {conversation.status !== "closed" && (
