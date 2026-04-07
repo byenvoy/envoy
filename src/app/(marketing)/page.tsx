@@ -331,25 +331,57 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-border py-8">
+      <footer className="border-t border-border py-12">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
-          <div className="flex items-center justify-between">
-            <span className="font-display text-base font-bold text-text-secondary">
-              envoyer
-            </span>
-            <div className="flex items-center gap-6">
-              <Link
-                href="/pricing"
-                className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
-              >
-                Pricing
-              </Link>
-              <Link
-                href="https://github.com/envoyer/envoyer"
-                className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
-              >
-                GitHub
-              </Link>
+          <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <span className="font-display text-base font-bold text-text-secondary">
+                envoyer
+              </span>
+              <p className="mt-2 max-w-xs font-body text-sm leading-relaxed text-text-secondary">
+                AI customer support with a human in the loop. Open source,
+                self-hosted or managed.
+              </p>
+            </div>
+            <div className="flex gap-12">
+              <div>
+                <p className="font-display text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  Product
+                </p>
+                <div className="mt-3 flex flex-col gap-2">
+                  <Link
+                    href="/pricing"
+                    className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Pricing
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              </div>
+              <div>
+                <p className="font-display text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  Resources
+                </p>
+                <div className="mt-3 flex flex-col gap-2">
+                  <Link
+                    href="https://github.com/envoyer/envoyer"
+                    className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    GitHub
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
