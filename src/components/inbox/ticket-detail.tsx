@@ -251,9 +251,6 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                     className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent ${chunk.source_url ? "hover:opacity-80 transition-opacity" : ""}`}
                   >
                     {label}
-                    <span className="opacity-60">
-                      {(chunk.similarity * 100).toFixed(0)}%
-                    </span>
                   </Tag>
                 );
               })}

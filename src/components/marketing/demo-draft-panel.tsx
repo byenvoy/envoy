@@ -10,9 +10,9 @@ Best,
 Support Team`;
 
 const chunks = [
-  { label: "shipping-policy", similarity: "94%" },
-  { label: "returns-faq", similarity: "87%" },
-  { label: "order-tracking", similarity: "82%" },
+  { label: "shipping-policy" },
+  { label: "returns-faq" },
+  { label: "order-tracking" },
 ];
 
 export function DemoDraftPanel() {
@@ -48,7 +48,6 @@ export function DemoDraftPanel() {
             className="inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent"
           >
             {chunk.label}
-            <span className="opacity-60">{chunk.similarity}</span>
           </span>
         ))}
         <span className="inline-flex shrink-0 items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
