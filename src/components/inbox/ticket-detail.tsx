@@ -162,7 +162,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
 
       {/* Draft section */}
       {draft && isPending && (
-        <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="flex flex-1 flex-col gap-2 p-3 md:gap-3 md:p-4">
           {/* Gate 3 warning — draft flagged as needing human review */}
           {autopilotEval?.gate3_passed === false && (
             <div className="rounded-md border border-ai-accent/30 bg-ai-light px-3 py-2">
@@ -208,7 +208,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               onChange={(e) => handleContentChange(e.target.value)}
               onBlur={() => setIsEditing(false)}
               rows={10}
-              className="flex-1 resize-none rounded-lg border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:px-4 md:py-3"
             />
           ) : (
             <div
@@ -218,14 +218,14 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 if (selection && selection.toString().length > 0) return;
                 setIsEditing(true);
               }}
-              className="flex-1 cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+              className="max-h-[200px] cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
               dangerouslySetInnerHTML={{ __html: renderedHtml }}
             />
           )}
 
           {/* Sources bar */}
           {(chunks.length > 0 || draftUsedCustomerData) && (
-            <div className="flex items-center gap-1.5 overflow-x-auto rounded-lg border border-border bg-surface px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center gap-1.5 overflow-x-auto rounded-lg border border-border bg-surface px-2.5 py-1.5 md:px-3 md:py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
                 Sources
               </span>
@@ -255,30 +255,38 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSend(false)}
-                disabled={loading !== null}
-                className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
-              >
-                {loading === "send" ? "Sending..." : "Send"}
-              </button>
-              <button
-                onClick={() => handleSend(true)}
-                disabled={loading !== null}
-                className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
-              >
-                {loading === "send-close" ? "..." : "Send & Close"}
-              </button>
-            </div>
+          {/* Actions — single row on mobile, two rows on desktop */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleSend(false)}
+              disabled={loading !== null}
+              className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+            >
+              {loading === "send" ? "Sending..." : "Send"}
+            </button>
+            <button
+              onClick={() => handleSend(true)}
+              disabled={loading !== null}
+              className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
+            >
+              {loading === "send-close" ? "..." : "Send & Close"}
+            </button>
             <button
               onClick={handleRegenerate}
               disabled={loading !== null}
-              className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50"
+              className="rounded-lg border border-border px-2.5 py-2 text-text-secondary transition-colors hover:bg-surface disabled:opacity-50"
+              title="Regenerate"
             >
-              {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
+              {loading === "regenerate" ? (
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="8" cy="8" r="6" strokeDasharray="28" strokeDashoffset="8" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13 7A5 5 0 1 0 8 13" />
+                  <path d="M13 3v4h-4" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
