@@ -31,6 +31,20 @@ export default async function LandingPage() {
               Support that runs itself
             </h1>
           </ScrollReveal>
+          <ScrollReveal delay={0.1}>
+            <p className="mx-auto mt-5 max-w-lg font-body text-lg leading-relaxed text-text-secondary">
+              AI that reads your docs, drafts replies, and lets your team send
+              them. Human touch, AI speed.
+            </p>
+          </ScrollReveal>
+          <ScrollReveal delay={0.2} className="mt-8">
+            <Link
+              href="/signup"
+              className="inline-flex rounded-lg bg-primary px-7 py-3 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Start free trial
+            </Link>
+          </ScrollReveal>
         </div>
       </section>
 
