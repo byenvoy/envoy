@@ -53,7 +53,7 @@ export function ShopifyConnection({
 
   if (integration) {
     return (
-      <div className="mx-auto max-w-sm rounded-lg border border-primary bg-success-light p-5 text-center">
+      <div className="rounded-lg border border-primary bg-success-light p-5 text-center">
         <div className="flex items-center justify-center gap-2">
           <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -90,18 +90,26 @@ export function ShopifyConnection({
           >
             Shop domain
           </label>
-          <div className="flex overflow-hidden rounded-lg border border-border bg-surface-alt focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
-            <input
-              id="shop-domain-oauth"
-              type="text"
-              placeholder="your-store.myshopify.com"
-              value={shopDomain}
-              onChange={(e) => setShopDomain(e.target.value)}
-              className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none"
-            />
+          <div className="space-y-2 sm:space-y-0">
+            <div className="flex overflow-hidden rounded-lg border border-border bg-surface-alt focus-within:border-primary focus-within:ring-1 focus-within:ring-primary sm:rounded-r-none">
+              <input
+                id="shop-domain-oauth"
+                type="text"
+                placeholder="your-store.myshopify.com"
+                value={shopDomain}
+                onChange={(e) => setShopDomain(e.target.value)}
+                className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none"
+              />
+              <a
+                href={`/api/integrations/shopify/authorize?shop=${encodeURIComponent(shopDomain)}`}
+                className={`hidden sm:flex items-center gap-2 bg-surface px-5 font-display text-sm font-medium text-text-primary transition-colors hover:bg-border ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
+              >
+                Connect
+              </a>
+            </div>
             <a
               href={`/api/integrations/shopify/authorize?shop=${encodeURIComponent(shopDomain)}`}
-              className={`flex items-center gap-2 bg-surface px-5 font-display text-sm font-medium text-text-primary transition-colors hover:bg-border ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
+              className={`flex items-center justify-center rounded-lg bg-primary px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:hidden ${!shopDomain ? "pointer-events-none opacity-50" : ""}`}
             >
               Connect
             </a>

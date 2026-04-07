@@ -188,7 +188,7 @@ export default async function SettingsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-4xl font-display font-bold tracking-tight text-text-primary">
+        <h1 className="text-2xl sm:text-4xl font-display font-bold tracking-tight text-text-primary">
           Settings
         </h1>
         <p className="mt-1 text-[15px] text-text-secondary">

@@ -136,7 +136,7 @@ export function ToneSettings({
         <textarea
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          placeholder="Add any specific instructions for how the AI should respond..."
+          placeholder="Add any specific instructions..."
           rows={3}
           className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
         />

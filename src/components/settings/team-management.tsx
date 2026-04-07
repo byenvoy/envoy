@@ -110,7 +110,7 @@ export function TeamManagement({
         <h3 className="mb-3 text-sm font-display font-medium text-text-primary">
           Invite Team Member
         </h3>
-        <form onSubmit={handleInvite} className="flex gap-2">
+        <form onSubmit={handleInvite} className="flex flex-col gap-2 sm:flex-row">
           <input
             type="email"
             value={email}

@@ -7,6 +7,8 @@ import { ThreadPanel } from "./thread-view";
 import { DraftPanel } from "./ticket-detail";
 import { InboxFilters } from "./inbox-filters";
 import { StatusBadge } from "./status-badge";
+import { useShell } from "@/components/dashboard/dashboard-shell";
+import { MobileNavMenu } from "@/components/dashboard/nav-bar";
 import type { Conversation, Message, Draft } from "@/lib/types/database";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
 
@@ -217,6 +219,36 @@ export function InboxView({
 
   const showNudge = showAutopilotNudge && !nudgeDismissed;
 
+  // Set contextual mobile nav bar content
+  const shell = useShell();
+  useEffect(() => {
+    if (!shell) return;
+
+    if (mobileShowDetail && detailData) {
+      // Thread view: back + subject + status + close
+      shell.setMobileNavContent(
+        <InboxThreadMobileNav
+          conversation={detailData.conversation}
+          messageCount={detailData.messages.length}
+          onBack={handleBack}
+          onClose={handleClose}
+          closing={closing}
+        />
+      );
+    } else {
+      // List view: hamburger + search input
+      shell.setMobileNavContent(
+        <InboxListMobileNav
+          userName={shell.userName}
+          userEmail={shell.userEmail}
+        />
+      );
+    }
+
+    return () => shell.setMobileNavContent(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileShowDetail, detailData, closing]);
+
   return (
     <div className="flex h-full flex-col">
       {showNudge && (
@@ -289,37 +321,6 @@ export function InboxView({
         >
             {/* Thread panel */}
             <div className={`min-w-0 flex-1 overflow-y-auto md:h-full ${showRightPanel ? "md:border-r md:border-border" : ""}`}>
-              {/* Mobile: unified header bar — back + subject + status + close */}
-              <div className="flex items-center gap-2 border-b border-border px-3 py-2 md:hidden">
-                <button
-                  onClick={handleBack}
-                  className="shrink-0 text-sm text-text-secondary hover:text-text-primary"
-                >
-                  &larr;
-                </button>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate font-display text-sm font-semibold text-text-primary">
-                      {detailData.conversation.subject || "(no subject)"}
-                    </span>
-                    <StatusBadge status={detailData.conversation.status} />
-                  </div>
-                  <p className="truncate font-mono text-[11px] text-text-secondary">
-                    {detailData.conversation.customer_name || detailData.conversation.customer_email}
-                    {" \u00B7 "}
-                    {detailData.messages.length} msg{detailData.messages.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-                {detailData.conversation.status !== "closed" && (
-                  <button
-                    onClick={handleClose}
-                    disabled={closing}
-                    className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-alt disabled:opacity-50"
-                  >
-                    {closing ? "..." : "Close"}
-                  </button>
-                )}
-              </div>
               <div className="p-4 md:p-5">
                 <ThreadPanel
                   conversation={detailData.conversation}
@@ -385,5 +386,57 @@ export function InboxView({
       )}
       </div>
     </div>
+  );
+}
+
+/** Mobile nav for inbox list view: hamburger + title */
+function InboxListMobileNav({ userName, userEmail }: { userName: string; userEmail: string }) {
+  return (
+    <>
+      <MobileNavMenu userName={userName} userEmail={userEmail} />
+      <span className="ml-1 font-display text-sm font-semibold text-text-primary">Inbox</span>
+    </>
+  );
+}
+
+/** Mobile nav for thread detail view: back + subject + status + close */
+function InboxThreadMobileNav({ conversation, messageCount, onBack, onClose, closing }: {
+  conversation: Conversation;
+  messageCount: number;
+  onBack: () => void;
+  onClose: () => void;
+  closing: boolean;
+}) {
+  return (
+    <>
+      <button
+        onClick={onBack}
+        className="shrink-0 text-sm text-text-secondary hover:text-text-primary"
+      >
+        &larr;
+      </button>
+      <div className="min-w-0 flex-1 ml-1">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate font-display text-sm font-semibold text-text-primary">
+            {conversation.subject || "(no subject)"}
+          </span>
+          <StatusBadge status={conversation.status} />
+        </div>
+        <p className="truncate font-mono text-[11px] text-text-secondary">
+          {conversation.customer_name || conversation.customer_email}
+          {" \u00B7 "}
+          {messageCount} msg{messageCount !== 1 ? "s" : ""}
+        </p>
+      </div>
+      {conversation.status !== "closed" && (
+        <button
+          onClick={onClose}
+          disabled={closing}
+          className="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-alt disabled:opacity-50"
+        >
+          {closing ? "..." : "Close"}
+        </button>
+      )}
+    </>
   );
 }

@@ -69,28 +69,28 @@ export default async function KnowledgeBasePage() {
             Knowledge Base
           </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
           <Link
             href="/knowledge-base/upload"
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
+            className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Upload File
           </Link>
           <Link
             href="/knowledge-base/new-url"
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
+            className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Add URL
           </Link>
           <Link
             href="/knowledge-base/new"
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
+            className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Manual Entry
           </Link>
           <Link
             href="/knowledge-base/crawl"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium font-display text-white transition-colors hover:bg-primary-dark"
+            className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium font-display text-white transition-colors hover:bg-primary-dark"
           >
             Import Site
           </Link>

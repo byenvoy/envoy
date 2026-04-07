@@ -18,89 +18,46 @@ interface NavBarProps {
   userName: string;
   userEmail: string;
   onOpenCommandPalette: () => void;
+  mobileContent?: React.ReactNode;
 }
 
-export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette }: NavBarProps) {
+export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette, mobileContent }: NavBarProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const mobileNavRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (mobileNavRef.current && !mobileNavRef.current.contains(e.target as Node)) {
-        setMobileNavOpen(false);
-      }
     }
-    if (menuOpen || mobileNavOpen) {
+    if (menuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [menuOpen, mobileNavOpen]);
-
-  // Close mobile nav on route change
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [pathname]);
+  }, [menuOpen]);
 
   return (
     <nav className="border-b border-border bg-surface">
-      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+      {/* Mobile: contextual content */}
+      {mobileContent ? (
+        <div className="flex h-12 items-center px-3 md:hidden">
+          {mobileContent}
+        </div>
+      ) : (
+        <MobileDefaultBar userName={userName} userEmail={userEmail} />
+      )}
+      {/* Desktop: always the full nav */}
+      <div className="hidden md:flex h-14 items-center justify-between px-6">
         <div className="flex items-center gap-2">
-          {/* Mobile hamburger */}
-          <div className="relative md:hidden" ref={mobileNavRef}>
-            <button
-              onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
-              aria-label="Navigation menu"
-            >
-              {mobileNavOpen ? (
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <path d="M4.5 4.5l9 9M13.5 4.5l-9 9" />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <path d="M3 5h12M3 9h12M3 13h12" />
-                </svg>
-              )}
-            </button>
-            {mobileNavOpen && (
-              <div className="absolute left-0 top-full mt-2 w-52 rounded-lg border border-border bg-surface shadow-lg z-50">
-                <div className="p-1.5">
-                  {NAV_ITEMS.map((item) => {
-                    const isActive =
-                      pathname === item.href ||
-                      (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`block rounded-md px-3 py-2.5 font-display text-sm font-medium transition-colors ${
-                          isActive
-                            ? "bg-success-light text-primary"
-                            : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
           <Link
             href="/dashboard"
             className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary"
           >
             envoyer
           </Link>
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -125,23 +82,12 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenCommandPalette}
-            className="hidden sm:flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 font-mono text-xs text-text-secondary transition-colors hover:border-text-secondary"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 font-mono text-xs text-text-secondary transition-colors hover:border-text-secondary"
           >
             Search...
             <kbd className="rounded border border-border bg-surface-alt px-1.5 py-0.5 font-mono text-[10px]">
               ⌘K
             </kbd>
-          </button>
-          {/* Mobile search icon */}
-          <button
-            onClick={onOpenCommandPalette}
-            className="flex sm:hidden h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
-            aria-label="Search"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <circle cx="7.5" cy="7.5" r="4.5" />
-              <path d="M11 11l3.5 3.5" />
-            </svg>
           </button>
           {/* Avatar with dropdown */}
           <div className="relative" ref={menuRef}>
@@ -174,5 +120,105 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
         </div>
       </div>
     </nav>
+  );
+}
+
+/** Reusable hamburger button + dropdown for mobile */
+export function MobileNavMenu({ userName, userEmail }: { userName?: string; userEmail?: string }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
+        aria-label="Navigation menu"
+      >
+        {open ? (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M4.5 4.5l9 9M13.5 4.5l-9 9" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M3 5h12M3 9h12M3 13h12" />
+          </svg>
+        )}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-2 w-52 rounded-lg border border-border bg-surface shadow-lg z-50">
+          <div className="p-1.5">
+            {NAV_ITEMS.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`block rounded-md px-3 py-2.5 font-display text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-success-light text-primary"
+                      : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+          {userName && (
+            <div className="border-t border-border p-1.5">
+              <div className="px-3 py-1.5">
+                <p className="font-display text-xs font-medium text-text-primary">{userName}</p>
+                {userEmail && <p className="font-mono text-[10px] text-text-secondary">{userEmail}</p>}
+              </div>
+              <button
+                onClick={async () => {
+                  await authClient.signOut();
+                  window.location.href = "/login";
+                }}
+                className="w-full rounded-md px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Default mobile bar: hamburger + page title */
+function MobileDefaultBar({ userName, userEmail }: { userName: string; userEmail: string }) {
+  const pathname = usePathname();
+
+  const pageTitle = NAV_ITEMS.find(
+    (item) => pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+  )?.label ?? "Dashboard";
+
+  return (
+    <div className="flex h-12 items-center gap-2 px-3 md:hidden">
+      <MobileNavMenu userName={userName} userEmail={userEmail} />
+      <span className="font-display text-sm font-semibold text-text-primary">{pageTitle}</span>
+    </div>
   );
 }
