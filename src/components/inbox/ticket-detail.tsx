@@ -239,21 +239,26 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
                 Sources
               </span>
-              {chunks.map((chunk) => {
-                const label = chunk.source_url
-                  ? new URL(chunk.source_url).pathname.split("/").pop() || "KB"
-                  : "KB";
-                const Tag = chunk.source_url ? "a" : "span";
-                return (
-                  <Tag
-                    key={chunk.id}
-                    {...(chunk.source_url ? { href: chunk.source_url, target: "_blank", rel: "noopener noreferrer" } : {})}
-                    className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent ${chunk.source_url ? "hover:opacity-80 transition-opacity" : ""}`}
-                  >
-                    {label}
-                  </Tag>
-                );
-              })}
+              {chunks
+                .filter((chunk, i, arr) => {
+                  const url = chunk.source_url ?? "";
+                  return arr.findIndex((c) => (c.source_url ?? "") === url) === i;
+                })
+                .map((chunk) => {
+                  const label = chunk.source_url
+                    ? new URL(chunk.source_url).pathname.split("/").pop() || "KB"
+                    : "KB";
+                  const Tag = chunk.source_url ? "a" : "span";
+                  return (
+                    <Tag
+                      key={chunk.id}
+                      {...(chunk.source_url ? { href: chunk.source_url, target: "_blank", rel: "noopener noreferrer" } : {})}
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent ${chunk.source_url ? "hover:opacity-80 transition-opacity" : ""}`}
+                    >
+                      {label}
+                    </Tag>
+                  );
+                })}
               {draftUsedCustomerData && (
                 <span className="inline-flex shrink-0 items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
                   Customer Data
