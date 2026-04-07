@@ -198,7 +198,7 @@ export default async function SettingsPage() {
 
       <div className="max-w-lg space-y-6">
         {isOwner && subscriptionRow && (
-          <div className="rounded-lg border border-border bg-surface-alt p-6">
+          <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               Billing
             </h2>
@@ -212,7 +212,7 @@ export default async function SettingsPage() {
           </div>
         )}
 
-        <div className="rounded-lg border border-border bg-surface-alt p-6">
+        <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
           <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
             Email Address
           </h2>
@@ -223,7 +223,7 @@ export default async function SettingsPage() {
           />
         </div>
 
-        <div className="rounded-lg border border-border bg-surface-alt p-6">
+        <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
           <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
             Integrations
           </h2>
@@ -234,7 +234,7 @@ export default async function SettingsPage() {
         </div>
 
         {isOwner && (
-          <div className="rounded-lg border border-border bg-surface-alt p-6">
+          <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               API Keys
             </h2>
@@ -243,7 +243,7 @@ export default async function SettingsPage() {
         )}
 
         {isOwner && (
-          <div className="rounded-lg border border-border bg-surface-alt p-6">
+          <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               AI Model
             </h2>
@@ -255,7 +255,7 @@ export default async function SettingsPage() {
         )}
 
         {isOwner && (
-          <div className="rounded-lg border border-border bg-surface-alt p-6">
+          <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               Response Style
             </h2>
@@ -269,7 +269,7 @@ export default async function SettingsPage() {
         )}
 
         {isOwner && (
-          <div className="rounded-lg border border-border bg-surface-alt p-6">
+          <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               Team
             </h2>

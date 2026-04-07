@@ -55,7 +55,7 @@ export default async function AutopilotPage() {
   })) as AutopilotTopic[];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-4 sm:px-6 sm:py-8">
       <div>
         <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">
           Autopilot
@@ -68,7 +68,7 @@ export default async function AutopilotPage() {
         </p>
       </div>
 
-      <div className="rounded-lg border border-border bg-surface-alt p-6">
+      <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-display font-medium text-text-primary">
           Topics
         </h2>
