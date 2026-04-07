@@ -55,7 +55,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Product basics ── */}
-      <section className="py-20">
+      <section className="py-12 sm:py-20">
         <div className="mx-auto grid max-w-[1120px] grid-cols-1 gap-6 px-4 sm:grid-cols-3 sm:px-6">
           {[
             {
@@ -84,7 +84,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Autopilot ── */}
-      <section className="py-16">
+      <section className="py-10 sm:py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
@@ -129,7 +129,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Get Started ── */}
-      <section className="py-16">
+      <section className="py-10 sm:py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
@@ -143,7 +143,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Anti-bloat ── */}
-      <section className="py-16">
+      <section className="py-10 sm:py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <div className="max-w-2xl">
             <ScrollReveal>
@@ -177,7 +177,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Pricing ── */}
-      <section className="py-16">
+      <section className="py-10 sm:py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <div className="grid items-center gap-14 lg:grid-cols-2">
             <ScrollReveal>
@@ -242,7 +242,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Integrations ── */}
-      <section className="py-16">
+      <section className="py-10 sm:py-16">
         <div className="mx-auto max-w-[1120px] px-4 text-center sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
@@ -284,7 +284,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="bg-surface-alt py-24">
+      <section className="bg-surface-alt py-16 sm:py-24">
         <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-5xl">
