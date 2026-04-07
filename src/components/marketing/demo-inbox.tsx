@@ -1,7 +1,7 @@
 const conversations = [
   {
     id: "1",
-    name: "Sarah Chen",
+    name: "Sarah C.",
     subject: "Refund for order #3190",
     time: "2m",
     status: "open" as const,
@@ -9,7 +9,7 @@ const conversations = [
   },
   {
     id: "2",
-    name: "Marcus Johnson",
+    name: "Marcus J.",
     subject: "Return request for blue jacket",
     time: "18m",
     status: "open" as const,
@@ -17,7 +17,7 @@ const conversations = [
   },
   {
     id: "3",
-    name: "Emily Rodriguez",
+    name: "Emily R.",
     subject: "Size guide question",
     time: "1h",
     status: "waiting" as const,
@@ -25,7 +25,7 @@ const conversations = [
   },
   {
     id: "4",
-    name: "David Park",
+    name: "David P.",
     subject: "Bulk order pricing",
     time: "3h",
     status: "open" as const,
@@ -33,7 +33,7 @@ const conversations = [
   },
   {
     id: "5",
-    name: "Aisha Patel",
+    name: "Norton M.",
     subject: "Warranty claim for item #2219",
     time: "5h",
     status: "waiting" as const,
@@ -41,7 +41,7 @@ const conversations = [
   },
   {
     id: "6",
-    name: "Tom Nguyen",
+    name: "Tom N.",
     subject: "Wrong color received",
     time: "1d",
     status: "closed" as const,
@@ -49,7 +49,7 @@ const conversations = [
   },
   {
     id: "7",
-    name: "Lisa Müller",
+    name: "Lisa M.",
     subject: "International shipping rates",
     time: "1d",
     status: "closed" as const,
@@ -57,7 +57,7 @@ const conversations = [
   },
   {
     id: "8",
-    name: "James Wilson",
+    name: "James W.",
     subject: "Gift wrapping options?",
     time: "2d",
     status: "closed" as const,
@@ -65,7 +65,7 @@ const conversations = [
   },
   {
     id: "9",
-    name: "Priya Sharma",
+    name: "Priya S.",
     subject: "Subscription billing issue",
     time: "2d",
     status: "open" as const,
@@ -73,7 +73,7 @@ const conversations = [
   },
   {
     id: "10",
-    name: "Carlos Rivera",
+    name: "Carlos R.",
     subject: "Exchange for different size",
     time: "3d",
     status: "closed" as const,
@@ -84,7 +84,7 @@ const conversations = [
 const threadMessages = [
   {
     id: "m1",
-    sender: "Sarah Chen",
+    sender: "Sarah C.",
     initials: "SC",
     isOutbound: false,
     collapsed: false,
@@ -198,7 +198,7 @@ export function DemoInbox() {
             </div>
             <div>
               <p className="font-display text-sm font-semibold text-text-primary">
-                Sarah Chen
+                Sarah C.
               </p>
               <p className="text-xs text-text-secondary">
                 Refund for order #3190
@@ -336,7 +336,7 @@ export function DemoInbox() {
                 </div>
               </div>
               <p className="mt-1 font-mono text-xs text-text-secondary">
-                Sarah Chen &lt;sarah.chen@gmail.com&gt; &middot; 1 message
+                Sarah C. &lt;sarah.chen@gmail.com&gt; &middot; 1 message
               </p>
             </div>
 
@@ -405,7 +405,7 @@ export function DemoInbox() {
                 </div>
                 <div>
                   <p className="font-display text-sm font-semibold text-text-primary">
-                    Sarah Chen
+                    Sarah C.
                   </p>
                   <p className="font-mono text-[11px] text-text-secondary">
                     3 orders &middot; $284.00

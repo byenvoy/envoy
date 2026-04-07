@@ -77,7 +77,7 @@ function InboxVisual() {
           Email
         </p>
         <div className="flex items-center gap-3.5 rounded-lg border border-primary-light bg-success-light px-4 py-3.5">
-          <Image src="/logos/google.jpg" alt="Google" width={28} height={28} className="h-7 w-7 flex-shrink-0 rounded object-contain" />
+          <Image src="/logos/google-icon.svg" alt="Google" width={28} height={28} className="h-7 w-7 flex-shrink-0 rounded object-contain" />
           <div className="flex-1">
             <p className="font-display text-sm font-semibold text-text-primary">Google</p>
             <p className="font-mono text-xs text-text-secondary">support@example.com</p>
