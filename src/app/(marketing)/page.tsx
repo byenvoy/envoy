@@ -4,11 +4,9 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import Image from "next/image";
 import { DemoInbox } from "@/components/marketing/demo-inbox";
-import { DemoSetupSteps } from "@/components/marketing/demo-setup-steps";
-import { DemoSetupStepsHorizontal } from "@/components/marketing/demo-setup-steps-horizontal";
+import { DemoSetupPanels } from "@/components/marketing/demo-setup-panels";
 import { DemoAutopilot } from "@/components/marketing/demo-autopilot";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
-import { HeroBackground } from "@/components/marketing/hero-background";
 
 export default async function LandingPage() {
   const session = await auth.api.getSession({
@@ -21,8 +19,6 @@ export default async function LandingPage() {
 
   return (
     <main className="relative overflow-hidden">
-      <HeroBackground />
-
       {/* ── Hero ── */}
       <section className="relative pb-0 pt-20 sm:pt-28">
         <div className="mx-auto max-w-[800px] px-4 text-center sm:px-6">
@@ -30,20 +26,19 @@ export default async function LandingPage() {
             <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-primary-dark sm:text-5xl lg:text-6xl">
               Support that runs itself
             </h1>
-          </ScrollReveal>
-          <ScrollReveal delay={0.1}>
-            <p className="mx-auto mt-5 max-w-lg font-body text-lg leading-relaxed text-text-secondary">
+            {/* <p className="mx-auto mt-5 max-w-lg font-body text-lg leading-relaxed text-text-secondary">
               AI that reads your docs, drafts replies, and lets your team send
               them. Human touch, AI speed.
-            </p>
-          </ScrollReveal>
-          <ScrollReveal delay={0.2} className="mt-8">
-            <Link
-              href="/signup"
-              className="inline-flex rounded-lg bg-primary px-7 py-3 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              Start free trial
-            </Link>
+            </p> */}
+            <div className="mt-8">
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-display text-base font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                Start free trial
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
           </ScrollReveal>
         </div>
       </section>
@@ -51,19 +46,9 @@ export default async function LandingPage() {
       {/* ── Inbox Demo ── */}
       <section className="relative pb-12 pt-16 sm:pt-20">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
-          <ScrollReveal delay={0.3} direction="up">
-            <div className="relative">
-              {/* Glow */}
-              <div
-                className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[60%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{
-                  background:
-                    "radial-gradient(ellipse, rgba(149,213,178,0.15) 0%, transparent 70%)",
-                }}
-              />
-              <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_20px_50px_-12px_rgba(0,0,0,0.08)]">
-                <DemoInbox />
-              </div>
+          <ScrollReveal direction="up">
+            <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_20px_50px_-12px_rgba(0,0,0,0.08)]">
+              <DemoInbox />
             </div>
           </ScrollReveal>
         </div>
@@ -85,21 +70,21 @@ export default async function LandingPage() {
               title: "Never reckless",
               desc: "If confidence is low, routes it to you before sending.",
             },
-          ].map((item, i) => (
-            <ScrollReveal key={item.title} delay={i * 0.1}>
+          ].map((item) => (
+            <div key={item.title}>
               <h3 className="font-display text-xl font-bold text-text-primary">
                 {item.title}
               </h3>
-              <p className="mt-2 font-body text-base leading-relaxed text-text-secondary">
+              <p className="mt-2 max-w-[250px] font-body text-base leading-relaxed text-text-secondary">
                 {item.desc}
               </p>
-            </ScrollReveal>
+            </div>
           ))}
         </div>
       </section>
 
       {/* ── Autopilot ── */}
-      <section className="py-24">
+      <section className="py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
@@ -127,7 +112,7 @@ export default async function LandingPage() {
                 </div>
                 <div>
                   <h3 className="font-display text-lg font-semibold text-text-primary">
-                    Routed when unsure
+                    Knows when to ask
                   </h3>
                   <p className="mt-1 max-w-sm font-body text-base leading-relaxed text-text-secondary">
                     If Autopilot isn&apos;t too sure, it routes the draft to
@@ -136,7 +121,7 @@ export default async function LandingPage() {
                 </div>
               </div>
             </ScrollReveal>
-            <ScrollReveal delay={0.2}>
+            <ScrollReveal>
               <DemoAutopilot />
             </ScrollReveal>
           </div>
@@ -144,30 +129,30 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Get Started ── */}
-      <section className="py-24">
+      <section className="py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
               Up and running in minutes
             </h2>
           </ScrollReveal>
-          <ScrollReveal delay={0.2} className="mt-14">
-            <DemoSetupSteps />
+          <ScrollReveal className="mt-14">
+            <DemoSetupPanels />
           </ScrollReveal>
         </div>
       </section>
 
       {/* ── Anti-bloat ── */}
-      <section className="py-24">
+      <section className="py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <div className="max-w-2xl">
             <ScrollReveal>
               <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-[40px] sm:leading-[1.15]">
-                Everything you need. Nothing you don&apos;t.
+                Everything you need
+                <br />
+                Nothing you don&apos;t
               </h2>
-            </ScrollReveal>
-            <ScrollReveal delay={0.1}>
-              <ul className="mt-12 flex flex-col gap-5">
+              <ul className="mt-8 flex flex-col gap-3">
                 {[
                   "Ticket queues to configure",
                   "Routing rules to maintain",
@@ -183,11 +168,8 @@ export default async function LandingPage() {
                   </li>
                 ))}
               </ul>
-            </ScrollReveal>
-            <ScrollReveal delay={0.2}>
-              <p className="mt-14 font-display text-lg font-semibold text-primary">
-                We built one thing and made it work: Envoyer answers your
-                customers. You run your business.
+              <p className="mt-4 font-display text-lg font-semibold text-primary">
+                Envoyer answers your customers. You run your business.
               </p>
             </ScrollReveal>
           </div>
@@ -195,21 +177,23 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Pricing ── */}
-      <section className="py-24">
+      <section className="py-16">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <div className="grid items-center gap-14 lg:grid-cols-2">
             <ScrollReveal>
               <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-[40px] sm:leading-[1.15]">
-                Pricing that makes sense.
+                Pricing that makes sense
               </h2>
               <p className="mt-6 font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
-                No per-seat fees. No per-resolution charges. No upfront contracts.
+                No per-seat fees. No per-resolution charges. No upfront
+                contracts.
               </p>
               <p className="mt-8 max-w-md font-body text-base leading-relaxed text-text-secondary">
                 Most AI support tools mark up model costs 5-10x and hide it
                 behind per-outcome pricing. Envoyer passes through model costs
-                directly with zero markup. Pick your own model based on your needs. You see exactly
-                what each response costs. Set your own spend limits.
+                directly with zero markup. Pick your own model based on your
+                needs. You see exactly what each response costs. Set your own
+                spend limits.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-4">
                 <Link
@@ -223,8 +207,14 @@ export default async function LandingPage() {
                 </span>
               </div>
             </ScrollReveal>
-            <ScrollReveal delay={0.2}>
-              <div className="flex flex-wrap gap-4">
+            <ScrollReveal>
+              <p className="font-display text-sm font-semibold text-text-secondary">
+                Pick any model. Switch anytime.
+              </p>
+              <p className="mt-1 font-mono text-xs text-text-secondary">
+                Zero markup. You pay what the provider charges.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-4">
                 {[
                   { name: "Claude", src: "/logos/anthropic.svg" },
                   { name: "GPT-4o", src: "/logos/openai.svg" },
@@ -252,78 +242,63 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Integrations ── */}
-      <section className="bg-surface-alt py-24">
+      <section className="py-16">
         <div className="mx-auto max-w-[1120px] px-4 text-center sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-              Envoyer works with the tools you already use
+              Works with the tools you use
             </h2>
-          </ScrollReveal>
-          <ScrollReveal delay={0.2} className="mt-12 flex items-center justify-center gap-6">
-            {[
-              { name: "Google", src: "/logos/google.jpg" },
-              { name: "Microsoft", src: "/logos/microsoft.svg" },
-              { name: "Shopify", src: "/logos/shopify.svg" },
-              { name: "Stripe", src: "/logos/stripe.svg", comingSoon: true },
-            ].map((item) => (
-              <div key={item.name} className="flex flex-col items-center gap-2.5">
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
-                  <Image
-                    src={item.src}
-                    alt={item.name}
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 object-contain"
-                  />
+            <div className="mt-12 flex items-center justify-center gap-6">
+              {[
+                { name: "Google", src: "/logos/google-icon.svg" },
+                { name: "Microsoft", src: "/logos/microsoft.svg" },
+                { name: "Shopify", src: "/logos/shopify.svg" },
+                { name: "Stripe", src: "/logos/stripe.svg", comingSoon: true },
+              ].map((item) => (
+                <div
+                  key={item.name}
+                  className="flex flex-col items-center gap-2.5"
+                >
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
+                    <Image
+                      src={item.src}
+                      alt={item.name}
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 object-contain"
+                    />
+                  </div>
+                  <span className="font-body text-sm text-text-secondary">
+                    {item.name}
+                    {"comingSoon" in item && (
+                      <span className="ml-1 text-xs text-text-secondary/50">
+                        soon
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <span className="font-body text-sm text-text-secondary">
-                  {item.name}
-                  {"comingSoon" in item && (
-                    <span className="ml-1 text-xs text-text-secondary/50">
-                      soon
-                    </span>
-                  )}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </ScrollReveal>
         </div>
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="py-24">
+      <section className="bg-surface-alt py-24">
         <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-5xl">
-              Ready to try it?
+              Ready to get started?
             </h2>
             <p className="mt-4 font-body text-base leading-relaxed text-text-secondary">
-              Start with our hosted plan or deploy on your own infrastructure
-              with Docker Compose. Same codebase, your choice.
+              See it for yourself. Get started in minutes.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-8">
               <Link
                 href="/signup"
                 className="rounded-md bg-primary px-8 py-3.5 font-body text-base font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                Start free trial
-              </Link>
-              <Link
-                href="https://github.com/envoyer/envoyer"
-                className="inline-flex items-center gap-2 rounded-md border border-border px-8 py-3.5 font-body text-base font-medium text-text-primary transition-colors hover:border-text-secondary hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
-                  />
-                </svg>
-                Self-host with Docker
+                Try Envoyer free
               </Link>
             </div>
           </ScrollReveal>
@@ -339,7 +314,7 @@ export default async function LandingPage() {
                 envoyer
               </span>
               <p className="mt-2 max-w-xs font-body text-sm leading-relaxed text-text-secondary">
-                AI customer support with a human in the loop. Open source,
+                AI customer support with a human in the loop when it matters. Open source,
                 self-hosted or managed.
               </p>
             </div>
