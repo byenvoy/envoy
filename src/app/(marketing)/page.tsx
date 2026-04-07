@@ -7,6 +7,7 @@ import { DemoInbox } from "@/components/marketing/demo-inbox";
 import { DemoSetupPanels } from "@/components/marketing/demo-setup-panels";
 import { DemoAutopilot } from "@/components/marketing/demo-autopilot";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
+import { RotatingFeatures } from "@/components/marketing/rotating-features";
 
 export default async function LandingPage() {
   const session = await auth.api.getSession({
@@ -45,6 +46,9 @@ export default async function LandingPage() {
 
       {/* ── Inbox Demo ── */}
       <section className="relative pb-12 pt-16 sm:pt-20">
+        <div className="mb-6 px-4 sm:hidden">
+          <RotatingFeatures />
+        </div>
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <ScrollReveal direction="up">
             <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_20px_50px_-12px_rgba(0,0,0,0.08)]">
