@@ -19,19 +19,19 @@ export default function MarketingLayout({
           <div className="flex items-center gap-6">
             <Link
               href="/pricing"
-              className="hidden font-body text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
+              className="hidden px-2 py-2 font-body text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
             >
               Pricing
             </Link>
             <Link
               href="/login"
-              className="hidden font-body text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
+              className="hidden px-2 py-2 font-body text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
             >
               Log in
             </Link>
             <Link
               href="/signup"
-              className="rounded-sm bg-primary px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="rounded-sm bg-primary px-5 py-2.5 font-body text-sm font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Get started
             </Link>
