@@ -16,6 +16,7 @@ const TIERS = [
     cta: "View on GitHub",
     ctaHref: "https://github.com/envoyer/envoyer",
     highlight: false,
+    mobileOrder: "order-last",
   },
   {
     name: "Pro",
@@ -36,6 +37,7 @@ const TIERS = [
     cta: "Start free trial",
     ctaHref: "/signup",
     highlight: true,
+    mobileOrder: "order-first",
   },
 ];
 
@@ -56,7 +58,7 @@ export default function PricingPage() {
         {TIERS.map((tier) => (
           <div
             key={tier.name}
-            className={`rounded-xl border p-8 transition-shadow hover:shadow-lg sm:p-9 ${
+            className={`rounded-xl border p-6 transition-shadow hover:shadow-lg sm:order-none sm:p-9 ${tier.mobileOrder} ${
               tier.highlight
                 ? "border-primary bg-gradient-to-b from-success-light/30 to-surface"
                 : "border-border bg-white hover:border-primary-light"
@@ -82,9 +84,9 @@ export default function PricingPage() {
             </p>
             <Link
               href={tier.ctaHref}
-              className={`mt-7 block rounded-lg px-5 py-3.5 text-center font-display text-sm font-semibold transition-opacity hover:opacity-90 ${
+              className={`mt-7 flex h-12 items-center justify-center rounded-lg px-5 font-display text-sm font-semibold transition-opacity hover:opacity-90 ${
                 tier.highlight
-                  ? "bg-primary text-white"
+                  ? "border border-transparent bg-primary text-white"
                   : "border border-border bg-white text-text-primary hover:bg-surface-alt"
               }`}
             >
