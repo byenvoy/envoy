@@ -21,6 +21,7 @@ import { BillingSection } from "@/components/settings/billing-section";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 import { isCloud } from "@/lib/config";
 import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
+import { canAccessFeature, type Role } from "@/lib/permissions";
 import type { EmailConnection, Integration, Organization, Profile, TeamInvite } from "@/lib/types/database";
 
 
@@ -56,7 +57,7 @@ export default async function SettingsPage() {
 
   if (!profile) redirect("/onboarding");
 
-  const isOwner = profile.role === "owner";
+  const role = profile.role as Role;
 
   const [orgRows, connectionRows, integrationRows, teamMemberRows, inviteRows, subscriptionRow] =
     await Promise.all([
@@ -77,7 +78,7 @@ export default async function SettingsPage() {
         .select({ id: profiles.id, fullName: profiles.fullName, role: profiles.role })
         .from(profiles)
         .where(eq(profiles.orgId, profile.orgId)),
-      isOwner
+      canAccessFeature(role, "team")
         ? db.select().from(teamInvites).where(eq(teamInvites.orgId, profile.orgId))
         : Promise.resolve([]),
       isCloud()
@@ -197,7 +198,7 @@ export default async function SettingsPage() {
       </div>
 
       <div className="max-w-lg space-y-6">
-        {isOwner && subscriptionRow && (
+        {canAccessFeature(role, "billing") && subscriptionRow && (
           <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               Billing
@@ -233,7 +234,7 @@ export default async function SettingsPage() {
           />
         </div>
 
-        {isOwner && (
+        {canAccessFeature(role, "api-keys") && (
           <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               API Keys
@@ -242,7 +243,7 @@ export default async function SettingsPage() {
           </div>
         )}
 
-        {isOwner && (
+        {canAccessFeature(role, "model") && (
           <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               AI Model
@@ -254,7 +255,7 @@ export default async function SettingsPage() {
           </div>
         )}
 
-        {isOwner && (
+        {canAccessFeature(role, "tone") && (
           <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               Response Style
@@ -268,7 +269,7 @@ export default async function SettingsPage() {
           </div>
         )}
 
-        {isOwner && (
+        {canAccessFeature(role, "team") && (
           <div className="rounded-lg border border-border bg-surface-alt p-4 sm:p-6">
             <h2 className="mb-4 text-lg font-display font-semibold text-text-primary">
               Team

@@ -5,6 +5,7 @@ import { teamInvites, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { requireOwner } from "@/lib/permissions";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoyer <onboarding@resend.dev>";
@@ -14,9 +15,8 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response;
   const { userId, orgId, role } = auth.context;
 
-  if (role !== "owner") {
-    return NextResponse.json({ error: "Only owners can invite" }, { status: 403 });
-  }
+  const denied = requireOwner(role);
+  if (denied) return denied;
 
   const { email, role: inviteRoleInput } = await request.json();
   if (!email) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth, getOrgSubscription } from "@/lib/db/helpers";
 import { getStripe } from "@/lib/stripe";
 import { isCloud } from "@/lib/config";
+import { requireOwner } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
   if (!isCloud()) {
@@ -12,12 +13,8 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response;
   const { orgId, role } = auth.context;
 
-  if (role !== "owner") {
-    return NextResponse.json(
-      { error: "Only owners can manage billing" },
-      { status: 403 }
-    );
-  }
+  const denied = requireOwner(role);
+  if (denied) return denied;
 
   const sub = await getOrgSubscription(orgId);
   if (!sub) {

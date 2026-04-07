@@ -4,15 +4,15 @@ import { db } from "@/lib/db";
 import { orgApiKeys } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { encrypt } from "@/lib/email/encryption";
+import { requireOwner } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
   if (!auth.success) return auth.response;
   const { orgId, role } = auth.context;
 
-  if (role !== "owner") {
-    return NextResponse.json({ error: "Only owners can manage API keys" }, { status: 403 });
-  }
+  const denied = requireOwner(role);
+  if (denied) return denied;
 
   const { provider_key, api_key } = await request.json();
 
@@ -55,9 +55,8 @@ export async function DELETE(request: NextRequest) {
   if (!auth.success) return auth.response;
   const { orgId, role } = auth.context;
 
-  if (role !== "owner") {
-    return NextResponse.json({ error: "Only owners can manage API keys" }, { status: 403 });
-  }
+  const denied = requireOwner(role);
+  if (denied) return denied;
 
   const { provider_key } = await request.json();
 

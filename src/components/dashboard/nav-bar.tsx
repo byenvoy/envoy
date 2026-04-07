@@ -1,28 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/inbox", label: "Inbox" },
-  { href: "/autopilot", label: "Autopilot" },
-  { href: "/knowledge-base", label: "Knowledge Base" },
-  { href: "/settings", label: "Settings" },
-];
+import { getNavItems, type Role } from "@/lib/permissions";
 
 interface NavBarProps {
   userInitials: string;
   userName: string;
   userEmail: string;
+  userRole: Role;
   onOpenCommandPalette: () => void;
   mobileContent?: React.ReactNode;
 }
 
-export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette, mobileContent }: NavBarProps) {
+export function NavBar({ userInitials, userName, userEmail, userRole, onOpenCommandPalette, mobileContent }: NavBarProps) {
   const pathname = usePathname();
+  const navItems = useMemo(() => getNavItems(userRole), [userRole]);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -46,19 +41,19 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
           {mobileContent}
         </div>
       ) : (
-        <MobileDefaultBar userName={userName} userEmail={userEmail} />
+        <MobileDefaultBar userName={userName} userEmail={userEmail} role={userRole} />
       )}
       {/* Desktop: always the full nav */}
       <div className="hidden md:flex h-14 items-center justify-between px-6">
         <div className="flex items-center gap-2">
           <Link
-            href="/dashboard"
+            href={userRole === "owner" ? "/dashboard" : "/inbox"}
             className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary"
           >
             envoyer
           </Link>
           <div className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -124,8 +119,9 @@ export function NavBar({ userInitials, userName, userEmail, onOpenCommandPalette
 }
 
 /** Reusable hamburger button + dropdown for mobile */
-export function MobileNavMenu({ userName, userEmail }: { userName?: string; userEmail?: string }) {
+export function MobileNavMenu({ userName, userEmail, role }: { userName?: string; userEmail?: string; role?: Role }) {
   const pathname = usePathname();
+  const navItems = useMemo(() => getNavItems(role ?? "agent"), [role]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -165,7 +161,7 @@ export function MobileNavMenu({ userName, userEmail }: { userName?: string; user
       {open && (
         <div className="absolute left-0 top-full mt-2 w-52 rounded-lg border border-border bg-surface shadow-lg z-50">
           <div className="p-1.5">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -208,16 +204,17 @@ export function MobileNavMenu({ userName, userEmail }: { userName?: string; user
 }
 
 /** Default mobile bar: hamburger + page title */
-function MobileDefaultBar({ userName, userEmail }: { userName: string; userEmail: string }) {
+function MobileDefaultBar({ userName, userEmail, role }: { userName: string; userEmail: string; role: Role }) {
   const pathname = usePathname();
+  const navItems = useMemo(() => getNavItems(role), [role]);
 
-  const pageTitle = NAV_ITEMS.find(
+  const pageTitle = navItems.find(
     (item) => pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
-  )?.label ?? "Dashboard";
+  )?.label ?? (role === "owner" ? "Dashboard" : "Inbox");
 
   return (
     <div className="flex h-12 items-center gap-2 px-3 md:hidden">
-      <MobileNavMenu userName={userName} userEmail={userEmail} />
+      <MobileNavMenu userName={userName} userEmail={userEmail} role={role} />
       <span className="font-display text-sm font-semibold text-text-primary">{pageTitle}</span>
     </div>
   );

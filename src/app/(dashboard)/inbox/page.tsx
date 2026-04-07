@@ -252,7 +252,7 @@ export default async function InboxPage({
         initialDetail={initialDetail}
         hasMore={hasMore}
         pageSize={PAGE_SIZE}
-        showAutopilotNudge={profile.role === "owner" && topicCount === 0}
+        showAutopilotNudge={topicCount === 0}
       />
     </Suspense>
   );

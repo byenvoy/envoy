@@ -49,11 +49,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
   if (!auth.success) return auth.response;
-  const { orgId, role } = auth.context;
-
-  if (role !== "owner") {
-    return NextResponse.json({ error: "Only owners can manage autopilot" }, { status: 403 });
-  }
+  const { orgId } = auth.context;
 
   const body = await request.json();
   const { name, description, mode, confidence_threshold, daily_send_limit } = body;

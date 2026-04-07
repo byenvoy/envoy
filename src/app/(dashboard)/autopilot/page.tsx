@@ -20,8 +20,6 @@ export default async function AutopilotPage() {
 
   if (!profile) redirect("/onboarding");
 
-  const isOwner = profile.role === "owner";
-  if (!isOwner) redirect("/inbox");
 
   const topicRows = await db
     .select({

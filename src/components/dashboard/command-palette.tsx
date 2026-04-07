@@ -1,28 +1,23 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-
-const NAV_COMMANDS = [
-  { id: "dashboard", label: "Dashboard", href: "/dashboard" },
-  { id: "inbox", label: "Inbox", href: "/inbox" },
-  { id: "knowledge-base", label: "Knowledge Base", href: "/knowledge-base" },
-  { id: "playground", label: "Playground", href: "/playground" },
-  { id: "settings", label: "Settings", href: "/settings" },
-];
+import { getNavItems, type Role } from "@/lib/permissions";
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
+  userRole: Role;
 }
 
-export function CommandPalette({ open, onClose }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, userRole }: CommandPaletteProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const filtered = NAV_COMMANDS.filter((cmd) =>
+  const navCommands = useMemo(() => getNavItems(userRole), [userRole]);
+  const filtered = navCommands.filter((cmd) =>
     cmd.label.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -114,7 +109,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
               </p>
               {filtered.map((cmd, i) => (
                 <button
-                  key={cmd.id}
+                  key={cmd.href}
                   onClick={() => handleSelect(cmd.href)}
                   className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                     i === selectedIndex

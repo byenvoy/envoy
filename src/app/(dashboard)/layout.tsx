@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { isCloud } from "@/lib/config";
 import { isActiveSubscription } from "@/lib/db/helpers";
+import type { Role } from "@/lib/permissions";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
     .select({
       fullName: profiles.fullName,
       orgId: profiles.orgId,
+      role: profiles.role,
     })
     .from(profiles)
     .where(eq(profiles.id, session.user.id))
@@ -78,6 +80,7 @@ export default async function DashboardLayout({
       userInitials={initials}
       userName={fullName}
       userEmail={session.user.email ?? ""}
+      userRole={(profile?.role ?? "agent") as Role}
       subscriptionStatus={subscriptionStatus}
     >
       {children}

@@ -240,6 +240,7 @@ export function InboxView({
         <InboxListMobileNav
           userName={shell.userName}
           userEmail={shell.userEmail}
+          role={shell.userRole}
         />
       );
     }
@@ -389,10 +390,10 @@ export function InboxView({
 }
 
 /** Mobile nav for inbox list view: hamburger + title */
-function InboxListMobileNav({ userName, userEmail }: { userName: string; userEmail: string }) {
+function InboxListMobileNav({ userName, userEmail, role }: { userName: string; userEmail: string; role?: string }) {
   return (
     <>
-      <MobileNavMenu userName={userName} userEmail={userEmail} />
+      <MobileNavMenu userName={userName} userEmail={userEmail} role={role as import("@/lib/permissions").Role} />
       <span className="ml-1 font-display text-sm font-semibold text-text-primary">Inbox</span>
     </>
   );

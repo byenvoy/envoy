@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { NavBar } from "./nav-bar";
 import { CommandPalette } from "./command-palette";
 import { SubscriptionBanner } from "./subscription-banner";
+import type { Role } from "@/lib/permissions";
 
 interface ShellContext {
   setMobileNavContent: (content: React.ReactNode) => void;
   openCommandPalette: () => void;
   userName: string;
   userEmail: string;
+  userRole: Role;
 }
 
 const ShellCtx = createContext<ShellContext | null>(null);
@@ -22,11 +24,12 @@ interface DashboardShellProps {
   userInitials: string;
   userName: string;
   userEmail: string;
+  userRole: Role;
   subscriptionStatus?: string | null;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ userInitials, userName, userEmail, subscriptionStatus, children }: DashboardShellProps) {
+export function DashboardShell({ userInitials, userName, userEmail, userRole, subscriptionStatus, children }: DashboardShellProps) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileNavContent, setMobileNavContent] = useState<React.ReactNode>(null);
   const pathname = usePathname();
@@ -57,12 +60,13 @@ export function DashboardShell({ userInitials, userName, userEmail, subscription
   }, [pathname]);
 
   return (
-    <ShellCtx.Provider value={{ setMobileNavContent, openCommandPalette, userName, userEmail }}>
+    <ShellCtx.Provider value={{ setMobileNavContent, openCommandPalette, userName, userEmail, userRole }}>
       <div className={isInbox ? "flex h-screen flex-col bg-surface" : "min-h-screen bg-surface"}>
         <NavBar
           userInitials={userInitials}
           userName={userName}
           userEmail={userEmail}
+          userRole={userRole}
           onOpenCommandPalette={openCommandPalette}
           mobileContent={mobileNavContent}
         />
@@ -73,6 +77,7 @@ export function DashboardShell({ userInitials, userName, userEmail, subscription
         <CommandPalette
           open={commandPaletteOpen}
           onClose={() => setCommandPaletteOpen(false)}
+          userRole={userRole}
         />
       </div>
     </ShellCtx.Provider>

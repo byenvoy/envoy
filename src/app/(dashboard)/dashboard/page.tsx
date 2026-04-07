@@ -13,6 +13,7 @@ import {
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { StatusBadge } from "@/components/inbox/status-badge";
+import { canAccessPage, type Role } from "@/lib/permissions";
 import type { Conversation } from "@/lib/types/database";
 
 function getThirtyDaysAgo(): string {
@@ -29,12 +30,13 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
 
   const profile = await db
-    .select({ orgId: profiles.orgId })
+    .select({ orgId: profiles.orgId, role: profiles.role })
     .from(profiles)
     .where(eq(profiles.id, session.user.id))
     .then((r) => r[0]);
 
   if (!profile) redirect("/onboarding");
+  if (!canAccessPage(profile.role as Role, "/dashboard")) redirect("/inbox");
 
   const orgId = profile.orgId;
   const thirtyDaysAgo = getThirtyDaysAgo();

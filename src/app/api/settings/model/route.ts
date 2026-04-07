@@ -4,15 +4,15 @@ import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
+import { requireOwner } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
   if (!auth.success) return auth.response;
   const { orgId, role } = auth.context;
 
-  if (role !== "owner") {
-    return NextResponse.json({ error: "Only owners can change settings" }, { status: 403 });
-  }
+  const denied = requireOwner(role);
+  if (denied) return denied;
 
   const { model } = await request.json();
   if (!model || !SUPPORTED_MODELS[model]) {

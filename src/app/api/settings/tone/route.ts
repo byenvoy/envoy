@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { requireOwner } from "@/lib/permissions";
 
 const VALID_TONES = ["professional", "casual", "technical", "friendly"];
 
@@ -11,9 +12,8 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response;
   const { orgId, role } = auth.context;
 
-  if (role !== "owner") {
-    return NextResponse.json({ error: "Only owners can change settings" }, { status: 403 });
-  }
+  const denied = requireOwner(role);
+  if (denied) return denied;
 
   const { tone, custom_instructions, greeting_template, sign_off } = await request.json();
 

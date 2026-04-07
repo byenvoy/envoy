@@ -3,15 +3,15 @@ import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { requireOwner } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
   if (!auth.success) return auth.response;
   const { userId, orgId, role } = auth.context;
 
-  if (role !== "owner") {
-    return NextResponse.json({ error: "Only owners can remove members" }, { status: 403 });
-  }
+  const denied = requireOwner(role);
+  if (denied) return denied;
 
   const { profile_id } = await request.json();
   if (!profile_id || profile_id === userId) {
