@@ -140,8 +140,8 @@ const statusFilters = [
 export function DemoInbox() {
   return (
     <div className="overflow-hidden bg-surface">
-      {/* Nav bar — mirrors src/components/dashboard/nav-bar.tsx */}
-      <nav className="border-b border-border bg-surface">
+      {/* Nav bar — hidden on mobile where the scaled view has its own */}
+      <nav className="hidden border-b border-border bg-surface sm:block">
         <div className="flex h-14 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
             <span className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary">
@@ -185,60 +185,232 @@ export function DemoInbox() {
         </div>
       </nav>
 
-      {/* Mobile: condensed single-column view */}
-      <div className="sm:hidden">
-        {/* Customer message */}
-        <div className="border-b border-border p-4">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-display text-[10px] font-bold text-white"
-              style={{ backgroundColor: "#7C6F64" }}
-            >
-              SC
+      {/* Full three-column layout, scaled down on mobile */}
+      <div className="overflow-hidden sm:hidden" style={{ height: 236 }}>
+        <div className="origin-top-left scale-[0.33]" style={{ width: 1080 }}>
+          {/* Scaled nav */}
+          <nav className="border-b border-border bg-surface">
+            <div className="flex h-14 items-center justify-between px-6">
+              <div className="flex items-center gap-2">
+                <span className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary">
+                  envoyer
+                </span>
+                <div className="flex items-center gap-1">
+                  {navItems.map((item) => (
+                    <span
+                      key={item.label}
+                      className={`rounded-lg px-3 py-1.5 font-display text-sm font-medium ${
+                        item.active
+                          ? "bg-success-light text-primary"
+                          : "text-text-secondary"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5">
+                  <span className="font-mono text-xs text-text-secondary">
+                    Search...
+                  </span>
+                  <kbd className="rounded border border-border bg-surface-alt px-1.5 py-0.5 font-mono text-[10px]">
+                    ⌘K
+                  </kbd>
+                </div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-white">
+                  BN
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="font-display text-sm font-semibold text-text-primary">
-                Sarah C.
-              </p>
-              <p className="text-xs text-text-secondary">
-                Refund for order #3190
-              </p>
+          </nav>
+          <div className="flex" style={{ height: 620 }}>
+          {/* Mobile-scaled: conversation list */}
+          <div className="flex w-[240px] flex-shrink-0 flex-col border-r border-border bg-surface">
+            <div className="flex-shrink-0 border-b border-border p-3">
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  readOnly
+                  placeholder="Search..."
+                  className="min-w-0 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-secondary"
+                />
+                <div className="flex min-w-0 gap-0.5">
+                  {statusFilters.map((filter) => (
+                    <span
+                      key={filter.value}
+                      className={`inline-flex items-baseline gap-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 font-display text-[11px] font-medium tabular-nums ${
+                        filter.active
+                          ? "bg-primary text-white"
+                          : "bg-surface text-text-secondary"
+                      }`}
+                    >
+                      {filter.label}
+                      {filter.count > 0 && (
+                        <span className="text-[9px] opacity-50">
+                          {filter.count}
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <div className="divide-y divide-border">
+                {conversations.map((convo) => (
+                  <div
+                    key={convo.id}
+                    className={`w-full px-4 py-3 text-left transition-colors ${
+                      convo.selected ? "bg-success-light" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-display text-sm font-semibold text-text-primary">
+                        {convo.name}
+                      </span>
+                      <span className="flex-shrink-0 font-mono text-xs text-text-secondary">
+                        {convo.time}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-center justify-between gap-2">
+                      <p className="truncate text-sm text-text-primary">
+                        {convo.subject}
+                      </p>
+                      {convo.status !== "open" && (
+                        <span
+                          className={`rounded px-1.5 py-0.5 font-display text-[10px] font-medium ${statusStyles[convo.status]}`}
+                        >
+                          {convo.status.charAt(0).toUpperCase() +
+                            convo.status.slice(1)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          <p className="mt-3 font-mono text-[13px] leading-relaxed text-text-primary">
-            I&apos;d like to request a refund for order #3190. The jacket I
-            received has a broken zipper and a small tear near the collar.
-          </p>
-        </div>
-        {/* AI Draft */}
-        <div className="bg-surface-alt p-4">
-          <div className="flex items-center gap-2 font-display text-sm font-semibold">
-            <span className="inline-block h-2 w-2 rounded-full bg-ai-accent" />
-            <span className="text-text-primary">Draft</span>
+          {/* Mobile-scaled: thread panel */}
+          <div className="flex min-w-0 flex-1 flex-col border-r border-border">
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="mb-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="font-display text-lg font-bold tracking-tight text-text-primary">
+                    Refund for order #3190
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-text-secondary">
+                      Close
+                    </span>
+                    <span className="rounded-full bg-success-light px-2.5 py-1 font-display text-[11px] font-semibold text-primary">
+                      Open
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-1 font-mono text-xs text-text-secondary">
+                  Sarah C. &lt;sarah.chen@gmail.com&gt; &middot; 1 message
+                </p>
+              </div>
+              <div className="divide-y divide-border">
+                {threadMessages.map((msg) => (
+                  <div key={msg.id} className="py-3">
+                    <div className="flex gap-3">
+                      <div
+                        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full font-display text-[10px] font-bold text-white"
+                        style={
+                          msg.isOutbound
+                            ? undefined
+                            : { backgroundColor: "#7C6F64" }
+                        }
+                      >
+                        {msg.isOutbound ? "E" : msg.initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-display text-sm font-semibold text-text-primary">
+                            {msg.sender}
+                          </span>
+                          <span className="font-mono text-xs text-text-secondary">
+                            {msg.time}
+                          </span>
+                        </div>
+                        <div className="mt-2 whitespace-pre-line font-mono text-[13px] leading-relaxed text-text-primary">
+                          {msg.body}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="mt-3 rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary">
-            {draftContent}
+          {/* Mobile-scaled: draft panel */}
+          <div className="w-[340px] flex-shrink-0 overflow-hidden bg-surface-alt">
+            <div className="border-b border-border bg-surface">
+              <div className="flex w-full items-center justify-between p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-surface-alt font-display text-[10px] font-bold text-text-secondary">
+                    SC
+                  </div>
+                  <div>
+                    <p className="font-display text-sm font-semibold text-text-primary">
+                      Sarah C.
+                    </p>
+                    <p className="font-mono text-[11px] text-text-secondary">
+                      3 orders &middot; $284.00
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-text-secondary">+</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-display text-sm font-semibold">
+                  <span className="inline-block h-2 w-2 rounded-full bg-ai-accent" />
+                  <span className="text-text-primary">Draft</span>
+                </div>
+                <span className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary">
+                  Copy
+                </span>
+              </div>
+              <div className="rounded-lg border border-border bg-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-text-primary">
+                <div className="whitespace-pre-line">{draftContent}</div>
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto rounded-lg border border-border bg-surface px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
+                  Sources
+                </span>
+                <span className="inline-flex shrink-0 items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
+                  Customer Data
+                </span>
+                {chunks.map((chunk) => (
+                  <span
+                    key={chunk.label}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent"
+                  >
+                    {chunk.label}
+                    <span className="opacity-60">{chunk.similarity}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <span className="flex-1 rounded-lg bg-primary px-4 py-2 text-center font-display text-sm font-semibold text-white">
+                    Send
+                  </span>
+                  <span className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary">
+                    Send &amp; Close
+                  </span>
+                </div>
+                <span className="rounded-lg border border-border px-3 py-2 text-center text-xs font-medium text-text-secondary">
+                  Regenerate
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto">
-            <span className="inline-flex shrink-0 items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
-              Customer Data
-            </span>
-            {chunks.map((chunk) => (
-              <span
-                key={chunk.label}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent"
-              >
-                {chunk.label}
-              </span>
-            ))}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <span className="flex-1 rounded-lg bg-primary py-2 text-center font-display text-sm font-semibold text-white">
-              Send
-            </span>
-            <span className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary">
-              Send &amp; Close
-            </span>
           </div>
         </div>
       </div>
