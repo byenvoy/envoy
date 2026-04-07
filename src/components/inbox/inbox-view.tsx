@@ -293,33 +293,33 @@ export function InboxView({
       {/* Middle + Right columns */}
       {selectedId && detailData ? (
         <div
-          className={`flex h-full min-w-0 flex-1 ${
+          className={`min-w-0 flex-1 overflow-y-auto md:overflow-hidden ${
             !mobileShowDetail ? "hidden md:flex" : "flex"
-          }`}
+          } flex-col md:flex-row`}
         >
-          {/* Thread panel */}
-          <div className={`h-full min-w-0 flex-1 overflow-y-auto p-5 ${showRightPanel ? "border-r border-border" : ""}`}>
-            <ThreadPanel
-              conversation={detailData.conversation}
-              messages={detailData.messages}
-              onClose={handleClose}
-              closing={closing}
-            />
-          </div>
-          {/* Right panel — customer context + draft */}
-          {showRightPanel && (
-            <div className="hidden h-full w-[380px] flex-shrink-0 overflow-y-auto md:block">
-              <DraftPanel
-                key={detailData.conversation.id}
+            {/* Thread panel */}
+            <div className={`min-w-0 flex-1 overflow-y-auto p-5 md:h-full ${showRightPanel ? "md:border-r md:border-border" : ""}`}>
+              <ThreadPanel
                 conversation={detailData.conversation}
-                draft={hasPendingDraft ? detailData.draft! : null}
-                shopifyCustomer={detailData.shopifyCustomer}
-                draftUsedCustomerData={!!detailData.draft?.customer_context}
-                onRefresh={handleDetailRefresh}
-                onSent={handleConversationSent}
+                messages={detailData.messages}
+                onClose={handleClose}
+                closing={closing}
               />
             </div>
-          )}
+            {/* Right panel — customer context + draft */}
+            {showRightPanel && (
+              <div className="border-t border-border md:border-t-0 h-auto md:h-full w-full md:w-[380px] flex-shrink-0 overflow-y-auto">
+                <DraftPanel
+                  key={detailData.conversation.id}
+                  conversation={detailData.conversation}
+                  draft={hasPendingDraft ? detailData.draft! : null}
+                  shopifyCustomer={detailData.shopifyCustomer}
+                  draftUsedCustomerData={!!detailData.draft?.customer_context}
+                  onRefresh={handleDetailRefresh}
+                  onSent={handleConversationSent}
+                />
+              </div>
+            )}
         </div>
       ) : selectedId && detailLoading ? (
         <div className={`flex flex-1 items-center justify-center ${!mobileShowDetail ? "hidden md:flex" : "flex"}`}>
