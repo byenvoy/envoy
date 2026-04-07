@@ -188,12 +188,22 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 <span className="font-mono text-[10px] font-normal text-primary">Saved</span>
               )}
             </div>
-            <button
-              onClick={handleCopy}
-              className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface"
-            >
-              {copied ? "Copied!" : "Copy"}
-            </button>
+            <div className="flex items-center gap-1.5">
+              {/* Mobile: regenerate in header row. Desktop: copy button */}
+              <button
+                onClick={handleRegenerate}
+                disabled={loading !== null}
+                className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50 md:hidden"
+              >
+                {loading === "regenerate" ? "..." : "Regenerate"}
+              </button>
+              <button
+                onClick={handleCopy}
+                className="hidden rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface md:block"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -255,38 +265,31 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             </div>
           )}
 
-          {/* Actions — single row on mobile, two rows on desktop */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleSend(false)}
-              disabled={loading !== null}
-              className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
-            >
-              {loading === "send" ? "Sending..." : "Send"}
-            </button>
-            <button
-              onClick={() => handleSend(true)}
-              disabled={loading !== null}
-              className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
-            >
-              {loading === "send-close" ? "..." : "Send & Close"}
-            </button>
+          {/* Actions */}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleSend(true)}
+                disabled={loading !== null}
+                className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
+              >
+                {loading === "send-close" ? "..." : "Send & Close"}
+              </button>
+              <button
+                onClick={() => handleSend(false)}
+                disabled={loading !== null}
+                className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+              >
+                {loading === "send" ? "Sending..." : "Send"}
+              </button>
+            </div>
+            {/* Desktop: regenerate below send buttons */}
             <button
               onClick={handleRegenerate}
               disabled={loading !== null}
-              className="rounded-lg border border-border px-2.5 py-2 text-text-secondary transition-colors hover:bg-surface disabled:opacity-50"
-              title="Regenerate"
+              className="hidden rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50 md:block"
             >
-              {loading === "regenerate" ? (
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="8" cy="8" r="6" strokeDasharray="28" strokeDashoffset="8" strokeLinecap="round" />
-                </svg>
-              ) : (
-                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M13 7A5 5 0 1 0 8 13" />
-                  <path d="M13 3v4h-4" />
-                </svg>
-              )}
+              {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
             </button>
           </div>
         </div>
