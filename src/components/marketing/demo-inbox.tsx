@@ -185,8 +185,66 @@ export function DemoInbox() {
         </div>
       </nav>
 
-      {/* Three-column layout */}
-      <div className="flex" style={{ height: 620 }}>
+      {/* Mobile: condensed single-column view */}
+      <div className="sm:hidden">
+        {/* Customer message */}
+        <div className="border-b border-border p-4">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-display text-[10px] font-bold text-white"
+              style={{ backgroundColor: "#7C6F64" }}
+            >
+              SC
+            </div>
+            <div>
+              <p className="font-display text-sm font-semibold text-text-primary">
+                Sarah Chen
+              </p>
+              <p className="text-xs text-text-secondary">
+                Refund for order #3190
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 font-mono text-[13px] leading-relaxed text-text-primary">
+            I&apos;d like to request a refund for order #3190. The jacket I
+            received has a broken zipper and a small tear near the collar.
+          </p>
+        </div>
+        {/* AI Draft */}
+        <div className="bg-surface-alt p-4">
+          <div className="flex items-center gap-2 font-display text-sm font-semibold">
+            <span className="inline-block h-2 w-2 rounded-full bg-ai-accent" />
+            <span className="text-text-primary">Draft</span>
+          </div>
+          <div className="mt-3 rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary">
+            {draftContent}
+          </div>
+          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto">
+            <span className="inline-flex shrink-0 items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
+              Customer Data
+            </span>
+            {chunks.map((chunk) => (
+              <span
+                key={chunk.label}
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent"
+              >
+                {chunk.label}
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <span className="flex-1 rounded-lg bg-primary py-2 text-center font-display text-sm font-semibold text-white">
+              Send
+            </span>
+            <span className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary">
+              Send &amp; Close
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: Three-column layout */}
+      <div className="hidden sm:flex" style={{ height: 620 }}>
         {/* Conversation list — mirrors inbox-view.tsx left column */}
         <div className="hidden w-[220px] flex-shrink-0 flex-col border-r border-border bg-surface sm:flex lg:w-[260px]">
           {/* Filters — mirrors inbox-filters.tsx */}
