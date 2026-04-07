@@ -177,7 +177,7 @@ export default async function LandingPage() {
                 ].map((item) => (
                   <li
                     key={item}
-                    className="font-body text-lg text-text-secondary line-through decoration-border decoration-[1.5px]"
+                    className="font-body text-lg text-text-primary line-through decoration-border decoration-[1.5px]"
                   >
                     {item}
                   </li>
