@@ -25,8 +25,8 @@ function SourcesPanel() {
         {[
           { title: "Shipping & Delivery", url: "/help/shipping", synced: "Synced 2h ago" },
           { title: "Returns & Refunds", url: "/help/returns", synced: "Synced 2h ago" },
-          { title: "Order Tracking", url: "/help/tracking", synced: "Synced 2h ago" },
-          { title: "Payment Methods", url: "/help/payments", synced: "Synced 5h ago" },
+          { title: "Order Tracking", url: "/help/tracking", synced: "Synced 2h ago", mobileHidden: true },
+          { title: "Payment Methods", url: "/help/payments", synced: "Synced 5h ago", mobileHidden: true },
           { title: "Product Care", url: "/help/care", synced: "Synced 1d ago" },
           { title: "Warranty Policy", url: "/help/warranty", synced: "Synced 1d ago" },
           { title: "Store Policies", url: "store-policies.pdf", synced: "Synced 1d ago" },
@@ -34,7 +34,7 @@ function SourcesPanel() {
         ].map((page) => (
           <div
             key={page.title}
-            className="rounded-lg border border-border bg-surface p-5"
+            className={`rounded-lg border border-border bg-surface p-5${page.mobileHidden ? " hidden sm:block" : ""}`}
           >
             <p className="font-body text-sm font-medium text-text-primary">
               {page.title}
