@@ -259,27 +259,27 @@ export default async function LandingPage() {
               Envoyer works with the tools you already use
             </h2>
           </ScrollReveal>
-          <ScrollReveal delay={0.2} className="mt-12 flex items-center justify-center gap-5">
+          <ScrollReveal delay={0.2} className="mt-12 flex items-center justify-center gap-6">
             {[
-              { name: "Google", src: "/logos/google.jpg", large: true },
+              { name: "Google", src: "/logos/google.jpg" },
               { name: "Microsoft", src: "/logos/microsoft.svg" },
               { name: "Shopify", src: "/logos/shopify.svg" },
               { name: "Stripe", src: "/logos/stripe.svg", comingSoon: true },
             ].map((item) => (
-              <div key={item.name} className="flex flex-col items-center gap-2">
-                <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-border bg-white shadow-sm">
+              <div key={item.name} className="flex flex-col items-center gap-2.5">
+                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
                   <Image
                     src={item.src}
                     alt={item.name}
-                    width={"large" in item ? 40 : 32}
-                    height={"large" in item ? 40 : 32}
-                    className={"large" in item ? "h-10 w-10 object-contain" : "h-8 w-8 object-contain"}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 object-contain"
                   />
                 </div>
-                <span className="font-body text-xs text-text-secondary">
+                <span className="font-body text-sm text-text-secondary">
                   {item.name}
                   {"comingSoon" in item && (
-                    <span className="ml-1 text-[10px] text-text-secondary/50">
+                    <span className="ml-1 text-xs text-text-secondary/50">
                       soon
                     </span>
                   )}
