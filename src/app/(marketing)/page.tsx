@@ -248,7 +248,7 @@ export default async function LandingPage() {
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
               Works with the tools you use
             </h2>
-            <div className="mt-12 flex items-center justify-center gap-6">
+            <div className="mt-12 flex items-center justify-center gap-4 sm:gap-6">
               {[
                 { name: "Google", src: "/logos/google-icon.svg" },
                 { name: "Microsoft", src: "/logos/microsoft.svg" },
