@@ -191,7 +191,7 @@ export function DemoSetupSteps() {
   return (
     <div className="grid items-center gap-12 lg:grid-cols-2">
       {/* Left: visual panel */}
-      <div className="order-2 min-h-[500px] rounded-xl border border-border bg-white p-7 lg:order-1">
+      <div className="order-2 rounded-xl border border-border bg-white p-7 lg:order-1">
         <Visual />
       </div>
 
