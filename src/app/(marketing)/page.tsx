@@ -49,7 +49,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Inbox Demo ── */}
-      <section className="relative pb-20 pt-16 sm:pt-20">
+      <section className="relative pb-12 pt-16 sm:pt-20">
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <ScrollReveal delay={0.3} direction="up">
             <div className="relative">
