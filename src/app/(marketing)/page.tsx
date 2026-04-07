@@ -224,25 +224,24 @@ export default async function LandingPage() {
               </div>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
-              <div className="relative h-80">
+              <div className="flex flex-wrap gap-4">
                 {[
-                  { name: "Claude", src: "/logos/anthropic.svg", top: "8%", left: "12%" },
-                  { name: "GPT-4o", src: "/logos/openai.svg", top: "2%", left: "58%" },
-                  { name: "Gemini", src: "/logos/gemini-icon.png", top: "38%", left: "35%" },
-                  { name: "Mistral", src: "/logos/mistral.svg", top: "62%", left: "8%" },
-                  { name: "DeepSeek", src: "/logos/deepseek.svg", top: "55%", left: "62%" },
+                  { name: "Claude", src: "/logos/anthropic.svg" },
+                  { name: "GPT-4o", src: "/logos/openai.svg" },
+                  { name: "Gemini", src: "/logos/gemini-icon.png" },
+                  { name: "Mistral", src: "/logos/mistral.svg" },
+                  { name: "DeepSeek", src: "/logos/deepseek.svg" },
                 ].map((model) => (
                   <div
                     key={model.name}
-                    className="absolute flex h-24 w-24 items-center justify-center rounded-2xl border border-border bg-white shadow-sm"
-                    style={{ top: model.top, left: model.left }}
+                    className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-white shadow-sm"
                   >
                     <Image
                       src={model.src}
                       alt={model.name}
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 object-contain"
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 object-contain"
                     />
                   </div>
                 ))}
