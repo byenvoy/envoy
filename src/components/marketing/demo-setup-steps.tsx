@@ -203,7 +203,7 @@ export function DemoSetupSteps() {
             <button
               key={step.id}
               onClick={() => handleClick(step.id)}
-              className={`flex w-full items-start gap-4 rounded-xl border p-6 text-left transition-all ${
+              className={`flex w-full items-start gap-4 rounded-xl border p-6 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                 isActive
                   ? "border-border bg-surface-alt"
                   : "border-transparent hover:bg-surface-alt"
