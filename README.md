@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Envoyer
 
-## Getting Started
+AI-powered customer support with a human-in-the-loop. Envoyer crawls your knowledge base, generates draft replies to incoming emails using RAG, and lets your team review and approve before sending.
 
-First, run the development server:
+## Features
+
+- **RAG Pipeline** — Crawls your docs/help center, chunks and embeds content, retrieves relevant context for each customer email
+- **Email Integration** — Connects to Gmail and Outlook via OAuth. Polls for new emails, threads replies automatically
+- **Draft Generation** — Uses Claude, GPT-4o, Gemini, Mistral, or DeepSeek to draft replies grounded in your knowledge base
+- **Autopilot** — Automatically send replies for well-understood topics with configurable quality gates
+- **Shopify Integration** — Pulls order, return, and customer data into draft context
+- **Team Management** — Invite agents with role-based permissions (owner, admin, agent)
+- **Self-Hosted** — Run the full stack on your own infrastructure with Docker Compose
+
+## Quick Start (Development)
 
 ```bash
+# Start Postgres
+docker compose up db -d
+
+# Install dependencies
+npm install
+
+# Copy env template and fill in your keys
+cp .env.example .env.local
+
+# Push schema to database
+npx drizzle-kit push
+
+# Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and create an account. The onboarding wizard walks you through connecting your knowledge base, choosing an AI model, and linking your email.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Self-Hosted Deployment (Docker Compose)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Copy and configure environment
+cp .env.example .env.local
+# Edit .env.local with your API keys and settings
 
-## Learn More
+# Start everything (app + Postgres + migrations)
+docker compose -f docker-compose.prod.yml up -d
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Required Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `BETTER_AUTH_SECRET` | Auth session signing secret (random string) |
+| `BETTER_AUTH_URL` | Your app's public URL |
+| `NEXT_PUBLIC_APP_URL` | Same as above (used client-side) |
+| `ENCRYPTION_KEY` | 32-byte hex string for encrypting OAuth tokens |
+| `CRON_SECRET` | Bearer token for cron job authentication |
+| `OPENAI_API_KEY` | Required for embeddings (text-embedding-3-small) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Optional Environment Variables
 
-## Deploy on Vercel
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | For Claude models |
+| `GOOGLE_AI_KEY` | For Gemini models |
+| `MISTRAL_API_KEY` | For Mistral models |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Gmail OAuth |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | Outlook OAuth |
+| `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET` | Shopify integration |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Transactional email (verification, invites) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Email Polling
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set up a cron job to poll for new emails. Call the poll endpoint with your `CRON_SECRET`:
+
+```bash
+# Every 2 minutes
+*/2 * * * * curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" http://localhost:3000/api/email/poll
+```
+
+### Knowledge Base Recrawl
+
+Optionally re-sync your knowledge base on a schedule:
+
+```bash
+# Every 6 hours
+0 */6 * * * curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" http://localhost:3000/api/knowledge-base/recrawl
+```
+
+## Deploy to Render
+
+Click the button below or use the included `render.yaml` Blueprint:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+The Blueprint provisions a web service, Postgres database, and cron jobs for email polling and KB recrawl.
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router), TypeScript, React 19
+- **Database:** Postgres + pgvector, Drizzle ORM
+- **Auth:** Better Auth
+- **Embeddings:** OpenAI text-embedding-3-small
+- **LLM:** Provider-agnostic (Anthropic, OpenAI, Google, Mistral, DeepSeek)
+- **Email:** IMAP/SMTP via OAuth (Google, Microsoft)
+
+## License
+
+MIT
