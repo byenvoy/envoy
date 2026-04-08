@@ -54,13 +54,10 @@ async function collectFromFolder(
 
       const parsed = await simpleParser(msg.source);
 
-      // For inbox: skip own outgoing mail and apply test filter
+      // For inbox: skip own outgoing mail
       if (!isSent) {
         const fromAddr = parsed.from?.value?.[0]?.address?.toLowerCase();
         if (fromAddr === ownEmail) continue;
-
-        const testAllowList = process.env.IMAP_ALLOW_SENDERS?.split(",").map(s => s.trim().toLowerCase());
-        if (testAllowList && testAllowList.length > 0 && (!fromAddr || !testAllowList.includes(fromAddr))) continue;
       }
 
       collected.push({
