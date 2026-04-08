@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { withAuth, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { retrieveAndDraft } from "@/lib/rag/retrieve";
 import { isCloud } from "@/lib/config";
+import { classifyLLMError } from "@/lib/rag/llm-errors";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -47,9 +48,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Draft generation failed:", error);
+    const classified = classifyLLMError(error);
+    const status = classified.type === "auth" || classified.type === "quota" ? 402 : 500;
     return NextResponse.json(
-      { error: "Failed to generate draft" },
-      { status: 500 }
+      { error: classified.message, errorType: classified.type },
+      { status }
     );
   }
 }

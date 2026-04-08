@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { NavBar } from "./nav-bar";
 import { CommandPalette } from "./command-palette";
 import { SubscriptionBanner } from "./subscription-banner";
+import { LLMErrorBanner } from "./llm-error-banner";
 import type { Role } from "@/lib/permissions";
 
 interface ShellContext {
@@ -26,10 +27,11 @@ interface DashboardShellProps {
   userEmail: string;
   userRole: Role;
   subscriptionStatus?: string | null;
+  llmErrorMessage?: string | null;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ userInitials, userName, userEmail, userRole, subscriptionStatus, children }: DashboardShellProps) {
+export function DashboardShell({ userInitials, userName, userEmail, userRole, subscriptionStatus, llmErrorMessage, children }: DashboardShellProps) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileNavContent, setMobileNavContent] = useState<React.ReactNode>(null);
   const pathname = usePathname();
@@ -71,6 +73,7 @@ export function DashboardShell({ userInitials, userName, userEmail, userRole, su
           mobileContent={mobileNavContent}
         />
         {subscriptionStatus && <SubscriptionBanner status={subscriptionStatus} />}
+        {llmErrorMessage && <LLMErrorBanner message={llmErrorMessage} />}
         <main className={isInbox ? "min-h-0 flex-1" : "mx-auto max-w-5xl px-3 py-6 sm:px-6 sm:py-8"}>
           {children}
         </main>

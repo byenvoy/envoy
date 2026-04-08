@@ -12,6 +12,7 @@ import { runAutopilotPipeline } from "@/lib/autopilot/pipeline";
 import { autoSendDraft } from "@/lib/autopilot/auto-send";
 import { classifyTopic } from "@/lib/autopilot/gates/classify-topic";
 import { isCloud } from "@/lib/config";
+import { recordLLMError, clearLLMError } from "@/lib/rag/llm-errors";
 import type { TopicClassificationResult, AutopilotTopicRow } from "@/lib/autopilot/types";
 
 export async function generateDraftForConversation(conversationId: string, isRegeneration = false): Promise<void> {
@@ -91,15 +92,24 @@ export async function generateDraftForConversation(conversationId: string, isReg
     }
   }
 
-  const result = await retrieveAndDraft({
-    orgId: conversation.orgId,
-    companyName,
-    customerMessage,
-    customerEmail: conversation.customerEmail,
-    conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
-    customerName: conversation.customerName,
-    injectConstrainedPrompt: gate1Result?.passed === true,
-  });
+  let result;
+  try {
+    result = await retrieveAndDraft({
+      orgId: conversation.orgId,
+      companyName,
+      customerMessage,
+      customerEmail: conversation.customerEmail,
+      conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
+      customerName: conversation.customerName,
+      injectConstrainedPrompt: gate1Result?.passed === true,
+    });
+    // Clear any previous LLM error on success
+    await clearLLMError(conversation.orgId);
+  } catch (error) {
+    const classified = await recordLLMError(conversation.orgId, error);
+    console.error(`Draft generation failed (${classified.type}):`, error);
+    throw error;
+  }
 
   // Strip NEEDS_HUMAN_REVIEW flag from draft content if present.
   const cleanedDraft = result.draft.replace(/\n?\*{0,2}NEEDS_HUMAN_REVIEW\*{0,2}:.*$/m, "").trim();
@@ -154,8 +164,18 @@ export async function generateDraftForConversation(conversationId: string, isReg
         })
         .where(eq(drafts.id, insertedDraft.id));
 
-      // Auto-send if all gates passed and mode is auto
+      // Auto-send if all gates passed, mode is auto, and no LLM errors on the org
       if (autopilotResult.shouldAutoSend && autopilotResult.topicMatch) {
+        const orgCheck = await db
+          .select({ llmErrorMessage: organizations.llmErrorMessage })
+          .from(organizations)
+          .where(eq(organizations.id, conversation.orgId))
+          .then((r) => r[0]);
+
+        if (orgCheck?.llmErrorMessage) {
+          console.warn(`[autopilot] Skipping auto-send for ${conversationId}: LLM error on org`);
+          return;
+        }
         await autoSendDraft({
           conversationId,
           draftId: insertedDraft.id,

@@ -9,6 +9,8 @@ export const organizations = pgTable("organizations", {
   customInstructions: text("custom_instructions"),
   greetingTemplate: text("greeting_template"),
   signOff: text("sign_off"),
+  llmErrorMessage: text("llm_error_message"),
+  llmErrorAt: timestamp("llm_error_at", { withTimezone: true }),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
   onboardingStep: integer("onboarding_step").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -34,11 +34,15 @@ export default async function DashboardLayout({
     .then((rows) => rows[0]);
 
   let subscriptionStatus: string | null = null;
+  let llmErrorMessage: string | null = null;
 
   // Check onboarding status
   if (profile) {
     const org = await db
-      .select({ onboardingCompletedAt: organizations.onboardingCompletedAt })
+      .select({
+        onboardingCompletedAt: organizations.onboardingCompletedAt,
+        llmErrorMessage: organizations.llmErrorMessage,
+      })
       .from(organizations)
       .where(eq(organizations.id, profile.orgId))
       .then((rows) => rows[0]);
@@ -46,6 +50,8 @@ export default async function DashboardLayout({
     if (org && !org.onboardingCompletedAt) {
       redirect("/onboarding");
     }
+
+    llmErrorMessage = org?.llmErrorMessage ?? null;
 
     // On cloud: check subscription status
     if (isCloud() && org?.onboardingCompletedAt) {
@@ -82,6 +88,7 @@ export default async function DashboardLayout({
       userEmail={session.user.email ?? ""}
       userRole={(profile?.role ?? "agent") as Role}
       subscriptionStatus={subscriptionStatus}
+      llmErrorMessage={llmErrorMessage}
     >
       {children}
     </DashboardShell>
