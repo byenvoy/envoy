@@ -22,7 +22,7 @@ Pre-launch checklist for Envoyer — hosted (Render) and open-source self-hosted
 - [x] **Remove IMAP_ALLOW_SENDERS test filter** — Currently blocks all emails except a test allowlist. Must be removed for production.
 - [x] **Fix initial lookback** — Reduce from 14 days to 3 days so new users aren't flooded with old threads.
 - [x] **First-poll import mode** — On first connection poll, ingest threads but skip draft generation. Only generate drafts for messages arriving after the initial sync.
-- [ ] **Polling frequency** — Target: every 2-3 minutes. Gmail allows ~15 IMAP connections/min. Render cron job minimum is 1 minute. Use 2 minutes as default.
+- [x] **Polling frequency** — Set to every 2 minutes in render.yaml and documented in README for self-hosted cron setup.
 
 ### API Key Error Handling
 
