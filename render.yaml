@@ -1,0 +1,101 @@
+services:
+  # --- Web Service ---
+  - type: web
+    name: envoyer
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/auth/ok
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: envoyer-db
+          property: connectionString
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        sync: false
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: SHOPIFY_CLIENT_ID
+        sync: false
+      - key: SHOPIFY_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_AI_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      # Stripe (cloud mode only)
+      - key: ENVOYER_CLOUD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRO_PRICE_ID
+        sync: false
+
+  # --- Email Polling Cron (every 2 minutes) ---
+  - type: cron
+    name: envoyer-email-poll
+    runtime: image
+    schedule: "*/2 * * * *"
+    dockerCommand: >
+      wget --header="Authorization: Bearer $CRON_SECRET"
+      -qO- "$NEXT_PUBLIC_APP_URL/api/email/poll" || true
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: envoyer
+          type: web
+          envVarKey: CRON_SECRET
+      - key: NEXT_PUBLIC_APP_URL
+        fromService:
+          name: envoyer
+          type: web
+          envVarKey: NEXT_PUBLIC_APP_URL
+
+  # --- Knowledge Base Recrawl Cron (every 6 hours) ---
+  - type: cron
+    name: envoyer-recrawl
+    runtime: image
+    schedule: "0 */6 * * *"
+    dockerCommand: >
+      wget --header="Authorization: Bearer $CRON_SECRET"
+      -qO- "$NEXT_PUBLIC_APP_URL/api/knowledge-base/recrawl" || true
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: envoyer
+          type: web
+          envVarKey: CRON_SECRET
+      - key: NEXT_PUBLIC_APP_URL
+        fromService:
+          name: envoyer
+          type: web
+          envVarKey: NEXT_PUBLIC_APP_URL
+
+databases:
+  - name: envoyer-db
+    plan: starter
+    postgresMajorVersion: "16"
+    ipAllowList: []
