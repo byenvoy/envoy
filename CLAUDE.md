@@ -64,7 +64,7 @@ Envoyer is a self-hosted AI customer support platform with a human-in-the-loop R
 - Server components use `auth.api.getSession({ headers: await headers() })` directly
 - Middleware (`src/middleware.ts`) uses cookie-based check for redirects (no DB call)
 - After-signup hook in `src/lib/auth.ts` creates organization + profile automatically
-- Email verification and password reset: stubbed to console.log (Resend integration pending)
+- Email verification and password reset: implemented via Resend (`src/lib/auth.ts`)
 
 ### Helpers
 
