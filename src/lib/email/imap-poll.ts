@@ -38,7 +38,7 @@ async function collectFromFolder(
     if (lastUid) {
       searchCriteria.uid = `${Number(lastUid) + 1}:*`;
     } else {
-      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+      const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
       searchCriteria.since = since;
     }
 
@@ -99,6 +99,9 @@ export async function pollConnection(
     await client.connect();
     const ownEmail = connection.emailAddress.toLowerCase();
 
+    // First poll = initial sync (import threads, skip draft generation)
+    const isFirstPoll = !connection.lastUid;
+
     // Collect messages from both folders
     const inbox = await collectFromFolder(
       client, "INBOX", connection.lastUid, ownEmail, false
@@ -139,7 +142,11 @@ export async function pollConnection(
     }
 
     // --- Phase 2: Escalation checks + draft generation ---
-    // Now that all messages are ingested, evaluate each touched conversation
+    // On first poll, skip draft generation — just import existing threads
+    if (isFirstPoll) {
+      console.log(`[poll] Initial sync for ${connection.emailAddress}: imported ${processed} messages, skipping draft generation`);
+    }
+
     for (const conversationId of touchedConversationIds) {
       // Check the final state of the conversation
       const lastMsg = await db
@@ -158,6 +165,9 @@ export async function pollConnection(
           .where(eq(conversations.id, conversationId));
         continue;
       }
+
+      // On initial sync, just set status — don't generate drafts
+      if (isFirstPoll) continue;
 
       // Skip if a pending draft already exists
       const existingDraft = await db
