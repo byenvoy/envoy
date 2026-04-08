@@ -76,5 +76,17 @@ export const auth = betterAuth({
       }
     }),
   },
+  rateLimit: {
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-up/email": { window: 60, max: 3 },
+      "/sign-in/email": { window: 10, max: 5 },
+      "/forgot-password": { window: 60, max: 3 },
+      "/reset-password": { window: 60, max: 5 },
+      "/verify-email": { window: 60, max: 5 },
+      "/get-session": false,
+    },
+  },
   plugins: [nextCookies()],
 });
