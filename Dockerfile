@@ -46,4 +46,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD node scripts/migrate.mjs && node server.js
+CMD ["node", "server.js"]
