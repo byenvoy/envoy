@@ -10,6 +10,7 @@ import {
   drafts,
   autopilotEvaluations,
   autopilotTopics,
+  knowledgeBaseChunks,
 } from "@/lib/db/schema";
 import { eq, and, desc, asc, or, ilike, sql, getTableColumns } from "drizzle-orm";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
@@ -91,7 +92,7 @@ export default async function InboxPage({
       }
     : { ...getTableColumns(conversations), searchSnippet: sql<string | null>`NULL` };
 
-  const [convoRows, allConvoRows, topicCount] = await Promise.all([
+  const [convoRows, allConvoRows, topicCount, kbChunkCount] = await Promise.all([
     db
       .select(snippetSelect)
       .from(conversations)
@@ -106,6 +107,11 @@ export default async function InboxPage({
       .select({ count: sql<number>`count(*)::int` })
       .from(autopilotTopics)
       .where(eq(autopilotTopics.orgId, orgId))
+      .then((r) => r[0]?.count ?? 0),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(knowledgeBaseChunks)
+      .where(eq(knowledgeBaseChunks.orgId, orgId))
       .then((r) => r[0]?.count ?? 0),
   ]);
 
@@ -242,6 +248,38 @@ export default async function InboxPage({
       draft: draftSnake,
       shopifyCustomer,
     };
+  }
+
+  if (kbChunkCount === 0) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="mx-auto max-w-lg text-center px-6">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-ai-accent-light">
+            <svg className="h-8 w-8 text-ai-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+            </svg>
+          </div>
+          <h2 className="font-display text-2xl font-bold text-text-primary">
+            Set up your knowledge base first
+          </h2>
+          <p className="mt-3 font-body text-base text-text-secondary leading-relaxed">
+            Envoy needs your knowledge base to write replies. Add your help docs, FAQs, or support articles so incoming emails get accurate, contextual responses.
+          </p>
+          <p className="mt-2 font-body text-sm text-text-secondary">
+            Email polling will start automatically once your knowledge base has content.
+          </p>
+          <a
+            href="/knowledge-base"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-display text-base font-semibold text-white transition-colors hover:bg-primary-dark"
+          >
+            Add knowledge base sources
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return (
