@@ -58,6 +58,8 @@ services:
   - type: cron
     name: envoy-email-poll
     runtime: image
+    image:
+      url: alpine:3.20
     schedule: "*/2 * * * *"
     dockerCommand: >
       wget --header="Authorization: Bearer $CRON_SECRET"
@@ -78,6 +80,8 @@ services:
   - type: cron
     name: envoy-recrawl
     runtime: image
+    image:
+      url: alpine:3.20
     schedule: "0 */6 * * *"
     dockerCommand: >
       wget --header="Authorization: Bearer $CRON_SECRET"
