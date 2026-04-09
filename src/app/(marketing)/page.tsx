@@ -359,6 +359,12 @@ export default async function LandingPage() {
                   >
                     GitHub
                   </Link>
+                  <a
+                    href="mailto:support@byenvoy.com"
+                    className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Contact
+                  </a>
                 </div>
               </div>
               <div>

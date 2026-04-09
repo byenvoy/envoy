@@ -17,7 +17,7 @@ services:
       - key: BETTER_AUTH_URL
         sync: false
       - key: ENCRYPTION_KEY
-        generateValue: true
+        sync: false
       - key: CRON_SECRET
         generateValue: true
       - key: OPENAI_API_KEY
