@@ -35,21 +35,36 @@ function filterUrlsByLocale(
   const seen = new Set<string>();
   const result: { url: string; suggested: boolean }[] = [];
 
+  // Pass 1: add URLs matching the selected locale (these win the dedup)
   for (const item of urls) {
     try {
       const parsed = new URL(item.url);
       const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
       const urlLocale = match ? match[1] : null;
 
-      // Skip URLs from other locales, but keep non-prefixed URLs
-      if (urlLocale && urlLocale !== locale) continue;
+      if (urlLocale !== locale) continue;
 
       const canonical = stripLocalePrefix(parsed.pathname);
+      seen.add(canonical);
+      result.push(item);
+    } catch {
+      // skip
+    }
+  }
+
+  // Pass 2: add non-prefixed URLs that don't overlap with locale URLs
+  for (const item of urls) {
+    try {
+      const parsed = new URL(item.url);
+      const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
+      if (match) continue; // has a locale prefix, already handled in pass 1
+
+      const canonical = parsed.pathname;
       if (seen.has(canonical)) continue;
       seen.add(canonical);
       result.push(item);
     } catch {
-      result.push(item);
+      // skip
     }
   }
 
