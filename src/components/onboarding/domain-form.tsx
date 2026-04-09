@@ -58,7 +58,7 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
           required
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
-          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2.5 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           placeholder="docs.example.com"
         />
       </div>
@@ -68,7 +68,7 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full cursor-pointer rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? "Discovering pages..." : "Discover pages"}
       </button>
