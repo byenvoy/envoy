@@ -92,38 +92,18 @@ function stripLocalePrefix(pathname: string): string {
   return pathname.replace(LOCALE_PREFIX_REGEX, "/");
 }
 
-/** Filter URLs to a single locale, deduplicating by canonical path */
+/** Filter URLs to a single locale. Keeps locale-matching and non-prefixed URLs. */
 export function filterByLocale(urls: string[], locale: string): string[] {
-  const seen = new Set<string>();
   const result: string[] = [];
 
-  // Pass 1: add URLs matching the selected locale (these win the dedup)
   for (const url of urls) {
     try {
       const parsed = new URL(url);
       const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
       const urlLocale = match ? match[1] : null;
 
-      if (urlLocale !== locale) continue;
-
-      const canonical = stripLocalePrefix(parsed.pathname);
-      seen.add(canonical);
-      result.push(url);
-    } catch {
-      // skip
-    }
-  }
-
-  // Pass 2: add non-prefixed URLs that don't overlap with locale URLs
-  for (const url of urls) {
-    try {
-      const parsed = new URL(url);
-      const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
-      if (match) continue; // has a locale prefix, already handled in pass 1
-
-      const canonical = parsed.pathname;
-      if (seen.has(canonical)) continue;
-      seen.add(canonical);
+      // Keep URLs matching the selected locale or with no locale prefix
+      if (urlLocale && urlLocale !== locale) continue;
       result.push(url);
     } catch {
       // skip
