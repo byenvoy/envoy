@@ -48,7 +48,7 @@ export function NavBar({ userInitials, userName, userEmail, userRole, onOpenComm
         <div className="flex items-center gap-2">
           <Link
             href={userRole === "owner" ? "/dashboard" : "/inbox"}
-            className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary"
+            className="mr-4 font-display text-[19px] font-bold tracking-tight text-primary"
           >
             envoy
           </Link>
