@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const ACCEPTED_TYPES = [
   "application/pdf",
@@ -69,7 +70,15 @@ export default function UploadPage() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-xl">
+      <div className="mb-6">
+        <Link
+          href="/knowledge-base"
+          className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+        >
+          &larr; Back to Knowledge Base
+        </Link>
+      </div>
       <div className="mb-8">
         <h1 className="text-2xl font-semibold font-display tracking-tight text-text-primary">
           Upload File
@@ -79,7 +88,7 @@ export default function UploadPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div
           onDragOver={(e) => {
             e.preventDefault();

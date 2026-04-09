@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function NewUrlEntryPage() {
   const router = useRouter();
@@ -37,7 +38,15 @@ export default function NewUrlEntryPage() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-xl">
+      <div className="mb-6">
+        <Link
+          href="/knowledge-base"
+          className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+        >
+          &larr; Back to Knowledge Base
+        </Link>
+      </div>
       <div className="mb-8">
         <h1 className="text-2xl font-semibold font-display tracking-tight text-text-primary">
           Add Single URL
@@ -47,7 +56,7 @@ export default function NewUrlEntryPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium font-display text-text-primary">
             URL
