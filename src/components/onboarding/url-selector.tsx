@@ -41,7 +41,9 @@ function filterUrlsByLocale(
       const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
       const urlLocale = match ? match[1] : null;
 
-      if (urlLocale && urlLocale !== locale) continue;
+      // Skip URLs from other locales, and skip non-locale URLs
+      // (they're either dupes of locale-prefixed versions or locale-agnostic)
+      if (urlLocale !== locale) continue;
 
       const canonical = stripLocalePrefix(parsed.pathname);
       if (seen.has(canonical)) continue;
