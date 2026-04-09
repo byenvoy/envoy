@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
-import { profiles, teamInvites } from "@/lib/db/schema";
+import { profiles, teamInvites, organizations } from "@/lib/db/schema";
 import { user } from "@/lib/db/schema/auth";
 import { eq, and } from "drizzle-orm";
 import { requireOwner } from "@/lib/permissions";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -34,18 +38,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cannot remove an owner" }, { status: 400 });
   }
 
-  try {
-    // Look up email to clean up invites
-    const targetUser = await db
-      .select({ email: user.email })
-      .from(user)
-      .where(eq(user.id, profile_id))
-      .then((r) => r[0]);
+  // Look up email before deleting (needed for invite cleanup and notification)
+  const targetUser = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.id, profile_id))
+    .then((r) => r[0]);
 
+  try {
     await db.delete(profiles).where(eq(profiles.id, profile_id));
-    // Delete the user account entirely so they don't end up logged in with no org access
     await db.delete(user).where(eq(user.id, profile_id));
-    // Clean up any invites for this email in the org
     if (targetUser) {
       await db
         .delete(teamInvites)
@@ -59,6 +61,22 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+
+  // Notify the removed user
+  if (targetUser) {
+    const org = await db
+      .select({ name: organizations.name })
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .then((r) => r[0]);
+
+    void resend.emails.send({
+      from: fromEmail,
+      to: targetUser.email,
+      subject: `You've been removed from ${org?.name ?? "a team"} on Envoy`,
+      html: `<p>You've been removed from <strong>${org?.name ?? "a team"}</strong> on Envoy. If you think this was a mistake, please contact your team administrator.</p>`,
+    });
   }
 
   return NextResponse.json({ ok: true });
