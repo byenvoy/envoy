@@ -77,19 +77,19 @@ export default async function KnowledgeBasePage() {
             Upload File
           </Link>
           <Link
-            href="/knowledge-base/new-url"
+            href="/knowledge-base/url"
             className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Add URL
           </Link>
           <Link
-            href="/knowledge-base/new"
+            href="/knowledge-base/custom"
             className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium font-display text-text-secondary transition-colors hover:bg-surface"
           >
             Manual Entry
           </Link>
           <Link
-            href="/knowledge-base/crawl"
+            href="/knowledge-base/import"
             className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium font-display text-white transition-colors hover:bg-primary-dark"
           >
             Import Site

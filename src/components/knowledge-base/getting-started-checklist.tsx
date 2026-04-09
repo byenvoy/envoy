@@ -5,13 +5,13 @@ const ITEMS = [
     key: "crawled",
     label: "Import your website",
     description: "Pull in pages from your domain automatically",
-    href: "/knowledge-base/crawl",
+    href: "/knowledge-base/import",
   },
   {
     key: "url",
     label: "Add individual URLs",
     description: "Help docs, blog posts, and other web pages",
-    href: "/knowledge-base/new-url",
+    href: "/knowledge-base/url",
   },
   {
     key: "upload",
@@ -23,7 +23,7 @@ const ITEMS = [
     key: "manual",
     label: "Add manual entries",
     description: "Paste in custom content directly",
-    href: "/knowledge-base/new",
+    href: "/knowledge-base/custom",
   },
 ];
 
