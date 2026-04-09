@@ -30,7 +30,7 @@ export default function CrawlPage() {
       <h1 className="mb-2 text-2xl font-bold font-display tracking-tight text-text-primary">
         {urls ? "Select pages to import" : "Crawl your website"}
       </h1>
-      <p className="mb-8 text-sm text-text-secondary">
+      <p className="mb-8 text-[15px] text-text-secondary">
         {urls
           ? "Choose which pages to add to your knowledge base. Support-related pages are pre-selected."
           : "Enter your website URL and we'll discover pages to build your knowledge base from."}
