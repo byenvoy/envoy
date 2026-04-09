@@ -1,5 +1,3 @@
-const URL_CAP = 200;
-
 const SUPPORT_PATTERNS =
   /\/(support|faq|help|docs|knowledge|article|guide|tutorial|delivery|returns|shipping|terms|policies|contact|about)/i;
 
