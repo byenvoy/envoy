@@ -4,7 +4,7 @@ services:
     name: envoy
     runtime: docker
     plan: starter
-    healthCheckPath: /api/auth/ok
+    healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
         fromDatabase:
