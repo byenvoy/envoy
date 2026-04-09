@@ -103,7 +103,7 @@ export function filterByLocale(urls: string[], locale: string): string[] {
       const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
       const urlLocale = match ? match[1] : null;
 
-      if (urlLocale !== locale) continue;
+      if (urlLocale && urlLocale !== locale) continue;
 
       const canonical = stripLocalePrefix(parsed.pathname);
       if (seen.has(canonical)) continue;
