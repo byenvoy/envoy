@@ -8,7 +8,7 @@ import { Resend } from "resend";
 import type Stripe from "stripe";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoyer <onboarding@resend.dev>";
+const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 async function getOwnerEmail(stripeCustomerId: string): Promise<string | null> {
   const sub = await db
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         void resend.emails.send({
           from: fromEmail,
           to: ownerEmail,
-          subject: "Your Envoyer trial ends in 3 days",
+          subject: "Your Envoy trial ends in 3 days",
           html: `<p>Your 14-day free trial ends on ${endDate}.</p><p>After that, your Pro subscription ($15/mo) will begin automatically and your card will be charged.</p><p>You can manage or cancel your subscription anytime from <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/settings">Settings</a>.</p>`,
         });
       }

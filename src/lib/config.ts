@@ -1,3 +1,3 @@
 export function isCloud(): boolean {
-  return process.env.ENVOYER_CLOUD === "true";
+  return process.env.ENVOY_CLOUD === "true";
 }

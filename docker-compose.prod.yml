@@ -10,7 +10,7 @@ services:
         condition: service_completed_successfully
     env_file: .env.local
     environment:
-      DATABASE_URL: postgresql://envoyer:envoyer@db:5432/envoyer
+      DATABASE_URL: postgresql://envoy:envoy@db:5432/envoy
       HOSTNAME: "0.0.0.0"
     restart: unless-stopped
 
@@ -19,13 +19,13 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: envoyer
-      POSTGRES_USER: envoyer
-      POSTGRES_PASSWORD: envoyer
+      POSTGRES_DB: envoy
+      POSTGRES_USER: envoy
+      POSTGRES_PASSWORD: envoy
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U envoyer"]
+      test: ["CMD-SHELL", "pg_isready -U envoy"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
         condition: service_healthy
     env_file: .env.local
     environment:
-      DATABASE_URL: postgresql://envoyer:envoyer@db:5432/envoyer
+      DATABASE_URL: postgresql://envoy:envoy@db:5432/envoy
     command: npx drizzle-kit migrate
     restart: "no"
 

@@ -50,7 +50,7 @@ export function NavBar({ userInitials, userName, userEmail, userRole, onOpenComm
             href={userRole === "owner" ? "/dashboard" : "/inbox"}
             className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary"
           >
-            envoyer
+            envoy
           </Link>
           <div className="flex items-center gap-1">
             {navItems.map((item) => {

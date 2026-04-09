@@ -145,7 +145,7 @@ export function DemoInbox() {
         <div className="flex h-14 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
             <span className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary">
-              envoyer
+              envoy
             </span>
             <div className="hidden items-center gap-1 sm:flex">
               {navItems.map((item) => (
@@ -193,7 +193,7 @@ export function DemoInbox() {
             <div className="flex h-14 items-center justify-between px-6">
               <div className="flex items-center gap-2">
                 <span className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary">
-                  envoyer
+                  envoy
                 </span>
                 <div className="flex items-center gap-1">
                   {navItems.map((item) => (

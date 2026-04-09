@@ -27,7 +27,7 @@ export default function SubscribePage() {
   return (
     <div>
       <p className="font-display text-[15px] font-bold tracking-tight text-primary">
-        envoyer
+        envoy
       </p>
 
       <h1 className="mt-6 font-display text-2xl font-bold tracking-tight text-text-primary">

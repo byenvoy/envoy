@@ -54,7 +54,7 @@ export function GettingStartedChecklist({
         Get started with your knowledge base
       </h2>
       <p className="mb-5 text-sm text-text-secondary">
-        Add content so Envoyer can draft accurate replies.
+        Add content so Envoy can draft accurate replies.
       </p>
       <div className="space-y-3">
         {ITEMS.map((item) => {

@@ -14,7 +14,7 @@ export default function MarketingLayout({
             href="/"
             className="font-display text-xl font-bold tracking-tight text-primary-dark"
           >
-            envoyer
+            envoy
           </Link>
           <div className="flex items-center gap-6">
             <Link

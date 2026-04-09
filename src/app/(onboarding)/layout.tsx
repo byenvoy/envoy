@@ -19,7 +19,7 @@ export default async function OnboardingLayout({
     <div className="flex min-h-screen flex-col bg-surface px-4">
       <div className="py-6 text-center">
         <span className="font-display text-xl font-bold tracking-tight text-primary">
-          envoyer
+          envoy
         </span>
       </div>
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col">

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Envoyer is a self-hosted AI customer support platform with a human-in-the-loop RAG pipeline. It crawls a user's knowledge base, generates embeddings, and uses retrieval-augmented generation to draft replies to incoming customer emails. Support agents review, edit, and approve drafts before they're sent. See PRODUCT_PLAN.md for the full product plan.
+Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG pipeline. It crawls a user's knowledge base, generates embeddings, and uses retrieval-augmented generation to draft replies to incoming customer emails. Support agents review, edit, and approve drafts before they're sent. See PRODUCT_PLAN.md for the full product plan.
 
 ## Commands
 

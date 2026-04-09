@@ -8,7 +8,7 @@ const steps = [
     id: "sources",
     title: "Add sources",
     description:
-      "Point Envoyer at your internal docs, FAQ, or support pages. Changes sync automatically. It absorbs everything.",
+      "Point Envoy at your internal docs, FAQ, or support pages. Changes sync automatically. It absorbs everything.",
   },
   {
     id: "inbox",
@@ -18,7 +18,7 @@ const steps = [
   },
   {
     id: "go",
-    title: "Let Envoyer take it from there",
+    title: "Let Envoy take it from there",
     description:
       "Every incoming email gets a draft grounded in your knowledge base. Review and send, or let Autopilot handle it.",
   },

@@ -1,6 +1,6 @@
-# Envoyer
+# Envoy
 
-AI-powered customer support with a human-in-the-loop. Envoyer crawls your knowledge base, generates draft replies to incoming emails using RAG, and lets your team review and approve before sending.
+AI-powered customer support with a human-in-the-loop. Envoy crawls your knowledge base, generates draft replies to incoming emails using RAG, and lets your team review and approve before sending.
 
 ## Features
 

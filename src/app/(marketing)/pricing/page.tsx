@@ -7,14 +7,14 @@ const TIERS = [
     price: "Free",
     priceDetail: "",
     description:
-      "Run Envoyer on your own infrastructure. Same codebase, full control.",
+      "Run Envoy on your own infrastructure. Same codebase, full control.",
     features: [
       "Docker Compose deployment",
       "All integrations included",
       "Community support",
     ],
     cta: "View on GitHub",
-    ctaHref: "https://github.com/envoyer/envoyer",
+    ctaHref: "https://github.com/envoy/envoy",
     highlight: false,
     mobileOrder: "order-last",
   },

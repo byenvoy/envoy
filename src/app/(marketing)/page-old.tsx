@@ -31,7 +31,7 @@ export default async function LandingPage() {
               <span className="text-primary">Your team delivers.</span>
             </h1>
             <p className="mt-6 max-w-lg font-body text-lg leading-relaxed text-text-secondary">
-              Envoyer crawls your knowledge base and drafts replies to customer
+              Envoy crawls your knowledge base and drafts replies to customer
               emails in seconds. Your team reviews every message before it goes
               out — keeping the human touch your customers expect.
             </p>
@@ -43,7 +43,7 @@ export default async function LandingPage() {
                 Start free trial
               </Link>
               <Link
-                href="https://github.com/envoyer/envoyer"
+                href="https://github.com/envoy/envoy"
                 className="rounded-lg border border-border px-6 py-3 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 View on GitHub
@@ -69,7 +69,7 @@ export default async function LandingPage() {
               </h3>
               <p className="mt-1.5 font-body text-[15px] leading-relaxed text-text-secondary">
                 No chatbot builder, no ticketing workflow engine, no CRM bolted
-                on. Envoyer reads your customers&apos; emails, drafts replies
+                on. Envoy reads your customers&apos; emails, drafts replies
                 from your docs, and lets you send them. That&apos;s it.
               </p>
             </div>
@@ -80,7 +80,7 @@ export default async function LandingPage() {
               <p className="mt-1.5 font-body text-[15px] leading-relaxed text-text-secondary">
                 Whether you&apos;re a solo entrepreneur answering every
                 email yourself, a Shopify store scaling up, or a small SaaS
-                team — Envoyer handles the drafting so you can focus on
+                team — Envoy handles the drafting so you can focus on
                 the conversation.
               </p>
             </div>
@@ -98,7 +98,7 @@ export default async function LandingPage() {
             Point it at your docs
           </h2>
           <p className="mt-2 max-w-lg font-body text-[15px] leading-relaxed text-text-secondary">
-            Give Envoyer a URL and it crawls your help center, FAQ, or support
+            Give Envoy a URL and it crawls your help center, FAQ, or support
             docs. Upload files or add content manually. Every draft is grounded
             in what you&apos;ve actually written.
           </p>
@@ -249,7 +249,7 @@ export default async function LandingPage() {
               Compose. Same codebase, same features, your choice.
             </p>
             <p className="mt-3 font-body text-[15px] leading-relaxed text-text-secondary">
-              We&apos;re not going anywhere. Envoyer is open source and built to
+              We&apos;re not going anywhere. Envoy is open source and built to
               last. Your data stays yours regardless of how you run it.
             </p>
           </div>
@@ -288,7 +288,7 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
           <div className="flex items-center justify-between">
             <p className="font-display text-sm font-bold tracking-tight text-primary">
-              envoyer
+              envoy
             </p>
             <div className="flex items-center gap-6">
               <Link
@@ -298,7 +298,7 @@ export default async function LandingPage() {
                 Pricing
               </Link>
               <Link
-                href="https://github.com/envoyer/envoyer"
+                href="https://github.com/envoy/envoy"
                 className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 GitHub

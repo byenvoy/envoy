@@ -101,7 +101,7 @@ export function EmailConnectionPicker({
   return (
     <div className="space-y-3">
       <p className="text-sm text-text-secondary">
-        Connect your email account to receive and send emails directly through Envoyer.
+        Connect your email account to receive and send emails directly through Envoy.
       </p>
       <div className="flex flex-col gap-3 sm:flex-row">
         {hasGoogleClientId && (

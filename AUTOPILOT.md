@@ -1,6 +1,6 @@
 # Autopilot Architecture
 
-Autopilot extends Envoyer's RAG pipeline to automatically send AI-generated replies for specific email topics when confidence is high enough. It uses a four-gate confidence pipeline where failing any gate routes the draft to the human review queue.
+Autopilot extends Envoy's RAG pipeline to automatically send AI-generated replies for specific email topics when confidence is high enough. It uses a four-gate confidence pipeline where failing any gate routes the draft to the human review queue.
 
 ## Overview
 

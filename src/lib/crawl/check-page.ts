@@ -25,7 +25,7 @@ export async function checkPage({
   lastModified,
 }: CheckPageOptions): Promise<CheckPageResult> {
   const headers: Record<string, string> = {
-    "User-Agent": "Envoyer/1.0 (knowledge-base crawler)",
+    "User-Agent": "Envoy/1.0 (knowledge-base crawler)",
   };
 
   if (etag) headers["If-None-Match"] = etag;

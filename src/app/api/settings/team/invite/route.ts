@@ -8,7 +8,7 @@ import crypto from "crypto";
 import { requireOwner } from "@/lib/permissions";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoyer <onboarding@resend.dev>";
+const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
     void resend.emails.send({
       from: fromEmail,
       to: email,
-      subject: `You've been invited to ${org?.name ?? "a team"} on Envoyer`,
-      html: `<p>You've been invited to join <strong>${org?.name ?? "a team"}</strong> on Envoyer as an ${inviteRole}.</p><p><a href="${inviteUrl}">Accept Invitation</a></p><p>This invitation expires in 7 days.</p>`,
+      subject: `You've been invited to ${org?.name ?? "a team"} on Envoy`,
+      html: `<p>You've been invited to join <strong>${org?.name ?? "a team"}</strong> on Envoy as an ${inviteRole}.</p><p><a href="${inviteUrl}">Accept Invitation</a></p><p>This invitation expires in 7 days.</p>`,
     });
 
     return NextResponse.json({

@@ -65,7 +65,7 @@ export function WelcomeBanner() {
       </h2>
       <p className="mb-4 text-sm text-text-secondary">
         Your knowledge base is being processed in the background. Once
-        processing completes, Envoyer will start drafting replies to incoming
+        processing completes, Envoy will start drafting replies to incoming
         emails.
       </p>
       <div className="mx-auto mb-4 max-w-xs">

@@ -1,4 +1,4 @@
-# Design System — Envoyer
+# Design System — Envoy
 
 ## Product Context
 - **What this is:** Self-hosted and hosted AI customer support platform with a human-in-the-loop RAG pipeline

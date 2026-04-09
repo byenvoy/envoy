@@ -111,7 +111,7 @@ export default async function LandingPage() {
                     Calibrate first
                   </h3>
                   <p className="mt-1 max-w-sm font-body text-base leading-relaxed text-text-secondary">
-                    Topics calibrate before Envoyer takes it from there.
+                    Topics calibrate before Envoy takes it from there.
                   </p>
                 </div>
                 <div>
@@ -173,7 +173,7 @@ export default async function LandingPage() {
                 ))}
               </ul>
               <p className="mt-4 font-display text-lg font-semibold text-primary">
-                Envoyer answers your customers. You run your business.
+                Envoy answers your customers. You run your business.
               </p>
             </ScrollReveal>
           </div>
@@ -194,7 +194,7 @@ export default async function LandingPage() {
               </p>
               <p className="mt-8 max-w-md font-body text-base leading-relaxed text-text-secondary">
                 Most AI support tools mark up model costs 5-10x and hide it
-                behind per-outcome pricing. Envoyer passes through model costs
+                behind per-outcome pricing. Envoy passes through model costs
                 directly with zero markup. Pick your own model based on your
                 needs. You see exactly what each response costs. Set your own
                 spend limits.
@@ -302,7 +302,7 @@ export default async function LandingPage() {
                 href="/signup"
                 className="rounded-md bg-primary px-8 py-3.5 font-body text-base font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                Try Envoyer free
+                Try Envoy free
               </Link>
             </div>
           </ScrollReveal>
@@ -315,7 +315,7 @@ export default async function LandingPage() {
           <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <span className="font-display text-base font-bold text-text-secondary">
-                envoyer
+                envoy
               </span>
               <p className="mt-2 max-w-xs font-body text-sm leading-relaxed text-text-secondary">
                 AI customer support with a human in the loop when it matters. Open source,
@@ -354,7 +354,7 @@ export default async function LandingPage() {
                 </p>
                 <div className="mt-3 flex flex-col gap-2">
                   <Link
-                    href="https://github.com/envoyer/envoyer"
+                    href="https://github.com/envoy/envoy"
                     className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
                   >
                     GitHub

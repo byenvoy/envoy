@@ -21,7 +21,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Envoyer",
+  title: "Envoy",
   description: "AI-powered customer support with human-in-the-loop",
 };
 

@@ -4,9 +4,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: envoyer
-      POSTGRES_USER: envoyer
-      POSTGRES_PASSWORD: envoyer
+      POSTGRES_DB: envoy
+      POSTGRES_USER: envoy
+      POSTGRES_PASSWORD: envoy
     volumes:
       - pgdata:/var/lib/postgresql/data
 

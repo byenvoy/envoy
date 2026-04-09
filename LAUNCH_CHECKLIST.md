@@ -1,6 +1,6 @@
 # Launch Checklist
 
-Pre-launch checklist for Envoyer — hosted (Render) and open-source self-hosted.
+Pre-launch checklist for Envoy — hosted (Render) and open-source self-hosted.
 
 ## Critical Path (Start Now)
 

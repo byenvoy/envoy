@@ -7,7 +7,7 @@ export default function SignupPage() {
         Create your account
       </h1>
       <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
-        Get started with Envoyer for your team.
+        Get started with Envoy for your team.
       </p>
       <SignupForm />
     </div>

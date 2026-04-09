@@ -151,7 +151,7 @@ export default async function DashboardPage() {
       {(kbPageCount ?? 0) === 0 && (
         <div className="mb-8 rounded-lg border border-ai-accent bg-ai-accent-light p-4">
           <p className="text-sm text-text-primary">
-            Your knowledge base is empty. Add content so Envoyer can start
+            Your knowledge base is empty. Add content so Envoy can start
             drafting replies.{" "}
             <Link
               href="/knowledge-base"

@@ -222,9 +222,9 @@ create table draft_replies (
 
 ### Phase 3.5: Gmail/Outlook OAuth Email Integration
 
-**Goal:** Direct OAuth connections to Gmail and Microsoft for zero-friction onboarding. Users click "Connect with Google" or "Connect with Microsoft" and Envoyer reads from and sends through their existing email account.
+**Goal:** Direct OAuth connections to Gmail and Microsoft for zero-friction onboarding. Users click "Connect with Google" or "Connect with Microsoft" and Envoy reads from and sends through their existing email account.
 
-**Why:** DNS configuration (MX records, domain verification, email forwarding) is the primary onboarding friction. OAuth lets users connect their existing `support@company.com` inbox with a single click. Replies are sent through the user's own mail server, so they come from their real address with no domain setup. The user's existing inbox (Gmail/Outlook) continues to work alongside Envoyer — Envoyer is just another client reading the same mailbox. This is the approach used by Front and Freshdesk.
+**Why:** DNS configuration (MX records, domain verification, email forwarding) is the primary onboarding friction. OAuth lets users connect their existing `support@company.com` inbox with a single click. Replies are sent through the user's own mail server, so they come from their real address with no domain setup. The user's existing inbox (Gmail/Outlook) continues to work alongside Envoy — Envoy is just another client reading the same mailbox. This is the approach used by Front and Freshdesk.
 
 **Features:**
 - "Connect with Google" and "Connect with Microsoft" OAuth flows in Settings
@@ -246,7 +246,7 @@ create table draft_replies (
 - OAuth buttons hidden when Google/Microsoft client IDs are not configured (self-hosted compatibility)
 
 **Deployment considerations:**
-- **Hosted version:** Envoyer provides its own Google/Microsoft OAuth apps. Users click "Connect with Google/Microsoft" and authorize — no setup required on their end. OAuth credentials and redirect URLs are managed by us.
+- **Hosted version:** Envoy provides its own Google/Microsoft OAuth apps. Users click "Connect with Google/Microsoft" and authorize — no setup required on their end. OAuth credentials and redirect URLs are managed by us.
 - **Self-hosted version:** Operators must register their own Google Cloud project and Azure AD app, configure OAuth consent screens, and provide their own client IDs/secrets via environment variables. This is necessary because OAuth redirect URLs must point to the operator's domain, not ours. The same pattern used by self-hosted GitLab, Supabase, etc.
 
 **Database additions:**

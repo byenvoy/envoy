@@ -113,7 +113,7 @@ async function fetchText(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(10000),
-      headers: { "User-Agent": "Envoyer/1.0 (knowledge-base crawler)" },
+      headers: { "User-Agent": "Envoy/1.0 (knowledge-base crawler)" },
     });
     if (!res.ok) return null;
     return await res.text();
@@ -286,7 +286,7 @@ async function fromCommonPaths(baseUrl: string): Promise<string[]> {
       const res = await fetch(url, {
         method: "HEAD",
         signal: AbortSignal.timeout(5000),
-        headers: { "User-Agent": "Envoyer/1.0 (knowledge-base crawler)" },
+        headers: { "User-Agent": "Envoy/1.0 (knowledge-base crawler)" },
         redirect: "follow",
       });
       if (res.ok) return url;
@@ -319,7 +319,7 @@ async function fromSupportSubdomains(baseUrl: string): Promise<string[]> {
       const res = await fetch(url, {
         method: "HEAD",
         signal: AbortSignal.timeout(5000),
-        headers: { "User-Agent": "Envoyer/1.0 (knowledge-base crawler)" },
+        headers: { "User-Agent": "Envoy/1.0 (knowledge-base crawler)" },
         redirect: "follow",
       });
       if (res.ok) return url;

@@ -218,7 +218,7 @@ async function extractSingle(
 ): Promise<ExtractedPage> {
   const page = await browser.newPage();
   try {
-    await page.setUserAgent("Envoyer/1.0 (knowledge-base crawler)");
+    await page.setUserAgent("Envoy/1.0 (knowledge-base crawler)");
 
     const response = await page.goto(url, {
       waitUntil: "networkidle2",

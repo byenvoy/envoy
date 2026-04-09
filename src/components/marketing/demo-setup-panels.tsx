@@ -8,7 +8,7 @@ function SourcesPanel() {
         Add sources
       </h3>
       <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">
-        Point Envoyer at your internal docs and support pages. Changes sync automatically.
+        Point Envoy at your internal docs and support pages. Changes sync automatically.
       </p>
       <div className="mt-4 flex flex-wrap gap-2.5">
         <span className="rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white">
@@ -93,7 +93,7 @@ function ResultsPanel() {
     <div className="rounded-xl border border-border bg-white p-5">
       <h3 className="font-display text-lg font-semibold text-text-primary">
         <span className="font-mono text-lg font-medium text-primary">3.</span>{" "}
-        Envoyer takes it from there
+        Envoy takes it from there
       </h3>
       <div className="mt-3 space-y-2">
         {[

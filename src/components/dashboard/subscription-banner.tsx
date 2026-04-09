@@ -37,7 +37,7 @@ export function SubscriptionBanner({ status }: { status: string }) {
               >
                 {loading ? "Redirecting…" : "Update payment method"}
               </button>{" "}
-              to continue using Envoyer.
+              to continue using Envoy.
             </>
           ) : (
             <>

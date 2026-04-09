@@ -34,7 +34,7 @@ export function EmailStep({
         Connect your email
       </h2>
       <p className="mb-8 text-sm text-text-secondary">
-        Envoyer will receive customer emails and send approved replies through your connected account.
+        Envoy will receive customer emails and send approved replies through your connected account.
       </p>
 
       {activeConnection ? (

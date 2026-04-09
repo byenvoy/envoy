@@ -8,7 +8,7 @@ import { organizations, profiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoyer <onboarding@resend.dev>";
+const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
