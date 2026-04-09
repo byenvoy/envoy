@@ -2,8 +2,16 @@
 
 import { useState } from "react";
 
+interface LocaleInfo {
+  locales: string[];
+  defaultLocale: string;
+}
+
 interface DomainFormProps {
-  onUrlsDiscovered: (urls: { url: string; suggested: boolean }[]) => void;
+  onUrlsDiscovered: (
+    urls: { url: string; suggested: boolean }[],
+    localeInfo: LocaleInfo | null,
+  ) => void;
 }
 
 export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
@@ -35,7 +43,7 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
         return;
       }
 
-      onUrlsDiscovered(data.urls);
+      onUrlsDiscovered(data.urls, data.localeInfo ?? null);
     } catch {
       setError("Network error. Please try again.");
     } finally {

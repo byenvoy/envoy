@@ -3,7 +3,10 @@ import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { withAuth } from "@/lib/db/helpers";
-import { discoverUrls, isSupportRelevant } from "@/lib/crawl/discover";
+import {
+  discoverUrls,
+  isSupportRelevant,
+} from "@/lib/crawl/discover";
 
 export async function POST(request: Request) {
   const auth = await withAuth();
@@ -45,11 +48,15 @@ export async function POST(request: Request) {
     .set({ domain: normalizedDomain, updatedAt: new Date() })
     .where(eq(organizations.id, orgId));
 
-  const urls = await discoverUrls(domain);
+  const { urls, localeInfo } = await discoverUrls(domain);
+
   const results = urls.map((url) => ({
     url,
     suggested: isSupportRelevant(url),
   }));
 
-  return NextResponse.json({ urls: results });
+  return NextResponse.json({
+    urls: results,
+    localeInfo,
+  });
 }

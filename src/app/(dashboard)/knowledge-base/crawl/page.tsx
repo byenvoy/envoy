@@ -6,11 +6,17 @@ import Link from "next/link";
 import { DomainForm } from "@/components/onboarding/domain-form";
 import { UrlSelector } from "@/components/onboarding/url-selector";
 
+interface LocaleInfo {
+  locales: string[];
+  defaultLocale: string;
+}
+
 export default function CrawlPage() {
   const router = useRouter();
   const [urls, setUrls] = useState<
     { url: string; suggested: boolean }[] | null
   >(null);
+  const [localeInfo, setLocaleInfo] = useState<LocaleInfo | null>(null);
 
   function handleComplete() {
     router.push("/knowledge-base");
@@ -40,11 +46,20 @@ export default function CrawlPage() {
       {urls ? (
         <UrlSelector
           urls={urls}
-          onBack={() => setUrls(null)}
+          localeInfo={localeInfo}
+          onBack={() => {
+            setUrls(null);
+            setLocaleInfo(null);
+          }}
           onComplete={handleComplete}
         />
       ) : (
-        <DomainForm onUrlsDiscovered={setUrls} />
+        <DomainForm
+          onUrlsDiscovered={(discovered, locale) => {
+            setUrls(discovered);
+            setLocaleInfo(locale);
+          }}
+        />
       )}
     </div>
   );

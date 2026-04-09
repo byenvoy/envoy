@@ -24,6 +24,99 @@ function isStaticAsset(url: string): boolean {
   }
 }
 
+// Paths that are never useful for a support knowledge base
+const NEGATIVE_PATTERNS = [
+  /\/products\//i,
+  /\/collections\//i,
+  /\/cart(\/|$)/i,
+  /\/checkout(\/|$)/i,
+  /\/account(\/|$)/i,
+  /\/search(\/|$)/i,
+  /\/tags\//i,
+  /\/blogs\/.*\/tagged\//i,
+];
+
+function isNegativeFiltered(url: string): boolean {
+  try {
+    const path = new URL(url).pathname;
+    return NEGATIVE_PATTERNS.some((p) => p.test(path));
+  } catch {
+    return false;
+  }
+}
+
+// --- Locale detection and dedup ---
+
+// Matches locale prefixes like /en, /en-AU, /fr-CA, /de-DE
+const LOCALE_PREFIX_REGEX = /^\/([a-z]{2}(?:-[A-Z]{2})?)(\/|$)/;
+
+export interface LocaleInfo {
+  locales: string[];
+  defaultLocale: string;
+}
+
+/** Detect locale prefixes from a set of URLs. Returns null if no locales found. */
+export function detectLocales(urls: string[]): LocaleInfo | null {
+  const localeCounts = new Map<string, number>();
+
+  for (const url of urls) {
+    try {
+      const path = new URL(url).pathname;
+      const match = path.match(LOCALE_PREFIX_REGEX);
+      if (match) {
+        const locale = match[1];
+        localeCounts.set(locale, (localeCounts.get(locale) || 0) + 1);
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  // Only treat as locale-based if we found at least 2 distinct locales
+  // and they cover a meaningful portion of the URLs
+  if (localeCounts.size < 2) return null;
+
+  const totalLocaleUrls = [...localeCounts.values()].reduce((a, b) => a + b, 0);
+  if (totalLocaleUrls < urls.length * 0.3) return null;
+
+  // Default locale = the one with the most URLs
+  const sorted = [...localeCounts.entries()].sort((a, b) => b[1] - a[1]);
+  return {
+    locales: sorted.map(([locale]) => locale),
+    defaultLocale: sorted[0][0],
+  };
+}
+
+/** Strip locale prefix from a URL path to get the canonical content path */
+function stripLocalePrefix(pathname: string): string {
+  return pathname.replace(LOCALE_PREFIX_REGEX, "/");
+}
+
+/** Filter URLs to a single locale, deduplicating by canonical path */
+export function filterByLocale(urls: string[], locale: string): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const url of urls) {
+    try {
+      const parsed = new URL(url);
+      const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
+      const urlLocale = match ? match[1] : null;
+
+      if (urlLocale && urlLocale !== locale) continue;
+
+      const canonical = stripLocalePrefix(parsed.pathname);
+      if (seen.has(canonical)) continue;
+      seen.add(canonical);
+      result.push(url);
+    } catch {
+      // skip
+    }
+  }
+
+  return result;
+}
+
 function normalizeUrl(input: string): string {
   let url = input.trim();
   if (!/^https?:\/\//i.test(url)) {
@@ -280,7 +373,12 @@ async function fromShopifyPages(baseUrl: string): Promise<string[]> {
 
 // --- Main discovery ---
 
-export async function discoverUrls(domain: string): Promise<string[]> {
+export interface DiscoverResult {
+  urls: string[];
+  localeInfo: LocaleInfo | null;
+}
+
+export async function discoverUrls(domain: string): Promise<DiscoverResult> {
   const baseUrl = normalizeUrl(domain);
 
   // Run all discovery signals in parallel
@@ -310,8 +408,13 @@ export async function discoverUrls(domain: string): Promise<string[]> {
     ...robotsUrls,
   ];
 
-  // Deduplicate and filter static assets
-  const unique = [...new Set(all)].filter((u) => !isStaticAsset(u));
+  // Deduplicate, filter static assets, and apply negative filtering
+  const unique = [...new Set(all)].filter(
+    (u) => !isStaticAsset(u) && !isNegativeFiltered(u)
+  );
+
+  // Detect locales from the full set
+  const localeInfo = detectLocales(unique);
 
   // Partition: support-relevant URLs first, then the rest
   const support: string[] = [];
@@ -324,5 +427,8 @@ export async function discoverUrls(domain: string): Promise<string[]> {
     }
   }
 
-  return [...support, ...rest].slice(0, URL_CAP);
+  return {
+    urls: [...support, ...rest],
+    localeInfo,
+  };
 }

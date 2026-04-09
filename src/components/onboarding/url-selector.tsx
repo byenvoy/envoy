@@ -4,8 +4,14 @@ import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 
+interface LocaleInfo {
+  locales: string[];
+  defaultLocale: string;
+}
+
 interface UrlSelectorProps {
   urls: { url: string; suggested: boolean }[];
+  localeInfo: LocaleInfo | null;
   onBack: () => void;
   onComplete?: () => void;
 }
@@ -15,8 +21,57 @@ interface UrlGroup {
   urls: { url: string; path: string; suggested: boolean }[];
 }
 
-export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
+const URL_CAP = 200;
+const LOCALE_PREFIX_REGEX = /^\/([a-z]{2}(?:-[A-Z]{2})?)(\/|$)/;
+
+function stripLocalePrefix(pathname: string): string {
+  return pathname.replace(LOCALE_PREFIX_REGEX, "/");
+}
+
+function filterUrlsByLocale(
+  urls: { url: string; suggested: boolean }[],
+  locale: string
+): { url: string; suggested: boolean }[] {
+  const seen = new Set<string>();
+  const result: { url: string; suggested: boolean }[] = [];
+
+  for (const item of urls) {
+    try {
+      const parsed = new URL(item.url);
+      const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
+      const urlLocale = match ? match[1] : null;
+
+      if (urlLocale && urlLocale !== locale) continue;
+
+      const canonical = stripLocalePrefix(parsed.pathname);
+      if (seen.has(canonical)) continue;
+      seen.add(canonical);
+      result.push(item);
+    } catch {
+      result.push(item);
+    }
+  }
+
+  return result.slice(0, URL_CAP);
+}
+
+export function UrlSelector({
+  urls: allUrls,
+  localeInfo,
+  onBack,
+  onComplete,
+}: UrlSelectorProps) {
   const router = useRouter();
+  const [selectedLocale, setSelectedLocale] = useState(
+    localeInfo?.defaultLocale ?? null
+  );
+
+  // Apply locale filtering client-side
+  const urls = useMemo(() => {
+    if (!localeInfo || !selectedLocale) return allUrls.slice(0, URL_CAP);
+    return filterUrlsByLocale(allUrls, selectedLocale);
+  }, [allUrls, localeInfo, selectedLocale]);
+
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(urls.filter((u) => u.suggested).map((u) => u.url))
   );
@@ -24,6 +79,20 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+
+  // When locale changes, reset selection to suggested URLs in the new set
+  const handleLocaleChange = useCallback(
+    (locale: string) => {
+      setSelectedLocale(locale);
+      const newUrls = filterUrlsByLocale(allUrls, locale);
+      setSelected(
+        new Set(newUrls.filter((u) => u.suggested).map((u) => u.url))
+      );
+      setFilter("");
+      setCollapsed(new Set());
+    },
+    [allUrls]
+  );
 
   const domain = useMemo(() => {
     if (urls.length === 0) return "";
@@ -42,7 +111,10 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
   }, [urls, filter]);
 
   const groups = useMemo<UrlGroup[]>(() => {
-    const map = new Map<string, { url: string; path: string; suggested: boolean }[]>();
+    const map = new Map<
+      string,
+      { url: string; path: string; suggested: boolean }[]
+    >();
 
     for (const item of filtered) {
       let path: string;
@@ -52,11 +124,17 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
         path = item.url;
       }
 
-      const segments = path.split("/").filter(Boolean);
+      // Strip locale prefix for grouping so /en-AU/help and /help group the same
+      const cleanPath = localeInfo ? stripLocalePrefix(path) : path;
+      const segments = cleanPath.split("/").filter(Boolean);
       const groupKey = segments.length > 0 ? `/${segments[0]}` : "/";
 
       if (!map.has(groupKey)) map.set(groupKey, []);
-      map.get(groupKey)!.push({ url: item.url, path, suggested: item.suggested });
+      map.get(groupKey)!.push({
+        url: item.url,
+        path,
+        suggested: item.suggested,
+      });
     }
 
     // Sort URLs within each group: suggested first, then alphabetically
@@ -81,9 +159,10 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
     });
 
     return entries;
-  }, [filtered]);
+  }, [filtered, localeInfo]);
 
-  const allFilteredSelected = filtered.length > 0 && filtered.every((u) => selected.has(u.url));
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((u) => selected.has(u.url));
 
   function toggleAll() {
     setSelected((prev) => {
@@ -185,6 +264,27 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
           {selected.size} of {urls.length} selected
         </span>
       </div>
+      {localeInfo && localeInfo.locales.length > 1 && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+          <span className="text-xs font-medium text-text-secondary">
+            Locale:
+          </span>
+          <select
+            value={selectedLocale ?? localeInfo.defaultLocale}
+            onChange={(e) => handleLocaleChange(e.target.value)}
+            className="cursor-pointer rounded border border-border bg-surface-alt px-2 py-1 text-xs font-medium text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            {localeInfo.locales.map((locale) => (
+              <option key={locale} value={locale}>
+                {locale}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-text-secondary">
+            {localeInfo.locales.length} locales detected
+          </span>
+        </div>
+      )}
       <div className="relative">
         <svg
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
@@ -193,7 +293,11 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
           stroke="currentColor"
           strokeWidth={2}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+          />
         </svg>
         <input
           type="text"
@@ -213,9 +317,13 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
       </div>
       <div className="max-h-96 overflow-y-auto rounded-lg border border-border bg-surface-alt">
         {groups.map((group) => {
-          const groupSelectedCount = group.urls.filter((u) => selected.has(u.url)).length;
-          const allGroupSelected = groupSelectedCount === group.urls.length;
-          const someGroupSelected = groupSelectedCount > 0 && !allGroupSelected;
+          const groupSelectedCount = group.urls.filter((u) =>
+            selected.has(u.url)
+          ).length;
+          const allGroupSelected =
+            groupSelectedCount === group.urls.length;
+          const someGroupSelected =
+            groupSelectedCount > 0 && !allGroupSelected;
           const isCollapsed = collapsed.has(group.key);
 
           return (
@@ -275,9 +383,7 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
           );
         })}
       </div>
-      {error && (
-        <p className="text-sm text-error">{error}</p>
-      )}
+      {error && <p className="text-sm text-error">{error}</p>}
       <button
         onClick={handleSubmit}
         disabled={loading || selected.size === 0}
