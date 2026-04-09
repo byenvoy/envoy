@@ -11,6 +11,10 @@ import { eq } from "drizzle-orm";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
+// Track invite signups so we can skip sending them the verification email.
+// The before hook adds emails here; sendVerificationEmail checks and removes them.
+const inviteSignupEmails = new Set<string>();
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -32,6 +36,9 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
+      // Skip sending for invite signups — they're already verified
+      if (inviteSignupEmails.delete(user.email)) return;
+
       void resend.emails.send({
         from: fromEmail,
         to: user.email,
@@ -41,6 +48,16 @@ export const auth = betterAuth({
     },
   },
   hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-up/email") {
+        const body = ctx.body as Record<string, unknown> | undefined;
+        const callbackURL = body?.callbackURL as string | undefined;
+        const email = body?.email as string | undefined;
+        if (callbackURL?.startsWith("/api/invite/") && email) {
+          inviteSignupEmails.add(email);
+        }
+      }
+    }),
     after: createAuthMiddleware(async (ctx) => {
       // Create org + profile after signup.
       // With requireEmailVerification, newSession is null — read the user
