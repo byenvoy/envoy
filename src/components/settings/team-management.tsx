@@ -125,7 +125,7 @@ export function TeamManagement({
               disabled={inviting || !email}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
-              {inviting ? "Inviting..." : "Generate Link"}
+              {inviting ? "Sending..." : "Send Invite"}
             </button>
           </div>
           <div className="flex gap-3">
