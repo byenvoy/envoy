@@ -19,14 +19,16 @@ export default function CrawlPage() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <div className="mb-6">
-        <Link
-          href="/knowledge-base"
-          className="text-sm text-text-secondary transition-colors hover:text-text-primary"
-        >
-          &larr; Back to Knowledge Base
-        </Link>
-      </div>
+      {!urls && (
+        <div className="mb-6">
+          <Link
+            href="/knowledge-base"
+            className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+          >
+            &larr; Back to Knowledge Base
+          </Link>
+        </div>
+      )}
       <h1 className="mb-2 text-2xl font-bold font-display tracking-tight text-text-primary">
         {urls ? "Select pages to import" : "Crawl your website"}
       </h1>

@@ -174,24 +174,35 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between">
         <button
           onClick={onBack}
           className="text-sm text-text-secondary transition-colors hover:text-text-primary"
         >
-          &larr; Back
+          &larr; Change URL
         </button>
         <span className="text-sm text-text-secondary">
           {selected.size} of {urls.length} selected
         </span>
       </div>
-      <input
-        type="text"
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        className="w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        placeholder="Filter URLs..."
-      />
+      <div className="relative">
+        <svg
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+        <input
+          type="text"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 pl-9 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          placeholder="Filter URLs..."
+        />
+      </div>
       <div className="flex items-center gap-2">
         <button
           onClick={toggleAll}
@@ -270,7 +281,7 @@ export function UrlSelector({ urls, onBack, onComplete }: UrlSelectorProps) {
       <button
         onClick={handleSubmit}
         disabled={loading || selected.size === 0}
-        className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+        className="w-full cursor-pointer rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading
           ? "Starting crawl..."
