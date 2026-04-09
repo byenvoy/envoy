@@ -10,7 +10,6 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/onboarding") ||
     path.startsWith("/knowledge-base") ||
     path.startsWith("/inbox") ||
-    path.startsWith("/playground") ||
     path.startsWith("/settings") ||
     path.startsWith("/dashboard") ||
     path.startsWith("/autopilot") ||
