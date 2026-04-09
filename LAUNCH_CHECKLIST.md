@@ -21,7 +21,7 @@ Pre-launch checklist for Envoyer — hosted (Render) and open-source self-hosted
 
 - [x] **Remove IMAP_ALLOW_SENDERS test filter** — Currently blocks all emails except a test allowlist. Must be removed for production.
 - [x] **Fix initial lookback** — Reduce from 14 days to 3 days so new users aren't flooded with old threads.
-- [x] **First-poll import mode** — On first connection poll, ingest threads but skip draft generation. Only generate drafts for messages arriving after the initial sync.
+- [x] **First-poll behavior** — Generates drafts on first poll within 3-day window. Drafts require manual approval so no risk of unwanted sends.
 - [x] **Polling frequency** — Set to every 2 minutes in render.yaml and documented in README for self-hosted cron setup.
 
 ### API Key Error Handling
@@ -34,12 +34,16 @@ Pre-launch checklist for Envoyer — hosted (Render) and open-source self-hosted
 
 - [x] **README rewrite** — Project description, features, screenshots placeholder, setup guide (hosted + self-hosted), env var reference.
 
+### Security
+
+- [x] **Auth rate limiting** — Better Auth built-in with tightened per-route rules (sign-up, sign-in, forgot-password).
+- [x] **Session revocation on password reset** — All sessions invalidated when password is changed.
+- [x] **CSRF protection** — Handled by Better Auth (origin validation, SameSite cookies, JSON content-type).
+- [x] **Playground route removed** — Eliminated unnecessary API surface (`/api/rag/draft`).
+
 ## Should-Have for Launch
 
-- [ ] **Rate limiting** — At minimum on auth routes and draft generation endpoint.
 - [ ] **Autopilot activation UI** — Metrics summary on topic cards (approval rate, volume, edit rate). Manual "Activate" button. Auto-disable on escalation spike.
-- [ ] **Update CLAUDE.md** — Email verification is implemented with Resend, not stubbed. Remove stale note.
-- [ ] **Complete .env.example** — Add missing `IMAP_ALLOW_SENDERS` (now optional) and `RECRAWL_SCHEDULE` entries.
 
 ## Nice-to-Have (Post-Launch)
 
