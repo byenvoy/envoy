@@ -361,6 +361,25 @@ export default async function LandingPage() {
                   </Link>
                 </div>
               </div>
+              <div>
+                <p className="font-display text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  Terms & Policies
+                </p>
+                <div className="mt-3 flex flex-col gap-2">
+                  <Link
+                    href="/terms"
+                    className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Terms of Service
+                  </Link>
+                  <Link
+                    href="/privacy"
+                    className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    Privacy Policy
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
