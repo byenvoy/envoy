@@ -33,6 +33,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/scripts/migrate.mjs ./scripts/migrate.mjs
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
