@@ -7,7 +7,7 @@ import { Resend } from "resend";
 import crypto from "crypto";
 import { requireOwner } from "@/lib/permissions";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 export async function POST(request: NextRequest) {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       .where(eq(organizations.id, orgId))
       .then((r) => r[0]);
 
-    void resend.emails.send({
+    void getResend().emails.send({
       from: fromEmail,
       to: email,
       subject: `You've been invited to ${org?.name ?? "a team"} on Envoy`,

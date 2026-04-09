@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { Resend } from "resend";
 import type Stripe from "stripe";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 async function getOwnerEmail(stripeCustomerId: string): Promise<string | null> {
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
           "en-US",
           { month: "long", day: "numeric", year: "numeric" }
         );
-        void resend.emails.send({
+        void getResend().emails.send({
           from: fromEmail,
           to: ownerEmail,
           subject: "Your Envoy trial ends in 3 days",

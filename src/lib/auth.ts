@@ -8,7 +8,11 @@ import { organizations, profiles } from "@/lib/db/schema";
 import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 // Track invite signups so we can skip sending them the verification email.
@@ -24,7 +28,7 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
-      void resend.emails.send({
+      void getResend().emails.send({
         from: fromEmail,
         to: user.email,
         subject: "Reset your password",
@@ -39,7 +43,7 @@ export const auth = betterAuth({
       // Skip sending for invite signups — they're already verified
       if (inviteSignupEmails.delete(user.email)) return;
 
-      void resend.emails.send({
+      void getResend().emails.send({
         from: fromEmail,
         to: user.email,
         subject: "Verify your email address",
