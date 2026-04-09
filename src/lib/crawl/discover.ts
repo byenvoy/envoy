@@ -92,26 +92,6 @@ function stripLocalePrefix(pathname: string): string {
   return pathname.replace(LOCALE_PREFIX_REGEX, "/");
 }
 
-/** Filter URLs to a single locale. Keeps locale-matching and non-prefixed URLs. */
-export function filterByLocale(urls: string[], locale: string): string[] {
-  const result: string[] = [];
-
-  for (const url of urls) {
-    try {
-      const parsed = new URL(url);
-      const match = parsed.pathname.match(LOCALE_PREFIX_REGEX);
-      const urlLocale = match ? match[1] : null;
-
-      // Keep URLs matching the selected locale or with no locale prefix
-      if (urlLocale && urlLocale !== locale) continue;
-      result.push(url);
-    } catch {
-      // skip
-    }
-  }
-
-  return result;
-}
 
 function normalizeUrl(input: string): string {
   let url = input.trim();
