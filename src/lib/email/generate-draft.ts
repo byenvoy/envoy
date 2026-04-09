@@ -164,18 +164,8 @@ export async function generateDraftForConversation(conversationId: string, isReg
         })
         .where(eq(drafts.id, insertedDraft.id));
 
-      // Auto-send if all gates passed, mode is auto, and no LLM errors on the org
+      // Auto-send if all gates passed and mode is auto
       if (autopilotResult.shouldAutoSend && autopilotResult.topicMatch) {
-        const orgCheck = await db
-          .select({ llmErrorMessage: organizations.llmErrorMessage })
-          .from(organizations)
-          .where(eq(organizations.id, conversation.orgId))
-          .then((r) => r[0]);
-
-        if (orgCheck?.llmErrorMessage) {
-          console.warn(`[autopilot] Skipping auto-send for ${conversationId}: LLM error on org`);
-          return;
-        }
         await autoSendDraft({
           conversationId,
           draftId: insertedDraft.id,
