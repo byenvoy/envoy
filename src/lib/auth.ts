@@ -5,6 +5,7 @@ import { createAuthMiddleware } from "better-auth/api";
 import { Resend } from "resend";
 import { db } from "@/lib/db";
 import { organizations, profiles } from "@/lib/db/schema";
+import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -46,7 +47,23 @@ export const auth = betterAuth({
       // from the response body instead.
       if (ctx.path === "/sign-up/email") {
         const body = ctx.body as Record<string, unknown> | undefined;
+        const callbackURL = body?.callbackURL as string | undefined;
         const companyName = body?.companyName as string | undefined;
+
+        // Invite signups: skip org+profile creation (the invite acceptance route handles it)
+        // and mark email as verified (they proved ownership by clicking the invite link)
+        if (callbackURL?.startsWith("/api/invite/")) {
+          const response = ctx.context.returned as Record<string, unknown> | null;
+          const inviteUser = response?.user as Record<string, unknown> | undefined;
+          const inviteUserId = inviteUser?.id as string | undefined;
+          if (inviteUserId) {
+            await db
+              .update(userTable)
+              .set({ emailVerified: true })
+              .where(eq(userTable.id, inviteUserId));
+          }
+          return;
+        }
 
         // Better Auth returns a plain object { token, user } from the signup endpoint
         const response = ctx.context.returned as Record<string, unknown> | null;

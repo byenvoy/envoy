@@ -5,42 +5,73 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
-export function LoginForm({ redirect }: { redirect?: string }) {
+export function InviteSignupForm({
+  email,
+  token,
+}: {
+  email: string;
+  token: string;
+}) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Only allow relative paths to prevent open redirect
-  const safeRedirect = redirect?.startsWith("/") ? redirect : undefined;
+  const callbackURL = `/api/invite/${token}`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const { error } = await authClient.signIn.email({
+    const { error: signUpError } = await authClient.signUp.email({
+      name: fullName,
       email,
       password,
-    });
+      callbackURL,
+    } as Parameters<typeof authClient.signUp.email>[0]);
 
-    if (error) {
-      setError(
-        error.status === 403
-          ? "Please confirm your email address first. Check your inbox for a confirmation link."
-          : error.message ?? "Sign in failed"
-      );
+    if (signUpError) {
+      setError(signUpError.message ?? "Sign up failed");
       setLoading(false);
       return;
     }
 
-    router.push(safeRedirect || "/inbox");
-    router.refresh();
+    // Email is pre-verified for invite signups, so sign in directly
+    const { error: signInError } = await authClient.signIn.email({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError(signInError.message ?? "Sign in failed");
+      setLoading(false);
+      return;
+    }
+
+    router.push(callbackURL);
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label
+          htmlFor="fullName"
+          className="mb-1 block font-display text-sm font-medium text-text-primary"
+        >
+          Full name
+        </label>
+        <input
+          id="fullName"
+          type="text"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          placeholder="Jane Smith"
+        />
+      </div>
       <div>
         <label
           htmlFor="email"
@@ -51,11 +82,9 @@ export function LoginForm({ redirect }: { redirect?: string }) {
         <input
           id="email"
           type="email"
-          required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          placeholder="you@company.com"
+          disabled
+          className="w-full rounded-lg border border-border bg-surface-secondary px-3 py-2 text-sm text-text-secondary"
         />
       </div>
       <div>
@@ -69,10 +98,11 @@ export function LoginForm({ redirect }: { redirect?: string }) {
           id="password"
           type="password"
           required
+          minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          placeholder="Your password"
+          placeholder="At least 8 characters"
         />
       </div>
       {error && (
@@ -83,15 +113,15 @@ export function LoginForm({ redirect }: { redirect?: string }) {
         disabled={loading}
         className="w-full rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
       >
-        {loading ? "Signing in..." : "Sign in"}
+        {loading ? "Creating account..." : "Join team"}
       </button>
       <p className="text-center text-sm text-text-secondary">
-        Don&apos;t have an account?{" "}
+        Already have an account?{" "}
         <Link
-          href={redirect ? `/signup?redirect=${encodeURIComponent(redirect)}` : "/signup"}
+          href={`/login?redirect=/api/invite/${token}`}
           className="font-medium text-primary hover:underline"
         >
-          Sign up
+          Sign in
         </Link>
       </p>
     </form>

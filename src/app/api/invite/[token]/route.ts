@@ -18,9 +18,7 @@ export async function GET(
   if (!session) {
     // Redirect to login with a return URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    return NextResponse.redirect(
-      `${appUrl}/login?redirect=/api/invite/${token}`
-    );
+    return NextResponse.redirect(`${appUrl}/invite/${token}`);
   }
 
   const user = session.user;

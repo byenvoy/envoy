@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
-export function ResendVerificationButton({ email }: { email: string }) {
+export function ResendVerificationButton({ email, redirect }: { email: string; redirect?: string }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -11,7 +11,7 @@ export function ResendVerificationButton({ email }: { email: string }) {
     setLoading(true);
     await authClient.sendVerificationEmail({
       email,
-      callbackURL: "/onboarding",
+      callbackURL: redirect || "/onboarding",
     });
     setSent(true);
     setLoading(false);

@@ -1,6 +1,12 @@
 import { LoginForm } from "@/components/auth/login-form";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>;
+}) {
+  const { redirect } = await searchParams;
+
   return (
     <div>
       <h1 className="mb-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -9,7 +15,7 @@ export default function LoginPage() {
       <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
         Enter your email and password to continue.
       </p>
-      <LoginForm />
+      <LoginForm redirect={redirect} />
     </div>
   );
 }

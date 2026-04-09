@@ -4,13 +4,13 @@ import { EmailVerificationPoller } from "@/components/auth/email-verification-po
 export default async function CheckEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; redirect?: string }>;
 }) {
-  const { email } = await searchParams;
+  const { email, redirect } = await searchParams;
 
   return (
     <div className="text-center">
-      <EmailVerificationPoller />
+      <EmailVerificationPoller redirect={redirect} />
       <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-success-light">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -44,7 +44,7 @@ export default async function CheckEmailPage({
       <p className="text-sm text-text-secondary">
         Didn&apos;t receive it? Check your spam folder, or{" "}
         {email ? (
-          <ResendVerificationButton email={email} />
+          <ResendVerificationButton email={email} redirect={redirect} />
         ) : (
           <>
             <a
