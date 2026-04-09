@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
+import { user } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { requireOwner } from "@/lib/permissions";
 
@@ -35,6 +36,8 @@ export async function POST(request: NextRequest) {
 
   try {
     await db.delete(profiles).where(eq(profiles.id, profile_id));
+    // Delete the user account entirely so they don't end up logged in with no org access
+    await db.delete(user).where(eq(user.id, profile_id));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
