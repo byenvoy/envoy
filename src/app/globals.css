@@ -65,6 +65,7 @@
 
   --color-success-light: var(--success-light);
 
+  --font-sans: var(--font-instrument-sans);
   --font-display: var(--font-dm-sans);
   --font-body: var(--font-instrument-sans);
   --font-mono: var(--font-dm-mono);
