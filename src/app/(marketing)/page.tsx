@@ -354,7 +354,7 @@ export default async function LandingPage() {
                 </p>
                 <div className="mt-3 flex flex-col gap-2">
                   <Link
-                    href="https://github.com/envoy/envoy"
+                    href="https://github.com/byenvoy/envoy"
                     className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary"
                   >
                     GitHub

@@ -43,7 +43,7 @@ export default async function LandingPage() {
                 Start free trial
               </Link>
               <Link
-                href="https://github.com/envoy/envoy"
+                href="https://github.com/byenvoy/envoy"
                 className="rounded-lg border border-border px-6 py-3 font-display text-sm font-semibold text-text-primary transition-colors hover:bg-surface-alt focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 View on GitHub
@@ -298,7 +298,7 @@ export default async function LandingPage() {
                 Pricing
               </Link>
               <Link
-                href="https://github.com/envoy/envoy"
+                href="https://github.com/byenvoy/envoy"
                 className="font-body text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 GitHub

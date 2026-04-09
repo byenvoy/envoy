@@ -14,7 +14,7 @@ const TIERS = [
       "Community support",
     ],
     cta: "View on GitHub",
-    ctaHref: "https://github.com/envoy/envoy",
+    ctaHref: "https://github.com/byenvoy/envoy",
     highlight: false,
     mobileOrder: "order-last",
   },
