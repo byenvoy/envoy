@@ -27,7 +27,7 @@ export default function CrawlPage() {
           &larr; Back to Knowledge Base
         </Link>
       </div>
-      <h1 className="mb-2 text-2xl font-semibold font-display tracking-tight text-text-primary">
+      <h1 className="mb-2 text-2xl font-bold font-display tracking-tight text-text-primary">
         {urls ? "Select pages to import" : "Crawl your website"}
       </h1>
       <p className="mb-8 text-sm text-text-secondary">
