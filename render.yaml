@@ -5,7 +5,6 @@ services:
     runtime: docker
     plan: starter
     healthCheckPath: /api/health
-    preDeployCommand: node scripts/migrate.mjs
     envVars:
       - key: DATABASE_URL
         fromDatabase:
