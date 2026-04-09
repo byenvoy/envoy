@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from auth routes
   if (sessionCookie && isAuthRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/knowledge-base";
+    url.pathname = "/inbox";
     return NextResponse.redirect(url);
   }
 

@@ -32,7 +32,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push("/knowledge-base");
+    router.push("/inbox");
     router.refresh();
   }
 
