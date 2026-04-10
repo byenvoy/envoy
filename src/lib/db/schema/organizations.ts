@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -11,6 +11,7 @@ export const organizations = pgTable("organizations", {
   signOff: text("sign_off"),
   llmErrorMessage: text("llm_error_message"),
   llmErrorAt: timestamp("llm_error_at", { withTimezone: true }),
+  pollingEnabled: boolean("polling_enabled").notNull().default(false),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
   onboardingStep: integer("onboarding_step").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

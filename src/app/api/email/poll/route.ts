@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { emailConnections, knowledgeBaseChunks } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { emailConnections, organizations } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { tryAdvisoryLock, advisoryUnlock, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
 import { isCloud } from "@/lib/config";
@@ -43,16 +43,16 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // Skip polling if org has no KB chunks — no point ingesting emails
-        // before the knowledge base is set up. UIDs won't advance, so emails
-        // will be picked up on the first poll after KB sources are added.
-        const chunkCount = await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(knowledgeBaseChunks)
-          .where(eq(knowledgeBaseChunks.orgId, conn.orgId))
-          .then((r) => r[0]?.count ?? 0);
+        // Skip polling if org hasn't enabled it yet — user opts in after
+        // setting up their knowledge base. UIDs won't advance, so emails
+        // will be picked up on the first poll after polling is enabled.
+        const org = await db
+          .select({ pollingEnabled: organizations.pollingEnabled })
+          .from(organizations)
+          .where(eq(organizations.id, conn.orgId))
+          .then((r) => r[0]);
 
-        if (chunkCount === 0) {
+        if (!org?.pollingEnabled) {
           continue;
         }
 

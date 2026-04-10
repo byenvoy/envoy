@@ -11,11 +11,13 @@ import {
   autopilotEvaluations,
   autopilotTopics,
   knowledgeBaseChunks,
+  organizations,
 } from "@/lib/db/schema";
 import { eq, and, desc, asc, or, ilike, sql, getTableColumns } from "drizzle-orm";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
 import { parseSearch } from "@/lib/search/parse-search";
 import { InboxView } from "@/components/inbox/inbox-view";
+import { PollingOptIn } from "@/components/inbox/polling-opt-in";
 import type { Conversation, Message, Draft, ConversationStatus, MessageDirection, DraftStatus } from "@/lib/types/database";
 
 const PAGE_SIZE = 50;
@@ -92,7 +94,7 @@ export default async function InboxPage({
       }
     : { ...getTableColumns(conversations), searchSnippet: sql<string | null>`NULL` };
 
-  const [convoRows, allConvoRows, topicCount, kbChunkCount] = await Promise.all([
+  const [convoRows, allConvoRows, topicCount, kbChunkCount, orgRow] = await Promise.all([
     db
       .select(snippetSelect)
       .from(conversations)
@@ -113,6 +115,11 @@ export default async function InboxPage({
       .from(knowledgeBaseChunks)
       .where(eq(knowledgeBaseChunks.orgId, orgId))
       .then((r) => r[0]?.count ?? 0),
+    db
+      .select({ pollingEnabled: organizations.pollingEnabled })
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .then((r) => r[0]),
   ]);
 
   const counts: Record<string, number> = { all: allConvoRows.length };
@@ -250,6 +257,7 @@ export default async function InboxPage({
     };
   }
 
+  // Phase 1: No KB sources at all — prompt to add them
   if (kbChunkCount === 0) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -265,9 +273,6 @@ export default async function InboxPage({
           <p className="mt-3 font-body text-base text-text-secondary leading-relaxed">
             Envoy needs your knowledge base to write replies. Add your help docs, FAQs, or support articles so incoming emails get accurate, contextual responses.
           </p>
-          <p className="mt-2 font-body text-sm text-text-secondary">
-            Email polling will start automatically once your knowledge base has content.
-          </p>
           <a
             href="/knowledge-base"
             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-display text-base font-semibold text-white transition-colors hover:bg-primary-dark"
@@ -280,6 +285,11 @@ export default async function InboxPage({
         </div>
       </div>
     );
+  }
+
+  // Phase 2: KB has sources but polling not enabled yet — user opts in
+  if (!orgRow?.pollingEnabled) {
+    return <PollingOptIn />;
   }
 
   return (

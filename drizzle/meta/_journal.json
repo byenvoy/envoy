@@ -71,6 +71,20 @@
       "when": 1775684778720,
       "tag": "0009_same_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775855295707,
+      "tag": "0010_smiling_rick_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1775858495751,
+      "tag": "0011_lethal_gressill",
+      "breakpoints": true
     }
   ]
 }
