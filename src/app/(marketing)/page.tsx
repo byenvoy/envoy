@@ -288,16 +288,16 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="bg-surface-alt py-16 sm:py-24">
+      <section className="bg-surface-alt py-40 sm:py-40">
         <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
           <ScrollReveal>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-5xl">
               Ready to get started?
             </h2>
-            <p className="mt-4 font-body text-base leading-relaxed text-text-secondary">
+            <p className="mt-6 font-body text-base leading-relaxed text-text-secondary sm:mt-4">
               See it for yourself. Get started in minutes.
             </p>
-            <div className="mt-8">
+            <div className="mt-10 sm:mt-8">
               <Link
                 href="/signup"
                 className="rounded-md bg-primary px-8 py-3.5 font-body text-base font-semibold text-white transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
