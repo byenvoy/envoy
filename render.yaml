@@ -86,9 +86,9 @@ services:
     name: envoy-email-poll
     runtime: image
     image:
-      url: alpine:3.20
+      url: curlimages/curl:8.7.1
     schedule: "*/2 * * * *"
-    dockerCommand: sh -c "wget --header='Authorization: Bearer '$CRON_SECRET -qO- $NEXT_PUBLIC_APP_URL/api/email/poll || true"
+    dockerCommand: curl -sf -H "Authorization: Bearer $CRON_SECRET" "$NEXT_PUBLIC_APP_URL/api/email/poll" || true
     envVars:
       - key: CRON_SECRET
         fromService:
@@ -106,9 +106,9 @@ services:
     name: envoy-recrawl
     runtime: image
     image:
-      url: alpine:3.20
+      url: curlimages/curl:8.7.1
     schedule: "0 */6 * * *"
-    dockerCommand: sh -c "wget --header='Authorization: Bearer '$CRON_SECRET -qO- $NEXT_PUBLIC_APP_URL/api/knowledge-base/recrawl || true"
+    dockerCommand: curl -sf -H "Authorization: Bearer $CRON_SECRET" "$NEXT_PUBLIC_APP_URL/api/knowledge-base/recrawl" || true
     envVars:
       - key: CRON_SECRET
         fromService:
