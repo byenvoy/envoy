@@ -252,7 +252,7 @@ export default async function LandingPage() {
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
               Works with the tools you use
             </h2>
-            <div className="mt-12 flex items-center justify-center gap-4 sm:gap-6">
+            <div className="mt-12 flex items-center justify-center gap-3 sm:gap-6">
               {[
                 { name: "Google", src: "/logos/google-icon.svg" },
                 { name: "Microsoft", src: "/logos/microsoft.svg" },
@@ -263,13 +263,13 @@ export default async function LandingPage() {
                   key={item.name}
                   className="flex flex-col items-center gap-2.5"
                 >
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-white shadow-sm sm:h-20 sm:w-20">
                     <Image
                       src={item.src}
                       alt={item.name}
                       width={40}
                       height={40}
-                      className="h-10 w-10 object-contain"
+                      className="h-8 w-8 object-contain sm:h-10 sm:w-10"
                     />
                   </div>
                   <span className="font-body text-sm text-text-secondary">
