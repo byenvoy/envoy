@@ -258,9 +258,9 @@ export async function extractPages(
   onPage?: (page: ExtractedPage) => void | Promise<void>
 ): Promise<ExtractedPage[]> {
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: "shell",
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--disable-software-rasterizer"],
   });
 
   try {
