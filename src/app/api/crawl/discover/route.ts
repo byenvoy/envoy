@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { organizations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { withAuth } from "@/lib/db/helpers";
 import {
   discoverUrls,
@@ -40,13 +37,6 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
   }
-
-  // Update org domain
-  const normalizedDomain = domain.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-  await db
-    .update(organizations)
-    .set({ domain: normalizedDomain, updatedAt: new Date() })
-    .where(eq(organizations.id, orgId));
 
   const { urls, localeInfo } = await discoverUrls(domain);
 
