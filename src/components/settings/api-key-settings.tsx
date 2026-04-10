@@ -6,7 +6,6 @@ interface ProviderKeyStatus {
   providerKey: string;
   label: string;
   hasOrgKey: boolean;
-  hasEnvKey: boolean;
   lastFour: string | null;
 }
 
@@ -18,8 +17,8 @@ export function ApiKeySettings({
   return (
     <div className="space-y-4">
       <p className="text-xs text-text-secondary">
-        Add API keys for each provider you want to use. Keys are encrypted at
-        rest. Server-level keys (set by the administrator) are used as fallback.
+        Add your API key for the provider you want to use for draft generation.
+        Keys are encrypted at rest.
       </p>
       {providers.map((p) => (
         <ProviderKeyRow key={p.providerKey} provider={p} />
@@ -73,7 +72,7 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
     }
   }
 
-  const isConfigured = status.hasOrgKey || provider.hasEnvKey;
+  const isConfigured = status.hasOrgKey;
 
   return (
     <div className="rounded-lg border border-border px-4 py-3">
@@ -86,10 +85,6 @@ function ProviderKeyRow({ provider }: { provider: ProviderKeyStatus }) {
             {status.hasOrgKey ? (
               <span className="text-primary font-mono">
                 Configured (...{status.lastFour})
-              </span>
-            ) : provider.hasEnvKey ? (
-              <span className="text-primary">
-                Reading from environment variable
               </span>
             ) : (
               <span>Not configured</span>

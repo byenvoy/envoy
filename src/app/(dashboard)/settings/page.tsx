@@ -144,7 +144,6 @@ export default async function SettingsPage() {
       providerKey,
       label,
       hasOrgKey: orgKeyStatus.has(providerKey),
-      hasEnvKey: hasEnvKey(providerKey),
       lastFour: orgKeyStatus.get(providerKey) ?? null,
     })
   );
