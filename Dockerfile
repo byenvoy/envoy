@@ -24,7 +24,7 @@ RUN npm run build
 # Bundle the crawl worker into a single file
 RUN npx esbuild src/worker/crawl.ts --bundle --platform=node --format=esm \
     --outfile=dist/worker.mjs \
-    --external:puppeteer --external:jsdom --external:postgres \
+    --external:puppeteer --external:jsdom --external:postgres --external:node-cron \
     --alias:@/lib=./src/lib --alias:@/worker=./src/worker
 
 # --- Production ---
