@@ -31,19 +31,18 @@ RUN npx esbuild src/worker/crawl.ts --bundle --platform=node --format=esm \
 FROM base AS runner
 ENV NODE_ENV=production
 
-# Install Chromium for Puppeteer
+# Install Google Chrome Stable for Puppeteer
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium \
+    wget gnupg ca-certificates \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    google-chrome-stable \
     fonts-liberation \
-    libgbm1 \
-    libnss3 \
-    libatk-bridge2.0-0 \
-    libgtk-3-0 \
-    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
