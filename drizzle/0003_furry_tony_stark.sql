@@ -63,9 +63,13 @@ CREATE TABLE "subscriptions" (
 	CONSTRAINT "subscriptions_stripe_subscription_id_unique" UNIQUE("stripe_subscription_id")
 );
 --> statement-breakpoint
+ALTER TABLE "team_invites" DROP CONSTRAINT IF EXISTS "team_invites_invited_by_profiles_id_fk";--> statement-breakpoint
+ALTER TABLE "drafts" DROP CONSTRAINT IF EXISTS "drafts_approved_by_profiles_id_fk";--> statement-breakpoint
 ALTER TABLE "profiles" ALTER COLUMN "id" SET DATA TYPE text;--> statement-breakpoint
 ALTER TABLE "drafts" ALTER COLUMN "approved_by" SET DATA TYPE text;--> statement-breakpoint
 ALTER TABLE "team_invites" ALTER COLUMN "invited_by" SET DATA TYPE text;--> statement-breakpoint
+ALTER TABLE "team_invites" ADD CONSTRAINT "team_invites_invited_by_profiles_id_fk" FOREIGN KEY ("invited_by") REFERENCES "public"."profiles"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "drafts" ADD CONSTRAINT "drafts_approved_by_profiles_id_fk" FOREIGN KEY ("approved_by") REFERENCES "public"."profiles"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "conversations" ADD COLUMN "last_message_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
