@@ -10,7 +10,8 @@ import { decrypt } from "@/lib/email/encryption";
  */
 export async function getOrgApiKey(
   orgId: string,
-  providerKey: string
+  providerKey: string,
+  { allowEnvFallback = true }: { allowEnvFallback?: boolean } = {}
 ): Promise<string | null> {
   const row = await db
     .select({ apiKeyEncrypted: orgApiKeys.apiKeyEncrypted })
@@ -31,8 +32,11 @@ export async function getOrgApiKey(
     }
   }
 
-  // Fall back to env var
-  return process.env[providerKey] ?? null;
+  if (allowEnvFallback) {
+    return process.env[providerKey] ?? null;
+  }
+
+  return null;
 }
 
 /**

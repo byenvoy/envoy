@@ -147,7 +147,7 @@ export async function retrieveAndDraft({
     customerName,
   });
 
-  const llm = await createLLMProvider(model, orgId);
+  const llm = await createLLMProvider(model, orgId, { allowEnvFallback: false });
   const response = await llm.generateDraft(system, user);
 
   // Log draft usage

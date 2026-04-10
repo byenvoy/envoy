@@ -205,7 +205,11 @@ class GoogleProvider implements LLMProvider {
   }
 }
 
-export async function createLLMProvider(model?: string, orgId?: string): Promise<LLMProvider> {
+export async function createLLMProvider(
+  model?: string,
+  orgId?: string,
+  { allowEnvFallback = true }: { allowEnvFallback?: boolean } = {}
+): Promise<LLMProvider> {
   const modelId = model ?? "claude-haiku-4-5-20251001";
   const config = SUPPORTED_MODELS[modelId];
 
@@ -215,7 +219,7 @@ export async function createLLMProvider(model?: string, orgId?: string): Promise
 
   const providerKey = config.envKey!;
   const apiKey = orgId
-    ? await getOrgApiKey(orgId, providerKey)
+    ? await getOrgApiKey(orgId, providerKey, { allowEnvFallback })
     : process.env[providerKey] ?? null;
 
   if (!apiKey) throw new Error(`Missing API key for ${config.label} (${providerKey})`);

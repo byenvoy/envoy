@@ -20,7 +20,7 @@ import { ApiKeySettings } from "@/components/settings/api-key-settings";
 import { BillingSection } from "@/components/settings/billing-section";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
 import { isCloud } from "@/lib/config";
-import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
+import { getOrgApiKeyStatus } from "@/lib/api-keys";
 import { canAccessFeature, type Role } from "@/lib/permissions";
 import type { EmailConnection, Integration, Organization, Profile, TeamInvite } from "@/lib/types/database";
 
@@ -148,10 +148,10 @@ export default async function SettingsPage() {
     })
   );
 
-  // Build model availability: a model is available if its envKey has an org key or env var
+  // Build model availability: a model is available only if the org has their own key
   const keyAvailability = new Set<string>();
   for (const [providerKey] of uniqueProviders) {
-    if (orgKeyStatus.has(providerKey) || hasEnvKey(providerKey)) {
+    if (orgKeyStatus.has(providerKey)) {
       keyAvailability.add(providerKey);
     }
   }
