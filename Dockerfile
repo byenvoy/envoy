@@ -21,9 +21,29 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
 RUN npm run build
 
+# Bundle the crawl worker into a single file
+RUN npx esbuild src/worker/crawl.ts --bundle --platform=node --format=esm \
+    --outfile=dist/worker.mjs \
+    --external:puppeteer --external:jsdom --external:postgres \
+    --alias:@/lib=./src/lib --alias:@/worker=./src/worker
+
 # --- Production ---
 FROM base AS runner
 ENV NODE_ENV=production
+
+# Install Chromium for Puppeteer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    fonts-liberation \
+    libgbm1 \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libasound2 \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -34,8 +54,12 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts/migrate.mjs ./scripts/migrate.mjs
-COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
-COPY --from=builder /app/node_modules/postgres ./node_modules/postgres
+
+# Copy all node_modules (needed for worker runtime deps + migration)
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy worker bundle
+COPY --from=builder /app/dist/worker.mjs ./worker.mjs
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
