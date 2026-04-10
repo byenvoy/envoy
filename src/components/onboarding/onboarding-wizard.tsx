@@ -29,7 +29,7 @@ export function OnboardingWizard({
   isCloud,
 }: {
   initialStep: number;
-  currentModel: string;
+  currentModel: string | null;
   models: ModelOption[];
   emailConnections: EmailConnection[];
   hasGoogleClientId: boolean;

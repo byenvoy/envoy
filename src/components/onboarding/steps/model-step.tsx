@@ -18,7 +18,7 @@ export function ModelStep({
   onNext,
   onBack,
 }: {
-  currentModel: string;
+  currentModel: string | null;
   models: ModelOption[];
   onNext: () => void;
   onBack: () => void;

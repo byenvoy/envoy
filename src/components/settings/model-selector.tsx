@@ -17,7 +17,7 @@ export function ModelSelector({
   models,
   onAvailabilityChange,
 }: {
-  currentModel: string;
+  currentModel: string | null;
   models: ModelOption[];
   onAvailabilityChange?: (hasAvailableModel: boolean) => void;
 }) {

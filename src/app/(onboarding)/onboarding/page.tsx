@@ -138,7 +138,7 @@ export default async function OnboardingPage() {
   return (
     <OnboardingWizard
       initialStep={orgData?.onboarding_step ?? 1}
-      currentModel={orgData?.preferred_model ?? "claude-haiku-4-5-20251001"}
+      currentModel={orgData?.preferred_model ?? null}
       models={models}
       emailConnections={connectionsSnake}
       hasGoogleClientId={!!process.env.GOOGLE_CLIENT_ID}
