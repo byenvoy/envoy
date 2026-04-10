@@ -11,7 +11,7 @@ import {
 import { eq } from "drizzle-orm";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { SUPPORTED_MODELS } from "@/lib/rag/llm";
-import { hasEnvKey, getOrgApiKeyStatus } from "@/lib/api-keys";
+import { getOrgApiKeyStatus } from "@/lib/api-keys";
 import { isCloud } from "@/lib/config";
 import type {
   EmailConnection,
@@ -80,7 +80,7 @@ export default async function OnboardingPage() {
 
   const keyAvailability = new Set<string>();
   for (const [providerKey] of uniqueProviders) {
-    if (orgKeyStatus.has(providerKey) || hasEnvKey(providerKey)) {
+    if (orgKeyStatus.has(providerKey)) {
       keyAvailability.add(providerKey);
     }
   }
