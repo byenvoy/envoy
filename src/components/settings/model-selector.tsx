@@ -15,9 +15,11 @@ interface ModelOption {
 export function ModelSelector({
   currentModel,
   models,
+  onAvailabilityChange,
 }: {
   currentModel: string;
   models: ModelOption[];
+  onAvailabilityChange?: (hasAvailableModel: boolean) => void;
 }) {
   const [selected, setSelected] = useState(currentModel);
   const [saving, setSaving] = useState(false);
@@ -26,7 +28,10 @@ export function ModelSelector({
   const [savingKey, setSavingKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availableKeys, setAvailableKeys] = useState<Set<string>>(
-    () => new Set(models.filter((m) => m.available).map((m) => m.providerKey))
+    () => {
+      const keys = new Set(models.filter((m) => m.available).map((m) => m.providerKey));
+      return keys;
+    }
   );
 
   async function switchModel(modelId: string) {
@@ -80,11 +85,13 @@ export function ModelSelector({
         throw new Error(data.error ?? "Failed to save API key");
       }
 
-      setAvailableKeys((prev) => new Set([...prev, pendingModel.providerKey]));
+      const newKeys = new Set([...availableKeys, pendingModel.providerKey]);
+      setAvailableKeys(newKeys);
 
       await switchModel(pendingModel.id);
       setPendingModel(null);
       setApiKey("");
+      onAvailabilityChange?.(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
