@@ -19,6 +19,10 @@ const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev
 // The before hook adds emails here; sendVerificationEmail checks and removes them.
 const inviteSignupEmails = new Set<string>();
 
+// Stash companyName from the signup request so the databaseHooks user.create.after
+// hook can access it (databaseHooks don't have access to the HTTP request body).
+const pendingCompanyNames = new Map<string, string>();
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -60,19 +64,18 @@ export const auth = betterAuth({
         if (callbackURL?.startsWith("/api/invite/") && email) {
           inviteSignupEmails.add(email);
         }
+        // Stash companyName so databaseHooks can access it
+        if (body?.companyName && body?.email) {
+          pendingCompanyNames.set(body.email as string, body.companyName as string);
+        }
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
-      // Create org + profile after signup.
-      // With requireEmailVerification, newSession is null — read the user
-      // from the response body instead.
+      // Handle invite signups: mark email as verified
       if (ctx.path === "/sign-up/email") {
         const body = ctx.body as Record<string, unknown> | undefined;
         const callbackURL = body?.callbackURL as string | undefined;
-        const companyName = body?.companyName as string | undefined;
 
-        // Invite signups: skip org+profile creation (the invite acceptance route handles it)
-        // and mark email as verified (they proved ownership by clicking the invite link)
         if (callbackURL?.startsWith("/api/invite/")) {
           const response = ctx.context.returned as Record<string, unknown> | null;
           const inviteUser = response?.user as Record<string, unknown> | undefined;
@@ -83,37 +86,42 @@ export const auth = betterAuth({
               .set({ emailVerified: true })
               .where(eq(userTable.id, inviteUserId));
           }
-          return;
         }
-
-        // Better Auth returns a plain object { token, user } from the signup endpoint
-        const response = ctx.context.returned as Record<string, unknown> | null;
-        const user = response?.user as Record<string, unknown> | undefined;
-        const userId = user?.id as string | undefined;
-        const userName = user?.name as string | undefined;
-        if (!userId) return;
-
-        // Idempotency check
-        const existing = await db
-          .select({ id: profiles.id })
-          .from(profiles)
-          .where(eq(profiles.id, userId))
-          .then((r) => r[0]);
-        if (existing) return;
-
-        const [org] = await db
-          .insert(organizations)
-          .values({ name: companyName || "My Organization" })
-          .returning({ id: organizations.id });
-
-        await db.insert(profiles).values({
-          id: userId,
-          orgId: org.id,
-          fullName: userName ?? "",
-          role: "owner",
-        });
       }
     }),
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          // Skip org+profile creation for invite signups (handled by invite acceptance route)
+          if (inviteSignupEmails.has(user.email)) return;
+
+          // Idempotency check
+          const existing = await db
+            .select({ id: profiles.id })
+            .from(profiles)
+            .where(eq(profiles.id, user.id))
+            .then((r) => r[0]);
+          if (existing) return;
+
+          const companyName = pendingCompanyNames.get(user.email);
+          pendingCompanyNames.delete(user.email);
+
+          const [org] = await db
+            .insert(organizations)
+            .values({ name: companyName || "My Organization" })
+            .returning({ id: organizations.id });
+
+          await db.insert(profiles).values({
+            id: user.id,
+            orgId: org.id,
+            fullName: user.name ?? "",
+            role: "owner",
+          });
+        },
+      },
+    },
   },
   rateLimit: {
     window: 60,
