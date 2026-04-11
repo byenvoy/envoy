@@ -32,12 +32,13 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
-      void getResend().emails.send({
+      const { error } = await getResend().emails.send({
         from: fromEmail,
         to: user.email,
         subject: "Reset your password",
         html: `<p>Click the link below to reset your password:</p><p><a href="${url}">Reset Password</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
       });
+      if (error) console.error("[Resend] password reset email failed:", error);
     },
   },
   emailVerification: {
@@ -47,12 +48,13 @@ export const auth = betterAuth({
       // Skip sending for invite signups — they're already verified
       if (inviteSignupEmails.delete(user.email)) return;
 
-      void getResend().emails.send({
+      const { error } = await getResend().emails.send({
         from: fromEmail,
         to: user.email,
         subject: "Verify your email address",
         html: `<p>Click the link below to verify your email:</p><p><a href="${url}">Verify Email</a></p>`,
       });
+      if (error) console.error("[Resend] verification email failed:", error);
     },
   },
   hooks: {
