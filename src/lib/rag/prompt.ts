@@ -64,7 +64,7 @@ function buildSystemPrompt(
 
   const rules = [
     `Only use information from the provided knowledge base context${hasCustomerContext ? " and customer context" : ""} to answer questions.`,
-    "If the knowledge base does not contain enough information to answer the question, say so honestly and let the customer know you'll look into it and follow up.",
+    "If the knowledge base does not contain enough information to fully answer the question, be upfront: briefly say you're not sure and that you'll find out and get back to them. Do NOT pad with filler, do NOT suggest the customer contact another channel or email address — they are already talking to support.",
     toneInstruction,
     greetingRule,
     "Keep responses concise and to the point.",
