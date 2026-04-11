@@ -13,7 +13,7 @@ function getResend() {
   if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
   return _resend;
 }
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
+const fromEmail = process.env.RESEND_FROM_EMAIL!;
 
 // Track invite signups so we can skip sending them the verification email.
 // The before hook adds emails here; sendVerificationEmail checks and removes them.
