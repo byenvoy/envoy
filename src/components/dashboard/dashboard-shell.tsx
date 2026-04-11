@@ -63,7 +63,7 @@ export function DashboardShell({ userInitials, userName, userEmail, userRole, su
 
   return (
     <ShellCtx.Provider value={{ setMobileNavContent, openCommandPalette, userName, userEmail, userRole }}>
-      <div className={isInbox ? "flex h-screen flex-col bg-surface" : "min-h-screen bg-surface"}>
+      <div className={isInbox ? "flex h-dvh flex-col bg-surface" : "min-h-screen bg-surface"}>
         <NavBar
           userInitials={userInitials}
           userName={userName}
