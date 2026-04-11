@@ -117,6 +117,22 @@ export default function PricingPage() {
           </div>
         ))}
       </div>
+
+      <div className="mx-auto mt-16 max-w-xl text-center">
+        <h2 className="font-display text-lg font-semibold text-text-primary">
+          Questions?
+        </h2>
+        <p className="mt-2 font-body text-[15px] leading-relaxed text-text-secondary">
+          Have a question about pricing or need something custom? Reach out and
+          we&apos;ll help.
+        </p>
+        <a
+          href="mailto:support@byenvoy.com"
+          className="mt-4 inline-block font-display text-sm font-semibold text-primary transition-opacity hover:opacity-80"
+        >
+          Contact us &rarr;
+        </a>
+      </div>
     </main>
   );
 }
