@@ -16,7 +16,7 @@ export default function MarketingLayout({
           >
             envoy
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/pricing"
               className="hidden px-2 py-2 font-body text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
@@ -25,7 +25,7 @@ export default function MarketingLayout({
             </Link>
             <Link
               href="/login"
-              className="hidden px-2 py-2 font-body text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
+              className="px-2 py-2 font-body text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
               Log in
             </Link>
