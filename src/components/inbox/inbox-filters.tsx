@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
@@ -21,48 +21,22 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
   const activeFilter = searchParams.get("status") ?? "open";
 
   // Manual poll state
-  const [polling, setPolling] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (cooldownRef.current) clearInterval(cooldownRef.current);
-    };
-  }, []);
-
-  function startCooldown(seconds: number) {
-    setCooldown(seconds);
-    if (cooldownRef.current) clearInterval(cooldownRef.current);
-    cooldownRef.current = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(cooldownRef.current!);
-          cooldownRef.current = null;
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }
+  const [spinning, setSpinning] = useState(false);
 
   async function handlePollNow() {
-    if (polling || cooldown > 0) return;
-    setPolling(true);
+    if (spinning) return;
+    setSpinning(true);
+
+    const spinTimer = new Promise((r) => setTimeout(r, 800));
+
     try {
-      const res = await fetch("/api/email/poll-now", { method: "POST" });
-      if (res.status === 429) {
-        const data = await res.json();
-        startCooldown(data.retryAfter ?? 30);
-      } else if (res.ok) {
-        startCooldown(30);
-        router.refresh();
-      }
-      // 409 (already in progress) — just silently finish
+      await fetch("/api/email/poll-now", { method: "POST" });
+      await spinTimer;
+      router.refresh();
     } catch {
-      // Network error — ignore
+      await spinTimer;
     } finally {
-      setPolling(false);
+      setSpinning(false);
     }
   }
 
@@ -129,12 +103,12 @@ export function InboxFilters({ statusCounts }: InboxFiltersProps) {
         </div>
         <button
           onClick={handlePollNow}
-          disabled={polling || cooldown > 0}
-          title={cooldown > 0 ? `Check again in ${cooldown}s` : "Check for new emails"}
-          className="shrink-0 rounded-lg border border-border p-1.5 text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary disabled:opacity-40 disabled:hover:bg-transparent"
+          disabled={spinning}
+          title="Check for new emails"
+          className="shrink-0 rounded-lg border border-border p-1.5 text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary disabled:pointer-events-none"
         >
           <svg
-            className={`h-3.5 w-3.5 ${polling ? "animate-spin" : ""}`}
+            className={`h-3.5 w-3.5 ${spinning ? "animate-refresh-spin" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
