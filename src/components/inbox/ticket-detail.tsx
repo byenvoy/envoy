@@ -267,32 +267,34 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
+          {/* Actions — sticky on mobile so buttons stay above browser bar */}
+          <div className="sticky bottom-0 -mx-4 border-t border-border bg-surface px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3 md:static md:mx-0 md:border-t-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleSend(true)}
+                  disabled={loading !== null}
+                  className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
+                >
+                  {loading === "send-close" ? "..." : "Send & Close"}
+                </button>
+                <button
+                  onClick={() => handleSend(false)}
+                  disabled={loading !== null}
+                  className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                >
+                  {loading === "send" ? "Sending..." : "Send"}
+                </button>
+              </div>
+              {/* Desktop: regenerate below send buttons */}
               <button
-                onClick={() => handleSend(true)}
+                onClick={handleRegenerate}
                 disabled={loading !== null}
-                className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
+                className="hidden rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50 md:block"
               >
-                {loading === "send-close" ? "..." : "Send & Close"}
-              </button>
-              <button
-                onClick={() => handleSend(false)}
-                disabled={loading !== null}
-                className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
-              >
-                {loading === "send" ? "Sending..." : "Send"}
+                {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
               </button>
             </div>
-            {/* Desktop: regenerate below send buttons */}
-            <button
-              onClick={handleRegenerate}
-              disabled={loading !== null}
-              className="hidden rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50 md:block"
-            >
-              {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
-            </button>
           </div>
         </div>
       )}
