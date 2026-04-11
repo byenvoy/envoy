@@ -37,7 +37,7 @@ export async function POST() {
 
   if (existing) {
     const accessToken = decrypt(existing.accessTokenEncrypted);
-    const shopDomain = existing.config.shop_domain as string;
+    const shopDomain = (existing.config as Record<string, unknown>)?.shop_domain as string;
     await revokeShopifyToken(shopDomain, accessToken);
   }
 
