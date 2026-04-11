@@ -31,10 +31,10 @@ export function PollingOptIn() {
           Knowledge base ready
         </h2>
         <p className="mt-3 font-body text-base text-text-secondary leading-relaxed">
-          Your knowledge base has content. When you enable polling, Envoy will start pulling in emails and writing draft replies using your sources.
+          Your knowledge base has content. When you're ready, Envoy will start reading incoming emails and drafting replies using your sources.
         </p>
         <p className="mt-2 font-body text-sm text-text-secondary">
-          You can always add more sources later — this just starts the email flow.
+          You can always add more sources later.
         </p>
         <div className="mt-6 flex items-center justify-center gap-3">
           <a
@@ -48,7 +48,7 @@ export function PollingOptIn() {
             disabled={enabling}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
           >
-            {enabling ? "Enabling..." : "Start polling"}
+            {enabling ? "Starting..." : "Start now"}
             {!enabling && (
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
