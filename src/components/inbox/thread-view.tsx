@@ -164,7 +164,7 @@ function MessageRow({
             <div className="mt-2">
               {renderedHtml ? (
                 <div
-                  className="font-mono text-[13px] leading-relaxed text-text-primary [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
+                  className="overflow-x-auto break-words font-mono text-[13px] leading-relaxed text-text-primary [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
                   dangerouslySetInnerHTML={{ __html: renderedHtml }}
                 />
               ) : (
