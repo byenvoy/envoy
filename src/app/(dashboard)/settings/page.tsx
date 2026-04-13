@@ -160,6 +160,7 @@ export default async function SettingsPage() {
     id,
     label: config.label,
     logo: config.logo,
+    darkLogo: config.darkLogo,
     available: config.envKey ? keyAvailability.has(config.envKey) : false,
     providerKey: config.envKey ?? "",
     providerLabel: config.envKey

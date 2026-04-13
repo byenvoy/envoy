@@ -114,8 +114,8 @@ export function IntegrationLogos() {
 
 export function ModelLogos() {
   const models = [
-    { name: "Claude", src: "/logos/anthropic.svg" },
-    { name: "GPT-4o", src: "/logos/openai.svg" },
+    { name: "Claude", src: "/logos/anthropic.svg", darkSrc: "/logos/Anthropic symbol - Ivory.svg" },
+    { name: "GPT-4o", src: "/logos/openai.svg", darkSrc: "/logos/OpenAI-white-monoblossom.svg" },
     { name: "Gemini", src: "/logos/gemini-icon.png" },
     { name: "Mistral", src: "/logos/mistral.svg" },
     { name: "DeepSeek", src: "/logos/deepseek.svg" },
@@ -131,8 +131,17 @@ export function ModelLogos() {
               alt={model.name}
               width={28}
               height={28}
-              className="h-7 w-7 object-contain"
+              className={`h-7 w-7 object-contain ${model.darkSrc ? "dark:hidden" : ""}`}
             />
+            {model.darkSrc && (
+              <Image
+                src={model.darkSrc}
+                alt={model.name}
+                width={28}
+                height={28}
+                className="hidden h-7 w-7 object-contain dark:block"
+              />
+            )}
           </div>
           <span className="font-body text-xs text-text-secondary">
             {model.name}

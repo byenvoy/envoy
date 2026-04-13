@@ -7,6 +7,7 @@ interface ModelOption {
   id: string;
   label: string;
   logo: string;
+  darkLogo?: string;
   available: boolean;
   providerKey: string;
   providerLabel: string;
@@ -131,8 +132,17 @@ export function ModelSelector({
                 alt=""
                 width={20}
                 height={20}
-                className="shrink-0"
+                className={`shrink-0 ${m.darkLogo ? "dark:hidden" : ""}`}
               />
+              {m.darkLogo && (
+                <Image
+                  src={m.darkLogo}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="hidden shrink-0 dark:block"
+                />
+              )}
               <div className="min-w-0 flex-1">
                 <span className={`block font-medium ${
                   isActive

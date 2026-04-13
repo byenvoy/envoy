@@ -18,6 +18,7 @@ export interface ModelConfig {
   provider: "anthropic" | "openai" | "google";
   label: string;
   logo: string;
+  darkLogo?: string;
   costPer1kInput: number;
   costPer1kOutput: number;
   baseUrl?: string;
@@ -29,6 +30,7 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     provider: "anthropic",
     label: "Claude Haiku",
     logo: "/logos/anthropic.svg",
+    darkLogo: "/logos/Anthropic symbol - Ivory.svg",
     envKey: "ANTHROPIC_API_KEY",
     costPer1kInput: 0.0008,
     costPer1kOutput: 0.004,
@@ -37,6 +39,7 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     provider: "anthropic",
     label: "Claude Sonnet",
     logo: "/logos/anthropic.svg",
+    darkLogo: "/logos/Anthropic symbol - Ivory.svg",
     envKey: "ANTHROPIC_API_KEY",
     costPer1kInput: 0.003,
     costPer1kOutput: 0.015,
@@ -45,6 +48,7 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     provider: "anthropic",
     label: "Claude Opus",
     logo: "/logos/anthropic.svg",
+    darkLogo: "/logos/Anthropic symbol - Ivory.svg",
     envKey: "ANTHROPIC_API_KEY",
     costPer1kInput: 0.015,
     costPer1kOutput: 0.075,
@@ -53,6 +57,7 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     provider: "openai",
     label: "GPT-4o",
     logo: "/logos/openai.svg",
+    darkLogo: "/logos/OpenAI-white-monoblossom.svg",
     baseUrl: "https://api.openai.com/v1",
     envKey: "OPENAI_API_KEY",
     costPer1kInput: 0.0025,
@@ -62,6 +67,7 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     provider: "openai",
     label: "GPT-4o Mini",
     logo: "/logos/openai.svg",
+    darkLogo: "/logos/OpenAI-white-monoblossom.svg",
     baseUrl: "https://api.openai.com/v1",
     envKey: "OPENAI_API_KEY",
     costPer1kInput: 0.00015,

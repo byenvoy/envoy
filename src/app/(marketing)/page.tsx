@@ -220,8 +220,8 @@ export default async function LandingPage() {
               </p>
               <div className="mt-5 flex flex-wrap gap-4">
                 {[
-                  { name: "Claude", src: "/logos/anthropic.svg" },
-                  { name: "GPT-4o", src: "/logos/openai.svg" },
+                  { name: "Claude", src: "/logos/anthropic.svg", darkSrc: "/logos/Anthropic symbol - Ivory.svg" },
+                  { name: "GPT-4o", src: "/logos/openai.svg", darkSrc: "/logos/OpenAI-white-monoblossom.svg" },
                   { name: "Gemini", src: "/logos/gemini-icon.png" },
                   { name: "Mistral", src: "/logos/mistral.svg" },
                   { name: "DeepSeek", src: "/logos/deepseek.svg" },
@@ -235,8 +235,17 @@ export default async function LandingPage() {
                       alt={model.name}
                       width={40}
                       height={40}
-                      className="h-10 w-10 object-contain"
+                      className={`h-10 w-10 object-contain ${"darkSrc" in model && model.darkSrc ? "dark:hidden" : ""}`}
                     />
+                    {"darkSrc" in model && model.darkSrc && (
+                      <Image
+                        src={model.darkSrc}
+                        alt={model.name}
+                        width={40}
+                        height={40}
+                        className="hidden h-10 w-10 object-contain dark:block"
+                      />
+                    )}
                   </div>
                 ))}
               </div>
