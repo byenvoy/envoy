@@ -40,6 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+.mcp.json
 
 # internal planning docs
 AUTOPILOT.md
