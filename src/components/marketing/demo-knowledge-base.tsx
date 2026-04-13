@@ -58,7 +58,7 @@ export function DemoKnowledgeBase() {
   return (
     <div className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
       {pages.map((page) => (
-        <div key={page.title} className="bg-white p-5">
+        <div key={page.title} className="bg-surface p-5">
           <h3 className="mb-1 truncate font-display text-sm font-semibold text-text-primary">
             {page.title}
           </h3>

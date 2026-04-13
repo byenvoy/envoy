@@ -9,7 +9,7 @@ export function DemoDashboardStats() {
   return (
     <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-border sm:grid-cols-4">
       {stats.map((stat) => (
-        <div key={stat.label} className="bg-white p-6 text-center">
+        <div key={stat.label} className="bg-surface p-6 text-center">
           <p
             className={`font-display text-3xl font-bold tracking-tight ${stat.color}`}
           >

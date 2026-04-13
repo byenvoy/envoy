@@ -2,7 +2,7 @@ import Image from "next/image";
 
 function SourcesPanel() {
   return (
-    <div className="h-full rounded-xl border border-border bg-white p-5">
+    <div className="h-full rounded-xl border border-border bg-surface p-5">
       <h3 className="font-display text-lg font-semibold text-text-primary">
         <span className="font-mono text-lg font-medium text-primary">1.</span>{" "}
         Add sources
@@ -54,7 +54,7 @@ function SourcesPanel() {
 
 function IntegrationsPanel() {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <h3 className="font-display text-lg font-semibold text-text-primary">
         <span className="font-mono text-lg font-medium text-primary">2.</span>{" "}
         Connect your inbox and integrations
@@ -90,16 +90,16 @@ function IntegrationsPanel() {
 
 function ResultsPanel() {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <h3 className="font-display text-lg font-semibold text-text-primary">
         <span className="font-mono text-lg font-medium text-primary">3.</span>{" "}
         Envoy takes it from there
       </h3>
       <div className="mt-3 space-y-2">
         {[
-          { name: "Sarah M.", subject: "Where's my order?", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-[#8B6914]" },
+          { name: "Sarah M.", subject: "Where's my order?", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-ai-accent" },
           { name: "James R.", subject: "Subscription plan change", badge: "Auto-sent", badgeClass: "bg-success-light text-primary" },
-          { name: "Mia F.", subject: "Return request #4821", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-[#8B6914]" },
+          { name: "Mia F.", subject: "Return request #4821", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-ai-accent" },
           { name: "Alex T.", subject: "Do you ship to Canada?", badge: "Auto-sent", badgeClass: "bg-success-light text-primary" },
           { name: "Hannah C.", subject: "Warranty claim", badge: "Auto-sent", badgeClass: "bg-success-light text-primary" },
         ].map((item) => (

@@ -148,9 +148,9 @@ function GoVisual() {
     <>
       <div className="mb-5 space-y-2">
         {[
-          { name: "Sarah M.", subject: "Where's my order? It said 3-5 days...", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-[#8B6914]" },
+          { name: "Sarah M.", subject: "Where's my order? It said 3-5 days...", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-ai-accent" },
           { name: "James R.", subject: "How do I change my subscription plan?", badge: "Auto-sent", badgeClass: "bg-success-light text-primary" },
-          { name: "Mia K.", subject: "Return request for order #4821", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-[#8B6914]" },
+          { name: "Mia K.", subject: "Return request for order #4821", badge: "Draft ready", badgeClass: "bg-ai-accent-light text-ai-accent" },
           { name: "Alex T.", subject: "Do you ship to Canada?", badge: "Auto-sent", badgeClass: "bg-success-light text-primary" },
         ].map((item) => (
           <div
@@ -274,7 +274,7 @@ export function DemoSetupStepsHorizontal() {
       </div>
 
       {/* Visual below */}
-      <div className="mt-8 min-h-[420px] rounded-xl border border-border bg-white p-7">
+      <div className="mt-8 min-h-[420px] rounded-xl border border-border bg-surface p-7">
         <Visual />
       </div>
     </div>

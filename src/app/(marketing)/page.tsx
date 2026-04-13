@@ -228,7 +228,7 @@ export default async function LandingPage() {
                 ].map((model) => (
                   <div
                     key={model.name}
-                    className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-white shadow-sm"
+                    className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-surface shadow-sm"
                   >
                     <Image
                       src={model.src}
@@ -263,7 +263,7 @@ export default async function LandingPage() {
                   key={item.name}
                   className="flex flex-col items-center gap-2.5"
                 >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-white shadow-sm sm:h-20 sm:w-20">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface shadow-sm sm:h-20 sm:w-20">
                     <Image
                       src={item.src}
                       alt={item.name}

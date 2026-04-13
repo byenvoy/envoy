@@ -61,7 +61,7 @@ export default function PricingPage() {
             className={`rounded-xl border p-6 transition-shadow hover:shadow-lg sm:order-none sm:p-9 ${tier.mobileOrder} ${
               tier.highlight
                 ? "border-primary bg-gradient-to-b from-success-light/30 to-surface"
-                : "border-border bg-white hover:border-primary-light"
+                : "border-border bg-surface hover:border-primary-light"
             }`}
           >
             <p
@@ -87,7 +87,7 @@ export default function PricingPage() {
               className={`mt-7 flex h-12 items-center justify-center rounded-lg px-5 font-display text-sm font-semibold transition-opacity hover:opacity-90 ${
                 tier.highlight
                   ? "border border-transparent bg-primary text-white"
-                  : "border border-border bg-white text-text-primary hover:bg-surface-alt"
+                  : "border border-border bg-surface text-text-primary hover:bg-surface-alt"
               }`}
             >
               {!tier.highlight && (
@@ -96,7 +96,7 @@ export default function PricingPage() {
                   alt=""
                   width={24}
                   height={24}
-                  className="mr-2 inline-block"
+                  className="mr-2 inline-block dark:invert"
                 />
               )}
               {tier.cta}
