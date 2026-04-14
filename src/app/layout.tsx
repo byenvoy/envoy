@@ -28,11 +28,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "Envoy",
-  description: "AI-powered customer support with human-in-the-loop",
+  description: "AI customer support with auto-replies and a human in the loop when it matters. Open source, self-hosted or managed.",
   openGraph: {
     title: "Envoy — Support that runs itself",
     description:
-      "AI customer support with humans in the loop. Open source, self-hosted or managed.",
+      "AI customer support with auto-replies and a human in the loop when it matters. Open source, self-hosted or managed.",
     siteName: "Envoy",
     type: "website",
   },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Envoy — Support that runs itself",
     description:
-      "AI customer support with humans in the loop. Open source, self-hosted or managed.",
+      "AI customer support with auto-replies and a human in the loop when it matters. Open source, self-hosted or managed.",
   },
 };
 

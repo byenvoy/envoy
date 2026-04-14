@@ -327,7 +327,7 @@ export default async function LandingPage() {
                 envoy
               </span>
               <p className="mt-2 max-w-xs font-body text-sm leading-relaxed text-text-secondary">
-                AI customer support with a human in the loop when it matters. Open source,
+                AI customer support with auto-replies and a human in the loop when it matters. Open source,
                 self-hosted or managed.
               </p>
             </div>
