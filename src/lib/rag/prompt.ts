@@ -109,6 +109,15 @@ function buildSystemPrompt(
   return sections.join("\n");
 }
 
+// Shopify delivers date fields as ISO strings with midnight UTC (e.g.
+// "2026-04-19T00:00:00Z"). toLocaleDateString() without a timeZone option
+// renders in the server's local zone, which shifts the displayed date by a
+// day for any server west of UTC. Pin to UTC so the draft sees the same date
+// the data actually encodes.
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { timeZone: "UTC" });
+}
+
 function formatCustomerContext(ctx: ShopifyCustomerContext): string {
   const lines: string[] = [];
 
@@ -117,9 +126,7 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
       .filter(Boolean)
       .join(" ") || "Unknown";
     lines.push(`Customer: ${name} (${ctx.customer.email})`);
-    lines.push(
-      `Customer since: ${new Date(ctx.customer.created_at).toLocaleDateString()}`
-    );
+    lines.push(`Customer since: ${formatDate(ctx.customer.created_at)}`);
     lines.push(
       `Total orders: ${ctx.customer.orders_count} | Total spent: $${ctx.customer.total_spent}`
     );
@@ -129,7 +136,7 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
     lines.push("");
     lines.push("Recent Orders:");
     for (const order of ctx.recent_orders) {
-      const date = new Date(order.created_at).toLocaleDateString();
+      const date = formatDate(order.created_at);
       lines.push(
         `- ${order.name} (${date}): ${order.financial_status}, ${order.fulfillment_status ?? "Unfulfilled"}`
       );
@@ -145,9 +152,7 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
           );
         }
         if (f.estimated_delivery_at) {
-          lines.push(
-            `  Estimated delivery: ${new Date(f.estimated_delivery_at).toLocaleDateString()}`
-          );
+          lines.push(`  Estimated delivery: ${formatDate(f.estimated_delivery_at)}`);
         }
       }
     }
