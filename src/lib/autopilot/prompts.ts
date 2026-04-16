@@ -103,48 +103,123 @@ export function buildValidationPrompt(
   customerContext: string | null,
   conversationHistory?: { role: "customer" | "agent"; content: string }[]
 ): { system: string; user: string } {
-  const system = `You are a critical evaluator reviewing an AI-generated customer support email draft before it is automatically sent. Your job is to find problems, not to be helpful. Evaluate the draft against the following criteria:
+  const system = `You are a quality gate for AI-generated customer support email drafts before they are automatically sent. Evaluate each draft against the criteria below and return a structured verdict. If any check is uncertain, mark it as failing — the draft will be routed to a human reviewer instead of being auto-sent, which is the safe default.
 
-1. **Responsiveness**: Does the draft actually address what the customer asked?
-2. **Accuracy**: Does the draft contain any information not supported by the provided context? Look for hallucinated details, numbers, dates, or policies. Only flag inaccuracies for claims the draft actually makes — do not penalize the draft for information that exists in the context but was not included.
-3. **Scope**: Does the draft make new commitments or exceptions on behalf of the company (e.g., "I've processed your refund," "I'll make an exception in your case," "I've updated your account")? Stating existing company policy from the knowledge base (e.g., "Our return policy allows refunds within 30 days") is NOT a scope issue — only flag when the draft commits to a specific action or grants an exception that hasn't been approved.
-4. **Completeness**: Does the draft fully resolve the customer's inquiry, or does it leave open questions?
+<criteria>
+<responsiveness>
+Does the draft actually address what the customer asked? A draft that answers a different question, or only partially engages with the request, fails this check.
+</responsiveness>
 
-Output valid JSON with these fields:
-- checks: an object with keys "responsiveness", "accuracy", "scope", "completeness", each containing { "pass": boolean, "note": string }
-- confidence: a number from 0.0 to 1.0 where 1.0 means "definitely safe to auto-send" and 0.0 means "definitely not safe to auto-send"
-- reasoning: one sentence overall assessment
+<accuracy>
+Does every factual claim in the draft appear in <knowledge_base> or <customer_context>? Flag hallucinated details, numbers, dates, tracking numbers, or policies. Only evaluate claims the draft actually makes — do not penalize the draft for information that exists in the context but was not included.
+</accuracy>
 
-Be strict — when in doubt, fail the check. It is better to route to a human than to send a bad response.
+<scope>
+Does the draft make new commitments or grant exceptions on behalf of the company? For example: "I've processed your refund," "I'll make an exception in your case," "I've updated your account." These are scope violations because the AI cannot actually take those actions.
 
-Output ONLY the JSON object, no markdown or extra text.`;
+Restating existing company policy from the knowledge base (e.g., "Our return policy allows refunds within 30 days") is NOT a scope issue. Only flag when the draft commits to a specific action or grants an exception that hasn't been approved.
+</scope>
+
+<completeness>
+Does the draft fully resolve the customer's inquiry, or does it leave open questions the customer will need to follow up on?
+</completeness>
+</criteria>
+
+<examples>
+<example>
+<customer_email>What's your return policy for items I bought 2 weeks ago?</customer_email>
+<knowledge_base>Returns are accepted within 30 days of delivery for unworn items with tags attached.</knowledge_base>
+<draft_reply>Hi Sarah, yes — your order is within our 30-day return window. You can return unworn items with tags attached. Let me know if you'd like help starting a return.</draft_reply>
+<verdict>
+{
+  "checks": {
+    "responsiveness": { "pass": true, "note": "Directly addresses the return window question." },
+    "accuracy": { "pass": true, "note": "30-day window and unworn/tags conditions are stated in the KB." },
+    "scope": { "pass": true, "note": "States existing policy; no unilateral commitments." },
+    "completeness": { "pass": true, "note": "Fully answers the question and offers a clear next step." }
+  },
+  "confidence": 0.95,
+  "reasoning": "Grounded, accurate policy answer that fully addresses the question."
+}
+</verdict>
+</example>
+
+<example>
+<customer_email>I want to return order #1042, the shirt doesn't fit.</customer_email>
+<knowledge_base>Returns are accepted within 30 days of delivery. Contact support to initiate a return.</knowledge_base>
+<draft_reply>Hi Sarah, I've processed your return for order #1042. You'll receive a refund within 5-7 business days.</draft_reply>
+<verdict>
+{
+  "checks": {
+    "responsiveness": { "pass": true, "note": "Addresses the return request." },
+    "accuracy": { "pass": false, "note": "The 5-7 business day refund timeline is not stated in the knowledge base." },
+    "scope": { "pass": false, "note": "\\"I've processed your return\\" claims an action was taken — this is a unilateral commitment the AI cannot make." },
+    "completeness": { "pass": true, "note": "The reply reads as complete on its face." }
+  },
+  "confidence": 0.1,
+  "reasoning": "Fails accuracy (fabricated timeline) and scope (commits to an action not yet taken by a human agent)."
+}
+</verdict>
+</example>
+
+<example>
+<customer_email>When will order #1042 arrive?</customer_email>
+<customer_context>Order #1042 — Shipped. No tracking number available yet.</customer_context>
+<draft_reply>Hi Sarah, your order #1042 will arrive on April 20th via FedEx. The tracking number is 9876543210.</draft_reply>
+<verdict>
+{
+  "checks": {
+    "responsiveness": { "pass": true, "note": "Addresses the delivery-date question." },
+    "accuracy": { "pass": false, "note": "Tracking number, carrier, and delivery date are not present in <customer_context>." },
+    "scope": { "pass": true, "note": "No unilateral commitments." },
+    "completeness": { "pass": true, "note": "Directly answers the question." }
+  },
+  "confidence": 0.05,
+  "reasoning": "Fails accuracy — the draft invents tracking details not present in the customer context."
+}
+</verdict>
+</example>
+</examples>
+
+<output_format>
+Output valid JSON only — no markdown fences, no preamble, no explanation outside the JSON. Schema:
+{
+  "checks": {
+    "responsiveness": { "pass": boolean, "note": string },
+    "accuracy": { "pass": boolean, "note": string },
+    "scope": { "pass": boolean, "note": string },
+    "completeness": { "pass": boolean, "note": string }
+  },
+  "confidence": number,  // 0.0 = definitely not safe to auto-send, 1.0 = definitely safe
+  "reasoning": string    // one-sentence overall assessment
+}
+</output_format>`;
 
   const formattedChunks = chunks
-    .map((c, i) => `[Chunk ${i + 1}]:\n${c}`)
-    .join("\n\n");
+    .map((c, i) => `  <chunk index="${i + 1}">\n${c}\n  </chunk>`)
+    .join("\n");
 
-  let user = `Customer email:
-${customerMessage}`;
+  const parts: string[] = [];
+
+  parts.push(`<customer_email>\n${customerMessage}\n</customer_email>`);
 
   if (conversationHistory && conversationHistory.length > 0) {
     const historyText = conversationHistory
-      .map((msg) => `[${msg.role === "customer" ? "Customer" : "Agent"}]: ${msg.content}`)
-      .join("\n\n");
-    user += `\n\nConversation history:\n${historyText}`;
+      .map((msg) => `  <message role="${msg.role}">\n${msg.content}\n  </message>`)
+      .join("\n");
+    parts.push(`<conversation_history>\n${historyText}\n</conversation_history>`);
   }
 
-  user += `\n\nAI-generated draft reply:\n${draftContent}
-
-Knowledge base context used:
-${formattedChunks}`;
+  parts.push(`<draft_reply>\n${draftContent}\n</draft_reply>`);
+  parts.push(`<knowledge_base>\n${formattedChunks}\n</knowledge_base>`);
 
   if (customerContext) {
-    user += `\n\nCustomer context:\n${customerContext}`;
+    parts.push(`<customer_context>\n${customerContext}\n</customer_context>`);
   }
 
-  user += `\n\nEvaluate the draft reply against the criteria above and determine whether it is safe to auto-send.`;
+  parts.push("Evaluate the draft reply in <draft_reply> against the criteria and return the JSON verdict.");
 
-  return { system, user };
+  return { system, user: parts.join("\n\n") };
 }
 
 export function getConstrainedGenerationAddendum(): string {
