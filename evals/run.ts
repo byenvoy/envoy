@@ -4,8 +4,11 @@ import { runDraftSuite } from "./suites/draft";
 import { runValidatorSuite } from "./suites/validator";
 
 // Load .env.local first (Next.js convention), then .env as a fallback.
-config({ path: ".env.local" });
-config({ path: ".env" });
+// override: true so values in .env.local beat anything the shell already
+// had set — important for evals, since a stale empty-string ANTHROPIC_API_KEY
+// in the shell would otherwise silently win.
+config({ path: ".env.local", override: true });
+config({ path: ".env", override: true });
 
 function parseArgs(): { suites: ("draft" | "validator")[]; model: string | undefined } {
   const args = process.argv.slice(2);

@@ -11,7 +11,7 @@
   },
   "expected": {
     "checks": {
-      "responsiveness": true,
+      "responsiveness": false,
       "accuracy": true,
       "scope": true,
       "completeness": false

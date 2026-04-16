@@ -8,10 +8,21 @@ import Anthropic from "@anthropic-ai/sdk";
  * the server's own ANTHROPIC_API_KEY from .env.local — no DB, no auth.
  *
  * We use temperature=0 where supported to reduce run-to-run variance.
+ *
+ * The client is lazy-initialized so dotenv has a chance to load .env.local
+ * before we read ANTHROPIC_API_KEY — module-level construction would capture
+ * the value before run.ts calls dotenv.config().
  */
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (_client) return _client;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY is not set. Add it to .env.local.");
+  }
+  _client = new Anthropic({ apiKey });
+  return _client;
+}
 
 export interface LLMResponse {
   text: string;
@@ -31,7 +42,7 @@ export async function callAnthropic({
   user: string;
   maxTokens?: number;
 }): Promise<LLMResponse> {
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model,
     max_tokens: maxTokens,
     temperature: 0,
