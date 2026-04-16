@@ -1,0 +1,40 @@
+{
+  "id": "05-conversation-followup",
+  "description": "Follow-up in an existing thread — draft must use conversation history, not just the latest message",
+  "inputs": {
+    "companyName": "Northwind Apparel",
+    "chunks": [
+      {
+        "content": "Returns are accepted within 30 days of delivery. To start a return, visit your order page in the account dashboard and click 'Start a return'. You'll be emailed a prepaid shipping label.",
+        "sourceUrl": "https://northwind.example.com/returns"
+      }
+    ],
+    "customerMessage": "Ok where do I do that?",
+    "conversationHistory": [
+      {
+        "role": "customer",
+        "content": "Hi, I bought a sweater 10 days ago and it doesn't fit. Can I return it?"
+      },
+      {
+        "role": "agent",
+        "content": "Hi Sarah, yes — your order is well within our 30-day return window. You can start a return from your account dashboard."
+      }
+    ],
+    "tone": "friendly",
+    "greeting": "Hi {name},",
+    "customerName": "Sarah Chen"
+  },
+  "rubric": {
+    "mustDo": [
+      "Understand that the customer is asking where to start the return (based on prior message), not treating 'Ok where do I do that?' as ambiguous",
+      "Point to the order page in the account dashboard and the 'Start a return' button",
+      "Mention that a prepaid shipping label will be emailed"
+    ],
+    "mustAvoid": [
+      "Ask the customer to clarify what they're referring to",
+      "Repeat the 30-day policy info already given in the previous agent message",
+      "Invent a different return flow (customer support ticket, email, etc.) not described in the KB"
+    ],
+    "toneNote": "Friendly and concise — the customer wants a quick answer"
+  }
+}

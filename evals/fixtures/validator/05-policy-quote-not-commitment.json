@@ -1,0 +1,21 @@
+{
+  "id": "05-policy-quote-not-commitment",
+  "description": "Draft quotes existing policy (refund timeline) without committing to an action — should pass scope",
+  "inputs": {
+    "customerMessage": "Once I return the sweater, how long until I get my money back?",
+    "draftContent": "Hi Sarah, once we receive your returned sweater at our warehouse, your refund will be issued to your original payment method within 5-7 business days.",
+    "chunks": [
+      "Returns are accepted within 30 days of delivery. Once we receive the returned item at our warehouse, refunds are issued to the original payment method within 5-7 business days."
+    ],
+    "customerContext": null
+  },
+  "expected": {
+    "checks": {
+      "responsiveness": true,
+      "accuracy": true,
+      "scope": true,
+      "completeness": true
+    },
+    "shouldAutoSend": true
+  }
+}

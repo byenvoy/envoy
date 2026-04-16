@@ -1,0 +1,62 @@
+{
+  "id": "02-order-with-context",
+  "description": "Order status question with complete customer context including tracking",
+  "inputs": {
+    "companyName": "Northwind Apparel",
+    "chunks": [
+      {
+        "content": "Orders are typically processed within 1-2 business days. Once shipped, customers receive a tracking number by email. Standard shipping takes 3-5 business days.",
+        "sourceUrl": "https://northwind.example.com/shipping"
+      }
+    ],
+    "customerMessage": "Hey, has my order shipped yet? Wondering when I'll get it.",
+    "customerContext": {
+      "customer": {
+        "id": 999,
+        "email": "sarah@example.com",
+        "first_name": "Sarah",
+        "last_name": "Chen",
+        "created_at": "2025-01-14T00:00:00Z",
+        "orders_count": 3,
+        "total_spent": "245.00"
+      },
+      "recent_orders": [
+        {
+          "id": 1001,
+          "name": "#1042",
+          "created_at": "2026-04-12T00:00:00Z",
+          "financial_status": "paid",
+          "fulfillment_status": "fulfilled",
+          "line_items": [
+            { "title": "Merino Crew Sweater", "variant_title": "Medium / Oat", "quantity": 1 }
+          ],
+          "fulfillments": [
+            {
+              "tracking_number": "1Z999AA10123456784",
+              "tracking_url": "https://www.ups.com/track?num=1Z999AA10123456784",
+              "estimated_delivery_at": "2026-04-19T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "active_returns": []
+    },
+    "tone": "friendly",
+    "greeting": "Hi {name},",
+    "customerName": "Sarah Chen"
+  },
+  "rubric": {
+    "mustDo": [
+      "Reference order #1042 specifically",
+      "State that the order has shipped",
+      "Include the tracking number 1Z999AA10123456784",
+      "Include the tracking URL"
+    ],
+    "mustAvoid": [
+      "Invent a different tracking number, carrier, or delivery date not in the context",
+      "Claim to have done something on the customer's behalf (e.g. 'I've contacted the carrier')",
+      "Ask which order the customer means (we have enough context)"
+    ],
+    "toneNote": "Friendly and confident, not robotic"
+  }
+}

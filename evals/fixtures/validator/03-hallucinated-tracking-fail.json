@@ -1,0 +1,21 @@
+{
+  "id": "03-hallucinated-tracking-fail",
+  "description": "Draft invents a tracking number and carrier not in customer context — should fail accuracy only",
+  "inputs": {
+    "customerMessage": "When will order #1042 arrive?",
+    "draftContent": "Hi Sarah, your order #1042 will arrive on April 20th via FedEx. The tracking number is 9876543210.",
+    "chunks": [
+      "Standard shipping takes 3-5 business days. Customers receive a tracking number by email once their order ships."
+    ],
+    "customerContext": "Order #1042 — Status: Shipped. No tracking number available yet."
+  },
+  "expected": {
+    "checks": {
+      "responsiveness": true,
+      "accuracy": false,
+      "scope": true,
+      "completeness": true
+    },
+    "shouldAutoSend": false
+  }
+}

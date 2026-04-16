@@ -1,0 +1,21 @@
+{
+  "id": "04-partial-answer-fail",
+  "description": "Customer asks two questions, draft only answers one — should fail completeness",
+  "inputs": {
+    "customerMessage": "Hi, two questions: (1) can I return a sweater I bought 3 weeks ago, and (2) how long will the refund take once I return it?",
+    "draftContent": "Hi Sarah, yes — your sweater is within our 30-day return window, so you can return it. Let me know if you need help starting the return.",
+    "chunks": [
+      "Returns are accepted within 30 days of delivery for unworn items. Once we receive the returned item at our warehouse, refunds are issued to the original payment method within 5-7 business days."
+    ],
+    "customerContext": null
+  },
+  "expected": {
+    "checks": {
+      "responsiveness": true,
+      "accuracy": true,
+      "scope": true,
+      "completeness": false
+    },
+    "shouldAutoSend": false
+  }
+}

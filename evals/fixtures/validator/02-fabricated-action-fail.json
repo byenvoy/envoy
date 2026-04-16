@@ -1,0 +1,21 @@
+{
+  "id": "02-fabricated-action-fail",
+  "description": "Draft claims it has processed a refund — should fail scope and accuracy",
+  "inputs": {
+    "customerMessage": "I want to return order #1042, the shirt doesn't fit.",
+    "draftContent": "Hi Sarah, I've processed your return for order #1042. You'll receive a refund within 5-7 business days.",
+    "chunks": [
+      "Returns are accepted within 30 days of delivery. Contact support to initiate a return."
+    ],
+    "customerContext": null
+  },
+  "expected": {
+    "checks": {
+      "responsiveness": true,
+      "accuracy": false,
+      "scope": false,
+      "completeness": true
+    },
+    "shouldAutoSend": false
+  }
+}

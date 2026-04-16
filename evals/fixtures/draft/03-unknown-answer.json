@@ -1,0 +1,34 @@
+{
+  "id": "03-unknown-answer",
+  "description": "Question with no relevant KB — draft should honestly acknowledge and defer",
+  "inputs": {
+    "companyName": "Northwind Apparel",
+    "chunks": [
+      {
+        "content": "Returns are accepted within 30 days of delivery for unworn items with original tags attached.",
+        "sourceUrl": "https://northwind.example.com/returns"
+      },
+      {
+        "content": "We offer standard shipping (3-5 business days) and expedited shipping (1-2 business days) to all 50 states.",
+        "sourceUrl": "https://northwind.example.com/shipping"
+      }
+    ],
+    "customerMessage": "Do you ship to Australia? I'm visiting the US next month and would love to place an order while I'm home.",
+    "tone": "friendly",
+    "greeting": "Hi {name},",
+    "customerName": "Jamie Lee"
+  },
+  "rubric": {
+    "mustDo": [
+      "Acknowledge that the reply-writer does not currently have information about international shipping",
+      "Say that someone will follow up (or that they will find out and get back to the customer)"
+    ],
+    "mustAvoid": [
+      "Fabricate an international shipping policy (rates, carriers, timelines)",
+      "Claim Northwind does or does not ship internationally without KB support",
+      "Pad with filler that doesn't answer the question",
+      "Redirect the customer to a different support channel or email address"
+    ],
+    "toneNote": "Honest and brief — no over-apologizing"
+  }
+}

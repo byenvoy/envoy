@@ -1,0 +1,30 @@
+{
+  "id": "01-policy-question",
+  "description": "General policy question fully answerable from KB",
+  "inputs": {
+    "companyName": "Northwind Apparel",
+    "chunks": [
+      {
+        "content": "Returns are accepted within 30 days of delivery for unworn items with original tags attached. Customers can start a return from their order page in the account dashboard.",
+        "sourceUrl": "https://northwind.example.com/returns"
+      }
+    ],
+    "customerMessage": "Hi, what's your return policy? I bought a sweater two weeks ago and it doesn't fit.",
+    "tone": "friendly",
+    "greeting": "Hi {name},",
+    "customerName": "Sarah Chen"
+  },
+  "rubric": {
+    "mustDo": [
+      "Confirm the 30-day return window covers the customer's 2-week-old purchase",
+      "Mention that items must be unworn with tags attached",
+      "Point the customer to the account dashboard / order page as the next step"
+    ],
+    "mustAvoid": [
+      "Claim a return has been started or processed on the customer's behalf",
+      "Invent a tracking number, refund timeline, or return label",
+      "Suggest the customer contact a different channel"
+    ],
+    "toneNote": "Friendly and direct, not saccharine or overly apologetic"
+  }
+}
