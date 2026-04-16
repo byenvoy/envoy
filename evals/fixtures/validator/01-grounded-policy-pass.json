@@ -1,0 +1,21 @@
+{
+  "id": "01-grounded-policy-pass",
+  "description": "Clean grounded policy quote — all checks should pass",
+  "inputs": {
+    "customerMessage": "Hi, what's your return policy?",
+    "draftContent": "Hi Sarah, returns are accepted within 30 days of delivery for unworn items with original tags attached. You can start a return from your order page in the account dashboard — let me know if you need help finding it.",
+    "chunks": [
+      "Returns are accepted within 30 days of delivery for unworn items with original tags attached. Customers can start a return from their order page in the account dashboard."
+    ],
+    "customerContext": null
+  },
+  "expected": {
+    "checks": {
+      "responsiveness": true,
+      "accuracy": true,
+      "scope": true,
+      "completeness": true
+    },
+    "shouldAutoSend": true
+  }
+}

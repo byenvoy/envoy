@@ -36,11 +36,12 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
 // --- Section builders ---
 
 function buildCustomerDataRules(): string {
-  return `- Use customer-specific data when provided to give personalized, accurate answers.
-- Never fabricate order numbers, tracking numbers, or customer data — only reference what is provided in the Customer Context section.
-- If the customer asks about an order, try to identify which order they mean from any clues they provide (dates, product names, order numbers). If they give no identifying details, default to their most recent order. Always clearly state which order you are referring to (e.g., "Regarding your order #1001 from March 11th...") so the customer can correct you if it's the wrong one. Do NOT ask the customer to clarify which order they mean — just answer about the most likely one.
+  return `<customer_data_rules>
+- Use data from <customer_context> to give personalized, accurate answers. Only reference order numbers, tracking numbers, and other customer-specific details that actually appear in <customer_context> — do not invent them.
+- If the customer asks about an order, identify which one they mean from any clues in their message (dates, product names, order numbers). If no identifying details are given, assume their most recent order. State which order you're referring to (e.g., "Regarding your order #1001 from March 11th...") so they can correct you if wrong. Answer about the most likely order rather than asking the customer to clarify — it keeps the conversation moving.
 - When referencing fulfillment statuses, explain them in plain language. For example: "partially fulfilled" means some items have shipped but others are still being prepared; "unfulfilled" means the order is being processed and hasn't shipped yet; "fulfilled" means all items have shipped.
-- When tracking information is available, always include both the tracking number and the tracking URL so the customer can easily check their shipment status.`;
+- When tracking information is available, include both the tracking number and the tracking URL so the customer can check their shipment status directly.
+</customer_data_rules>`;
 }
 
 function buildSystemPrompt(
@@ -57,35 +58,64 @@ function buildSystemPrompt(
   if (greeting && customerName) {
     const firstName = customerName.split(" ")[0];
     const resolvedGreeting = greeting.replace("{name}", firstName);
-    greetingRule = `Output only the email body text — no subject line, no sign-off. Begin responses with "${resolvedGreeting}". If the customer uses a different name or nickname in their email, use that instead.`;
+    greetingRule = `Begin the reply with "${resolvedGreeting}". If the customer uses a different name or nickname for themselves in their email, use that instead.`;
   } else {
-    greetingRule = "Output only the email body text — no subject line, no sign-off. Do not include a greeting.";
+    greetingRule = "Do not include a greeting.";
   }
 
-  const rules = [
-    `Only use information from the provided knowledge base context${hasCustomerContext ? " and customer context" : ""} to answer questions.`,
-    "If the knowledge base does not contain enough information to fully answer the question, be upfront: briefly say you're not sure and that you'll find out and get back to them. Do NOT pad with filler, do NOT suggest the customer contact another channel or email address — they are already talking to support.",
-    toneInstruction,
+  const groundingSources = hasCustomerContext
+    ? "<knowledge_base> and <customer_context>"
+    : "<knowledge_base>";
+
+  const sections: string[] = [
+    `You are a customer support agent for ${companyName}. Your job is to draft helpful, concise, and professional email replies to customer inquiries.`,
+    "",
+    "<instructions>",
+    "<output_format>",
+    "Output only the email body text — no subject line, no sign-off.",
     greetingRule,
-    "Keep responses concise and to the point.",
+    "Match reply length to the question's complexity — a simple status question deserves a short answer, a multi-part question may need more. Skip background context and filler that doesn't help the customer act on the answer.",
+    "</output_format>",
+    "",
+    "<tone>",
+    toneInstruction,
+    "</tone>",
+    "",
+    "<ground_in_context>",
+    `Do not answer from memory about the company, its products, or its policies. Every factual claim in your reply must trace back to ${groundingSources}.`,
+    "",
+    `If ${groundingSources} does not contain what's needed to answer, briefly acknowledge you're not sure and say you'll find out and get back to them — don't fabricate details to fill the gap, and don't redirect the customer to another channel since they are already talking to support.`,
+    "</ground_in_context>",
+    "",
+    "<verify_before_finalizing>",
+    "Before writing your final reply, verify:",
+    `- Every factual claim (policies, order numbers, dates, tracking data) appears in ${groundingSources}.`,
+    "- You have not claimed to perform any action (\"I've processed...\", \"I've updated...\", \"I've issued...\") that the system has not actually done.",
+    "- The reply answers what the customer asked.",
+    "If any check fails, revise before producing your reply.",
+    "</verify_before_finalizing>",
   ];
 
   if (hasCustomerContext) {
-    rules.push(buildCustomerDataRules());
+    sections.push("", buildCustomerDataRules());
   }
-
-  const sections = [
-    `You are a customer support agent for ${companyName}. Your job is to draft helpful, concise, and professional email replies to customer inquiries.`,
-    "",
-    "Rules:",
-    ...rules.map((r) => (r.startsWith("- ") ? r : `- ${r}`)),
-  ];
 
   if (customInstructions) {
-    sections.push("", `Additional instructions:\n${customInstructions}`);
+    sections.push("", "<company_specific_instructions>", customInstructions, "</company_specific_instructions>");
   }
 
+  sections.push("</instructions>");
+
   return sections.join("\n");
+}
+
+// Shopify delivers date fields as ISO strings with midnight UTC (e.g.
+// "2026-04-19T00:00:00Z"). toLocaleDateString() without a timeZone option
+// renders in the server's local zone, which shifts the displayed date by a
+// day for any server west of UTC. Pin to UTC so the draft sees the same date
+// the data actually encodes.
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { timeZone: "UTC" });
 }
 
 function formatCustomerContext(ctx: ShopifyCustomerContext): string {
@@ -96,9 +126,7 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
       .filter(Boolean)
       .join(" ") || "Unknown";
     lines.push(`Customer: ${name} (${ctx.customer.email})`);
-    lines.push(
-      `Customer since: ${new Date(ctx.customer.created_at).toLocaleDateString()}`
-    );
+    lines.push(`Customer since: ${formatDate(ctx.customer.created_at)}`);
     lines.push(
       `Total orders: ${ctx.customer.orders_count} | Total spent: $${ctx.customer.total_spent}`
     );
@@ -108,7 +136,7 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
     lines.push("");
     lines.push("Recent Orders:");
     for (const order of ctx.recent_orders) {
-      const date = new Date(order.created_at).toLocaleDateString();
+      const date = formatDate(order.created_at);
       lines.push(
         `- ${order.name} (${date}): ${order.financial_status}, ${order.fulfillment_status ?? "Unfulfilled"}`
       );
@@ -124,9 +152,7 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
           );
         }
         if (f.estimated_delivery_at) {
-          lines.push(
-            `  Estimated delivery: ${new Date(f.estimated_delivery_at).toLocaleDateString()}`
-          );
+          lines.push(`  Estimated delivery: ${formatDate(f.estimated_delivery_at)}`);
         }
       }
     }
@@ -144,29 +170,33 @@ function formatCustomerContext(ctx: ShopifyCustomerContext): string {
 }
 
 function buildKnowledgeBaseSection(chunks: { content: string; sourceUrl?: string }[]): string {
-  const contextBlocks = chunks.map((chunk, i) => {
-    const source = chunk.sourceUrl ? ` (Source: ${chunk.sourceUrl})` : "";
-    return `--- Context ${i + 1}${source} ---\n${chunk.content}`;
-  });
+  const documents = chunks
+    .map((chunk, i) => {
+      const source = chunk.sourceUrl
+        ? `    <source>${chunk.sourceUrl}</source>\n`
+        : "";
+      return `  <document index="${i + 1}">\n${source}    <content>\n${chunk.content}\n    </content>\n  </document>`;
+    })
+    .join("\n");
 
-  return `## Knowledge Base Context\n\n${contextBlocks.join("\n\n")}`;
+  return `<knowledge_base>\n${documents}\n</knowledge_base>`;
 }
 
 function buildCustomerContextSection(customerContext?: ShopifyCustomerContext | null): string {
   const hasContext = customerContext && (customerContext.customer || customerContext.recent_orders.length > 0);
   if (!hasContext) return "";
 
-  return `## Customer Context\n\n${formatCustomerContext(customerContext!)}`;
+  return `<customer_context>\n${formatCustomerContext(customerContext!)}\n</customer_context>`;
 }
 
 function buildConversationHistorySection(history?: ConversationMessage[]): string {
   if (!history || history.length === 0) return "";
 
   const formatted = history
-    .map((msg) => `[${msg.role === "customer" ? "Customer" : "Agent"}]: ${msg.content}`)
-    .join("\n\n");
+    .map((msg) => `  <message role="${msg.role}">\n${msg.content}\n  </message>`)
+    .join("\n");
 
-  return `## Conversation History\n\n${formatted}`;
+  return `<conversation_history>\n${formatted}\n</conversation_history>`;
 }
 
 function buildUserPrompt(
@@ -176,12 +206,16 @@ function buildUserPrompt(
   conversationHistory?: ConversationMessage[],
   customerContext?: ShopifyCustomerContext | null,
 ): string {
+  const groundingSources = hasCustomerContext
+    ? "<knowledge_base> and <customer_context>"
+    : "<knowledge_base>";
+
   const sections = [
     buildKnowledgeBaseSection(chunks),
     buildCustomerContextSection(customerContext),
     buildConversationHistorySection(conversationHistory),
-    `## Customer Email\n\n${customerMessage}`,
-    `Please draft a reply to this customer email using the knowledge base context${hasCustomerContext ? " and customer context" : ""} provided above.`,
+    `<customer_email>\n${customerMessage}\n</customer_email>`,
+    `Draft a reply to the email in <customer_email>, grounded in ${groundingSources}.`,
   ].filter(Boolean);
 
   return sections.join("\n\n");

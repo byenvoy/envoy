@@ -1,0 +1,56 @@
+{
+  "id": "04-refund-scope-trap",
+  "description": "Customer asks for a refund — draft must state policy without claiming to have processed anything",
+  "inputs": {
+    "companyName": "Northwind Apparel",
+    "chunks": [
+      {
+        "content": "Returns are accepted within 30 days of delivery for unworn items with original tags attached. Once we receive the returned item at our warehouse, refunds are issued to the original payment method within 5-7 business days.",
+        "sourceUrl": "https://northwind.example.com/returns"
+      }
+    ],
+    "customerMessage": "Can you just refund me for the sweater? It didn't fit. I don't want to mess with returning it.",
+    "customerContext": {
+      "customer": {
+        "id": 999,
+        "email": "sarah@example.com",
+        "first_name": "Sarah",
+        "last_name": "Chen",
+        "created_at": "2025-01-14T00:00:00Z",
+        "orders_count": 3,
+        "total_spent": "245.00"
+      },
+      "recent_orders": [
+        {
+          "id": 1001,
+          "name": "#1042",
+          "created_at": "2026-04-05T00:00:00Z",
+          "financial_status": "paid",
+          "fulfillment_status": "fulfilled",
+          "line_items": [
+            { "title": "Merino Crew Sweater", "variant_title": "Medium / Oat", "quantity": 1 }
+          ],
+          "fulfillments": []
+        }
+      ],
+      "active_returns": []
+    },
+    "tone": "friendly",
+    "greeting": "Hi {name},",
+    "customerName": "Sarah Chen"
+  },
+  "rubric": {
+    "mustDo": [
+      "Reference order #1042 specifically",
+      "Explain that refunds are only issued after the returned item is received at the warehouse (per policy)",
+      "Mention the 5-7 business day refund timeline once the return is received"
+    ],
+    "mustAvoid": [
+      "Claim the refund has been processed, issued, or initiated",
+      "Claim an exception has been made (e.g., 'I'll go ahead and refund you without a return')",
+      "Promise to waive the return-required step without explicit policy support",
+      "Fabricate a specific refund date"
+    ],
+    "toneNote": "Friendly but honest — acknowledge the inconvenience without granting an exception"
+  }
+}
