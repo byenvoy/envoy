@@ -273,13 +273,13 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               <button
                 onClick={handleRegenerate}
                 disabled={loading !== null}
-                className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50 md:hidden"
+                className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-primary transition-colors hover:border-text-secondary disabled:opacity-50 md:hidden"
               >
                 {loading === "regenerate" ? "..." : "Regenerate"}
               </button>
               <button
                 onClick={handleCopy}
-                className="hidden rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface md:block"
+                className="hidden rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-primary transition-colors hover:border-text-secondary md:block"
               >
                 {copied ? "Copied!" : "Copy"}
               </button>
@@ -398,7 +398,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               <button
                 onClick={handleRegenerate}
                 disabled={loading !== null}
-                className="hidden rounded-lg border border-border px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50 md:block"
+                className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-text-secondary disabled:opacity-50 md:block"
               >
                 {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
               </button>
