@@ -85,6 +85,13 @@
       "when": 1775858495751,
       "tag": "0011_lethal_gressill",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776365796535,
+      "tag": "0012_add_citations_metadata",
+      "breakpoints": true
     }
   ]
 }

@@ -128,6 +128,7 @@ export async function generateDraftForConversation(conversationId: string, isReg
         similarity: c.similarity,
         source_url: c.source_url,
       })),
+      citationsMetadata: result.citationBlocks ?? null,
       customerContext: result.customerContext ?? null,
       classificationResult: result.classification ?? null,
       isRegeneration,

@@ -79,6 +79,7 @@ export async function GET(
         status: draft.status,
         model_used: draft.modelUsed,
         chunks_used: draft.chunksUsed,
+        citations_metadata: draft.citationsMetadata,
         customer_context: draft.customerContext,
         classification_result: draft.classificationResult,
         approved_at: draft.approvedAt,

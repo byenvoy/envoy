@@ -148,7 +148,66 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   }
 
   const chunks = draft?.chunks_used ?? [];
+  const citationBlocks = draft?.citations_metadata ?? [];
   const isPending = draft?.status === "pending";
+
+  // Build a deduplicated list of cited sources from all citation blocks.
+  // A block may carry multiple citations (e.g. KB + Customer Data), so we
+  // iterate the full citations array rather than just the first entry.
+  const citedSources = useMemo(() => {
+    const seen = new Map<string, { sourceUrl?: string; documentTitle?: string; index: number }>();
+    for (const b of citationBlocks) {
+      for (const c of b.citations ?? []) {
+        const key = c.sourceUrl ?? String(c.documentIndex);
+        if (!seen.has(key)) {
+          seen.set(key, {
+            sourceUrl: c.sourceUrl,
+            documentTitle: c.documentTitle,
+            index: seen.size + 1,
+          });
+        }
+      }
+    }
+    return seen;
+  }, [citationBlocks]);
+
+  // Render citation-annotated HTML by processing blocks in order.
+  // Each cited block is rendered through marked (inline) then wrapped in <mark> + superscript.
+  // Falls back to the pre-rendered renderedHtml when edited or no citation blocks present.
+  const annotatedHtml = useMemo(() => {
+    if (citationBlocks.length === 0 || draft?.edited_content) return renderedHtml;
+    const hasCitations = citationBlocks.some((b) => b.citations && b.citations.length > 0);
+    if (!hasCitations) return renderedHtml;
+
+    const renderInline = (text: string) => marked.parseInline(text) as string;
+
+    const parts = citationBlocks.map((b) => {
+      if (!b.citations || b.citations.length === 0) {
+        // Uncited block — preserve paragraph and line breaks
+        return b.text
+          .split(/\n\n+/)
+          .map(renderInline)
+          .join("</p><p>")
+          .replace(/\n/g, "<br>");
+      }
+
+      // Cited block — resolve every citation to a source number and render all
+      // superscripts so a claim backed by multiple sources shows [1][2].
+      const inlineHtml = renderInline(b.text);
+      const sups = b.citations
+        .map((c) => {
+          const key = c.sourceUrl ?? String(c.documentIndex);
+          const source = citedSources.get(key);
+          return source ? `<sup class="citation-sup">[${source.index}]</sup>` : "";
+        })
+        .join("");
+      return sups
+        ? `<mark class="citation-mark">${inlineHtml}${sups}</mark>`
+        : inlineHtml;
+    });
+
+    return `<p>${parts.join("")}</p>`;
+  }, [citationBlocks, citedSources, renderedHtml, draft?.edited_content]);
 
   return (
     <div className="flex h-full flex-col bg-surface-alt">
@@ -228,8 +287,8 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 if (selection && selection.toString().length > 0) return;
                 setIsEditing(true);
               }}
-              className="max-h-[200px] cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0"
-              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+              className="max-h-[200px] cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:rounded-sm [&_.citation-mark]:bg-ai-accent-light [&_.citation-mark]:px-0.5 [&_.citation-sup]:ml-0.5 [&_.citation-sup]:font-display [&_.citation-sup]:text-[9px] [&_.citation-sup]:font-semibold [&_.citation-sup]:text-ai-accent"
+              dangerouslySetInnerHTML={{ __html: annotatedHtml }}
             />
           )}
 
@@ -239,26 +298,49 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
                 Sources
               </span>
-              {chunks
-                .filter((chunk, i, arr) => {
-                  const url = chunk.source_url ?? "";
-                  return arr.findIndex((c) => (c.source_url ?? "") === url) === i;
-                })
-                .map((chunk) => {
-                  const label = chunk.source_url
-                    ? new URL(chunk.source_url).pathname.split("/").pop() || "KB"
-                    : "KB";
-                  const Tag = chunk.source_url ? "a" : "span";
+
+              {citedSources.size > 0 ? (
+                // Citation mode: numbered pills matching superscripts in the draft
+                Array.from(citedSources.values()).map((source) => {
+                  const Tag = source.sourceUrl ? "a" : "span";
+                  const label = source.sourceUrl
+                    ? new URL(source.sourceUrl).pathname.split("/").pop() || "KB"
+                    : source.documentTitle ?? "KB";
                   return (
                     <Tag
-                      key={chunk.id}
-                      {...(chunk.source_url ? { href: chunk.source_url, target: "_blank", rel: "noopener noreferrer" } : {})}
-                      className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent ${chunk.source_url ? "hover:opacity-80 transition-opacity" : ""}`}
+                      key={source.index}
+                      {...(source.sourceUrl ? { href: source.sourceUrl, target: "_blank", rel: "noopener noreferrer" } : {})}
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent ${source.sourceUrl ? "transition-opacity hover:opacity-80" : ""}`}
                     >
+                      <span className="font-mono">[{source.index}]</span>
                       {label}
                     </Tag>
                   );
-                })}
+                })
+              ) : (
+                // Fallback: deduplicated URL chips (non-Anthropic models)
+                chunks
+                  .filter((chunk, i, arr) => {
+                    const url = chunk.source_url ?? "";
+                    return arr.findIndex((c) => (c.source_url ?? "") === url) === i;
+                  })
+                  .map((chunk) => {
+                    const label = chunk.source_url
+                      ? new URL(chunk.source_url).pathname.split("/").pop() || "KB"
+                      : "KB";
+                    const Tag = chunk.source_url ? "a" : "span";
+                    return (
+                      <Tag
+                        key={chunk.id}
+                        {...(chunk.source_url ? { href: chunk.source_url, target: "_blank", rel: "noopener noreferrer" } : {})}
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent ${chunk.source_url ? "hover:opacity-80 transition-opacity" : ""}`}
+                      >
+                        {label}
+                      </Tag>
+                    );
+                  })
+              )}
+
               {draftUsedCustomerData && (
                 <span className="inline-flex shrink-0 items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
                   Customer Data

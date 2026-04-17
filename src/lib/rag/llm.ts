@@ -3,15 +3,58 @@ import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getOrgApiKey } from "@/lib/api-keys";
 
+export interface BlockCitation {
+  citedText: string;
+  documentIndex: number;
+  /** URL of the KB page, undefined for Customer Data and other non-URL sources */
+  sourceUrl?: string;
+  documentTitle?: string;
+}
+
+/**
+ * A single block of draft text from the LLM response.
+ * Blocks without citations are plain prose; cited blocks carry every citation
+ * the model attached to that claim (a single claim can be backed by multiple
+ * sources, e.g. a KB policy chunk AND a Customer Data field).
+ * Storing blocks in order lets the UI render them sequentially without fragile
+ * post-hoc regex matching against rendered HTML.
+ */
+export interface CitationBlock {
+  /** Raw text (may contain markdown) for this block */
+  text: string;
+  /** All citations attached to this block, or absent if none */
+  citations?: BlockCitation[];
+}
+
+
+export interface SourceChunk {
+  /** Plain text content — used for KB chunks (auto-chunked into sentences by Anthropic) */
+  content?: string;
+  /**
+   * Custom content blocks — used for structured data like Shopify customer context.
+   * Each block is one atomic fact, giving the model citation granularity at the field level.
+   * When present, `content` is ignored and a `content` source type document is used.
+   */
+  contentBlocks?: { type: "text"; text: string }[];
+  sourceUrl?: string;
+  title?: string;
+}
+
 export interface LLMResponse {
   text: string;
   inputTokens: number;
   outputTokens: number;
   model: string;
+  /** Ordered text blocks with citation metadata. Only populated for Anthropic models. */
+  citationBlocks?: CitationBlock[];
 }
 
 export interface LLMProvider {
-  generateDraft(systemPrompt: string, userMessage: string): Promise<LLMResponse>;
+  generateDraft(
+    systemPrompt: string,
+    userMessage: string,
+    options?: { sourceChunks?: SourceChunk[] }
+  ): Promise<LLMResponse>;
 }
 
 export interface ModelConfig {
@@ -127,7 +170,98 @@ class AnthropicProvider implements LLMProvider {
     this.model = model;
   }
 
-  async generateDraft(systemPrompt: string, userMessage: string): Promise<LLMResponse> {
+  async generateDraft(
+    systemPrompt: string,
+    userMessage: string,
+    options?: { sourceChunks?: SourceChunk[] }
+  ): Promise<LLMResponse> {
+    const { sourceChunks } = options ?? {};
+
+    // Citations path: pass KB chunks and Shopify data as document blocks.
+    // KB chunks use plain text (auto sentence-chunked by Anthropic).
+    // Shopify customer context uses custom content blocks (one fact per block)
+    // so the model can cite individual order fields rather than a whole blob.
+    if (sourceChunks && sourceChunks.length > 0) {
+      const docBlocks = sourceChunks.map((chunk) => {
+        if (chunk.contentBlocks) {
+          return {
+            type: "document" as const,
+            source: {
+              type: "content" as const,
+              content: chunk.contentBlocks,
+            },
+            title: chunk.title ?? "Customer Data",
+            citations: { enabled: true },
+          };
+        }
+        return {
+          type: "document" as const,
+          source: {
+            type: "text" as const,
+            media_type: "text/plain" as const,
+            data: chunk.content ?? "",
+          },
+          title: chunk.title ?? chunk.sourceUrl ?? "Knowledge Base",
+          citations: { enabled: true },
+        };
+      });
+
+      const response = await this.client.messages.create({
+        model: this.model,
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{
+          role: "user",
+          content: [
+            ...docBlocks,
+            { type: "text", text: userMessage },
+          ],
+        }],
+      });
+
+      // Build ordered CitationBlocks — one per text block from the response.
+      // Handles both char_location (plain text docs) and content_block_location
+      // (custom content docs, i.e. Shopify data).
+      let fullText = "";
+      const citationBlocks: CitationBlock[] = [];
+
+      for (const block of response.content) {
+        if (block.type !== "text" || !block.text) continue;
+        fullText += block.text;
+
+        // Collect ALL citations on this block — a single claim can be backed by
+        // multiple sources (e.g. a KB policy chunk + a Customer Data field).
+        const blockCitations = (block.citations ?? [])
+          .filter((c) => c.type === "char_location" || c.type === "content_block_location")
+          .map((c) => {
+            if (c.type !== "char_location" && c.type !== "content_block_location") return null;
+            return {
+              citedText: c.cited_text,
+              documentIndex: c.document_index,
+              sourceUrl: sourceChunks[c.document_index]?.sourceUrl,
+              documentTitle: c.document_title ?? undefined,
+            };
+          })
+          .filter((c): c is BlockCitation => c !== null);
+
+        citationBlocks.push(
+          blockCitations.length > 0
+            ? { text: block.text, citations: blockCitations }
+            : { text: block.text }
+        );
+      }
+
+      const hasCitations = citationBlocks.some((b) => b.citations && b.citations.length > 0);
+      return {
+        text: fullText,
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+        model: this.model,
+        citationBlocks: hasCitations ? citationBlocks : undefined,
+      };
+    }
+
+    // Standard path (no citations)
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 1024,
@@ -158,7 +292,7 @@ class OpenAICompatibleProvider implements LLMProvider {
     this.model = model;
   }
 
-  async generateDraft(systemPrompt: string, userMessage: string): Promise<LLMResponse> {
+  async generateDraft(systemPrompt: string, userMessage: string, _options?: { sourceChunks?: SourceChunk[] }): Promise<LLMResponse> {
     const response = await this.client.chat.completions.create({
       model: this.model,
       max_tokens: 1024,
@@ -191,7 +325,7 @@ class GoogleProvider implements LLMProvider {
     this.apiKey = apiKey;
   }
 
-  async generateDraft(systemPrompt: string, userMessage: string): Promise<LLMResponse> {
+  async generateDraft(systemPrompt: string, userMessage: string, _options?: { sourceChunks?: SourceChunk[] }): Promise<LLMResponse> {
     const genAI = new GoogleGenerativeAI(this.apiKey);
     const model = genAI.getGenerativeModel({
       model: this.model,

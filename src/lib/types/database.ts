@@ -127,6 +127,7 @@ export interface Draft {
   status: DraftStatus;
   model_used: string | null;
   chunks_used: { id: string; content: string; similarity: number; source_url?: string }[] | null;
+  citations_metadata: { text: string; citations?: { citedText: string; documentIndex: number; sourceUrl?: string; documentTitle?: string }[] }[] | null;
   customer_context: Record<string, unknown> | null;
   classification_result: Record<string, unknown> | null;
   autopilot_evaluation_id: string | null;

@@ -91,6 +91,7 @@ export class ShopifyClient {
       created_at: node.createdAt,
       orders_count: parseInt(node.numberOfOrders, 10) || 0,
       total_spent: node.amountSpent.amount,
+      currency: node.amountSpent.currencyCode,
     };
   }
 

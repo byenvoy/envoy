@@ -15,6 +15,17 @@ interface PromptInput {
   customInstructions?: string | null;
   greeting?: string | null;
   customerName?: string | null;
+  /**
+   * When true, omit the KB context section from the user prompt.
+   * Used for Anthropic models that receive chunks as document blocks directly
+   * in the API call — passing them again as text would duplicate content.
+   */
+  excludeChunks?: boolean;
+  /**
+   * When true, omit the customer context section from the user prompt.
+   * Used for Anthropic models that receive customer context as a document block.
+   */
+  excludeCustomerContext?: boolean;
 }
 
 interface PromptOutput {
@@ -118,7 +129,52 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { timeZone: "UTC" });
 }
 
-function formatCustomerContext(ctx: ShopifyCustomerContext): string {
+/**
+ * Breaks Shopify customer context into individual text blocks for a custom
+ * content document. Each block is one atomic fact (one order field, one line
+ * item, one tracking entry) so the model can cite specific data points rather
+ * than being forced to cite an entire multi-line blob.
+ */
+export function buildCustomerContentBlocks(ctx: ShopifyCustomerContext): { type: "text"; text: string }[] {
+  const blocks: { type: "text"; text: string }[] = [];
+
+  if (ctx.customer) {
+    const name = [ctx.customer.first_name, ctx.customer.last_name].filter(Boolean).join(" ") || "Unknown";
+    blocks.push({ type: "text", text: `Customer name: ${name}` });
+    blocks.push({ type: "text", text: `Customer email: ${ctx.customer.email}` });
+    blocks.push({ type: "text", text: `Customer since: ${formatDate(ctx.customer.created_at)}` });
+    blocks.push({ type: "text", text: `Total orders: ${ctx.customer.orders_count}` });
+    blocks.push({ type: "text", text: `Total spent: ${ctx.customer.currency} ${ctx.customer.total_spent}` });
+  }
+
+  for (const order of ctx.recent_orders) {
+    const date = formatDate(order.created_at);
+    blocks.push({ type: "text", text: `Order ${order.name} placed on ${date}: ${order.financial_status.toLowerCase()}, ${(order.fulfillment_status ?? "unfulfilled").toLowerCase()}. Total: ${order.currency} ${order.total_price}.` });
+    for (const li of order.line_items) {
+      const variant = li.variant_title ? ` (${li.variant_title})` : "";
+      blocks.push({ type: "text", text: `Order ${order.name} item: ${li.title}${variant} x${li.quantity}` });
+    }
+    for (const f of order.fulfillments) {
+      if (f.tracking_number) {
+        blocks.push({ type: "text", text: `Order ${order.name} tracking number: ${f.tracking_number}` });
+      }
+      if (f.tracking_url) {
+        blocks.push({ type: "text", text: `Order ${order.name} tracking URL: ${f.tracking_url}` });
+      }
+      if (f.estimated_delivery_at) {
+        blocks.push({ type: "text", text: `Order ${order.name} estimated delivery: ${formatDate(f.estimated_delivery_at)}` });
+      }
+    }
+  }
+
+  for (const ret of ctx.active_returns) {
+    blocks.push({ type: "text", text: `Return ${ret.name}: ${ret.status}` });
+  }
+
+  return blocks;
+}
+
+export function formatCustomerContext(ctx: ShopifyCustomerContext): string {
   const lines: string[] = [];
 
   if (ctx.customer) {
@@ -205,14 +261,19 @@ function buildUserPrompt(
   hasCustomerContext: boolean,
   conversationHistory?: ConversationMessage[],
   customerContext?: ShopifyCustomerContext | null,
+  excludeChunks?: boolean,
+  excludeCustomerContext?: boolean,
 ): string {
   const groundingSources = hasCustomerContext
     ? "<knowledge_base> and <customer_context>"
     : "<knowledge_base>";
 
   const sections = [
-    buildKnowledgeBaseSection(chunks),
-    buildCustomerContextSection(customerContext),
+    // Omit KB section when chunks are passed as document blocks in the API call
+    // (Anthropic citations path) — including them here too would duplicate content
+    excludeChunks ? "" : buildKnowledgeBaseSection(chunks),
+    // Omit customer context when it is passed as a document block in the API call
+    excludeCustomerContext ? "" : buildCustomerContextSection(customerContext),
     buildConversationHistorySection(conversationHistory),
     `<customer_email>\n${customerMessage}\n</customer_email>`,
     `Draft a reply to the email in <customer_email>, grounded in ${groundingSources}.`,
@@ -233,11 +294,13 @@ export function buildDraftPrompt({
   customInstructions,
   greeting,
   customerName,
+  excludeChunks,
+  excludeCustomerContext,
 }: PromptInput): PromptOutput {
   const hasCustomerContext = !!(customerContext && (customerContext.customer || customerContext.recent_orders.length > 0));
 
   return {
     system: buildSystemPrompt(companyName, hasCustomerContext, tone, customInstructions, greeting, customerName),
-    user: buildUserPrompt(chunks, customerMessage, hasCustomerContext, conversationHistory, customerContext),
+    user: buildUserPrompt(chunks, customerMessage, hasCustomerContext, conversationHistory, customerContext, excludeChunks, excludeCustomerContext),
   };
 }

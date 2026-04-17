@@ -1,0 +1,1 @@
+ALTER TABLE "drafts" ADD COLUMN "citations_metadata" jsonb;

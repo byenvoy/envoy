@@ -7,6 +7,7 @@ export interface ShopifyCustomerContext {
     created_at: string;
     orders_count: number;
     total_spent: string;
+    currency: string;
   } | null;
   recent_orders: ShopifyOrder[];
   active_returns: ShopifyReturn[];

@@ -90,6 +90,7 @@ export const drafts = pgTable(
     status: text("status").notNull().default("pending"),
     modelUsed: text("model_used"),
     chunksUsed: jsonb("chunks_used"),
+    citationsMetadata: jsonb("citations_metadata"),
     customerContext: jsonb("customer_context"),
     classificationResult: jsonb("classification_result"),
     approvedAt: timestamp("approved_at", { withTimezone: true }),

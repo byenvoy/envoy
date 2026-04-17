@@ -225,6 +225,7 @@ export default async function InboxPage({
           status: draftRow.status as DraftStatus,
           model_used: draftRow.modelUsed,
           chunks_used: draftRow.chunksUsed as Draft["chunks_used"],
+          citations_metadata: draftRow.citationsMetadata as Draft["citations_metadata"],
           customer_context: draftRow.customerContext as Draft["customer_context"],
           classification_result: draftRow.classificationResult as Draft["classification_result"],
           autopilot_evaluation_id: draftRow.autopilotEvaluationId,
