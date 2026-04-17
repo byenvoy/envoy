@@ -37,8 +37,10 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [isEditing, setIsEditing] = useState(false);
+  const [activeSources, setActiveSources] = useState<Set<string>>(new Set());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hoveredMarkRef = useRef<HTMLElement | null>(null);
 
   const renderedHtml = useMemo(
     () => marked.parse(editedContent, { breaks: true, async: false, renderer: draftRenderer }) as string,
@@ -147,6 +149,28 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function handleDraftMouseOver(e: React.MouseEvent<HTMLDivElement>) {
+    const mark = (e.target as HTMLElement).closest<HTMLElement>(".citation-mark");
+    // Skip re-renders when still hovering the same mark
+    if (mark === hoveredMarkRef.current) return;
+    hoveredMarkRef.current = mark;
+    if (mark) {
+      const keysRaw = mark.getAttribute("data-source-keys");
+      if (keysRaw) {
+        try {
+          setActiveSources(new Set(JSON.parse(keysRaw) as string[]));
+          return;
+        } catch { /* fall through */ }
+      }
+    }
+    setActiveSources(new Set());
+  }
+
+  function clearActiveSources() {
+    hoveredMarkRef.current = null;
+    setActiveSources(new Set());
+  }
+
   const chunks = draft?.chunks_used ?? [];
   const citationBlocks = draft?.citations_metadata ?? [];
   const isPending = draft?.status === "pending";
@@ -191,26 +215,23 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           .replace(/\n/g, "<br>");
       }
 
-      // Cited block — resolve every citation to a source number and render all
-      // superscripts so a claim backed by multiple sources shows [1][2].
+      // Cited block — store the source keys as a data attribute so the
+      // mouseover handler can highlight the matching pills in the sources bar.
       const inlineHtml = renderInline(b.text);
-      const sups = b.citations
-        .map((c) => {
-          const key = c.sourceUrl ?? String(c.documentIndex);
-          const source = citedSources.get(key);
-          return source ? `<sup class="citation-sup">[${source.index}]</sup>` : "";
-        })
-        .join("");
-      return sups
-        ? `<mark class="citation-mark">${inlineHtml}${sups}</mark>`
-        : inlineHtml;
+      const sourceKeys = b.citations
+        .map((c) => c.sourceUrl ?? String(c.documentIndex))
+        .filter((v, i, a) => a.indexOf(v) === i);
+      const keysAttr = sourceKeys.length > 0
+        ? ` data-source-keys="${JSON.stringify(sourceKeys).replace(/"/g, "&quot;")}"`
+        : "";
+      return `<mark class="citation-mark"${keysAttr}>${inlineHtml}</mark>`;
     });
 
     return `<p>${parts.join("")}</p>`;
   }, [citationBlocks, citedSources, renderedHtml, draft?.edited_content]);
 
   return (
-    <div className="flex h-full flex-col bg-surface-alt">
+    <div className="flex h-full flex-col bg-surface-alt" onMouseLeave={clearActiveSources}>
       {/* Customer context card */}
       {shopifyCustomer && (shopifyCustomer.customer || shopifyCustomer.recent_orders?.length > 0) && (
         <CustomerContextCard
@@ -285,9 +306,12 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 if ((e.target as HTMLElement).closest("a")) return;
                 const selection = window.getSelection();
                 if (selection && selection.toString().length > 0) return;
+                clearActiveSources();
                 setIsEditing(true);
               }}
-              className="max-h-[200px] cursor-text overflow-y-auto rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:rounded-sm [&_.citation-mark]:bg-ai-accent-light [&_.citation-mark]:px-0.5 [&_.citation-sup]:ml-0.5 [&_.citation-sup]:font-display [&_.citation-sup]:text-[9px] [&_.citation-sup]:font-semibold [&_.citation-sup]:text-ai-accent"
+              onMouseOver={handleDraftMouseOver}
+              onMouseLeave={clearActiveSources}
+              className="max-h-[200px] cursor-text overflow-y-auto break-words rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:bg-ai-accent-light"
               dangerouslySetInnerHTML={{ __html: annotatedHtml }}
             />
           )}
@@ -300,19 +324,23 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               </span>
 
               {citedSources.size > 0 ? (
-                // Citation mode: numbered pills matching superscripts in the draft
-                Array.from(citedSources.values()).map((source) => {
+                // Anthropic citation mode: pills highlight when hovering cited text
+                Array.from(citedSources.entries()).map(([key, source]) => {
                   const Tag = source.sourceUrl ? "a" : "span";
                   const label = source.sourceUrl
                     ? new URL(source.sourceUrl).pathname.split("/").pop() || "KB"
                     : source.documentTitle ?? "KB";
+                  const isActive = activeSources.has(key);
                   return (
                     <Tag
                       key={source.index}
                       {...(source.sourceUrl ? { href: source.sourceUrl, target: "_blank", rel: "noopener noreferrer" } : {})}
-                      className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-ai-accent-light px-2 py-0.5 text-[10px] font-medium text-ai-accent ${source.sourceUrl ? "transition-opacity hover:opacity-80" : ""}`}
+                      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                        isActive
+                          ? "bg-ai-accent text-white"
+                          : "bg-ai-accent-light text-ai-accent"
+                      } ${source.sourceUrl ? "hover:opacity-80" : ""}`}
                     >
-                      <span className="font-mono">[{source.index}]</span>
                       {label}
                     </Tag>
                   );
@@ -341,7 +369,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                   })
               )}
 
-              {draftUsedCustomerData && (
+              {draftUsedCustomerData && citedSources.size === 0 && (
                 <span className="inline-flex shrink-0 items-center rounded-full bg-success-light px-2 py-0.5 text-[10px] font-medium text-primary">
                   Customer Data
                 </span>
