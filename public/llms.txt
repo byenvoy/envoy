@@ -1,0 +1,26 @@
+# Envoy
+
+> Envoy is AI customer support that runs itself. It learns your business from your knowledge base, drafts replies to incoming customer emails, and lets your team review and send. Open source, self-hosted or managed.
+
+Envoy works with Gmail and Microsoft 365. Teams can pick any supported model (Claude, GPT-4o, Gemini, Mistral, DeepSeek) and switch anytime, with model costs passed through directly and no markup. Autopilot can auto-reply to topics you've calibrated; anything it isn't sure about routes to a human for approval.
+
+## Product
+
+- [Landing page](https://byenvoy.com/): Overview of Envoy, how drafts and autopilot work, supported models and integrations.
+- [Pricing](https://byenvoy.com/pricing): Self-hosted (free) or managed Pro at $15/month flat. No per-seat, per-resolution, or contract fees. 14-day free trial on Pro.
+- [Sign up](https://byenvoy.com/signup): Create an account and start a 14-day free trial.
+- [Log in](https://byenvoy.com/login): Existing customer login.
+
+## Open source
+
+- [GitHub: byenvoy/envoy](https://github.com/byenvoy/envoy): Source code. Same codebase runs hosted and self-hosted via Docker Compose.
+
+## Policies
+
+- [Terms of Service](https://byenvoy.com/terms)
+- [Privacy Policy](https://byenvoy.com/privacy)
+
+## Contact
+
+- Support: support@byenvoy.com
+- Privacy: privacy@byenvoy.com
