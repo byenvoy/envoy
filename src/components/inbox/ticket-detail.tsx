@@ -231,7 +231,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   }, [citationBlocks, citedSources, renderedHtml, draft?.edited_content]);
 
   return (
-    <div className="flex h-full flex-col bg-surface-alt" onMouseLeave={clearActiveSources}>
+    <div className="flex h-full flex-col bg-surface-alt" onMouseOver={handleDraftMouseOver} onMouseLeave={clearActiveSources}>
       {/* Customer context card */}
       {shopifyCustomer && (shopifyCustomer.customer || shopifyCustomer.recent_orders?.length > 0) && (
         <CustomerContextCard
@@ -309,8 +309,6 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 clearActiveSources();
                 setIsEditing(true);
               }}
-              onMouseOver={handleDraftMouseOver}
-              onMouseLeave={clearActiveSources}
               className="max-h-[200px] cursor-text overflow-y-auto break-words rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:bg-ai-accent-light"
               dangerouslySetInnerHTML={{ __html: annotatedHtml }}
             />
