@@ -231,18 +231,18 @@ class AnthropicProvider implements LLMProvider {
 
         // Collect ALL citations on this block — a single claim can be backed by
         // multiple sources (e.g. a KB policy chunk + a Customer Data field).
-        const blockCitations = (block.citations ?? [])
-          .filter((c) => c.type === "char_location" || c.type === "content_block_location")
-          .map((c) => {
-            if (c.type !== "char_location" && c.type !== "content_block_location") return null;
-            return {
-              citedText: c.cited_text,
-              documentIndex: c.document_index,
-              sourceUrl: sourceChunks[c.document_index]?.sourceUrl,
-              documentTitle: c.document_title ?? undefined,
-            };
-          })
-          .filter((c): c is BlockCitation => c !== null);
+        const blockCitations: BlockCitation[] = [];
+        for (const c of block.citations ?? []) {
+          if (c.type !== "char_location" && c.type !== "content_block_location") continue;
+          const citation: BlockCitation = {
+            citedText: c.cited_text,
+            documentIndex: c.document_index,
+          };
+          const sourceUrl = sourceChunks[c.document_index]?.sourceUrl;
+          if (sourceUrl) citation.sourceUrl = sourceUrl;
+          if (c.document_title) citation.documentTitle = c.document_title;
+          blockCitations.push(citation);
+        }
 
         citationBlocks.push(
           blockCitations.length > 0
