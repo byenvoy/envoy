@@ -376,7 +376,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           )}
 
           {/* Actions — sticky on mobile so buttons stay above browser bar */}
-          <div className="sticky bottom-0 -mx-4 border-t border-border bg-surface px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3 md:static md:mx-0 md:border-t-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
+          <div className="sticky bottom-0 -mx-4 bg-surface-alt px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3 md:static md:mx-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
                 <button
