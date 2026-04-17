@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { EmailConnection } from "@/lib/types/database";
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  email_already_connected: "This email address is already in use by another account. Your organization may have an existing account setup. Ask the account owner to add you as a team member.",
+  save_failed: "Failed to save the connection. Please try again.",
+  token_exchange_failed: "Google authorization failed. Please try again.",
+  invalid_state: "Authorization request expired. Please try again.",
+  missing_params: "Authorization response was incomplete. Please try again.",
+  access_denied: "Access was denied. Please grant the required permissions and try again.",
+};
 
 export function EmailConnectionPicker({
   connections,
@@ -14,6 +23,8 @@ export function EmailConnectionPicker({
   hasMicrosoftClientId: boolean;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get("error");
   const activeConnection = connections.find((c) => c.status !== "revoked");
   const [disconnecting, setDisconnecting] = useState(false);
 
@@ -95,6 +106,11 @@ export function EmailConnectionPicker({
 
   return (
     <div className="space-y-3">
+      {oauthError && (
+        <p className="text-sm text-error">
+          {OAUTH_ERROR_MESSAGES[oauthError] ?? "Something went wrong. Please try again."}
+        </p>
+      )}
       <p className="text-sm text-text-secondary">
         Connect your email account to receive and send emails directly through Envoy.
       </p>

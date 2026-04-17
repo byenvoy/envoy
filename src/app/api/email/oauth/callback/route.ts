@@ -84,7 +84,22 @@ export async function GET(request: NextRequest) {
     refresh_token: tokenData.refresh_token,
   });
 
-  // Upsert email_connections
+  // Guard: if this email is already connected to a DIFFERENT org, reject it.
+  // One email address may only belong to one org.
+  const existingConnection = await db
+    .select({ orgId: emailConnections.orgId })
+    .from(emailConnections)
+    .where(eq(emailConnections.emailAddress, email))
+    .then((r) => r[0] ?? null);
+
+  if (existingConnection && existingConnection.orgId !== orgId) {
+    return NextResponse.redirect(
+      `${appUrl}/settings?error=email_already_connected`
+    );
+  }
+
+  // Upsert email_connections — same org reconnecting refreshes tokens.
+  const tokenExpiresAt = new Date(Date.now() + (tokenData.expires_in ?? 3600) * 1000);
   try {
     await db
       .insert(emailConnections)
@@ -95,9 +110,7 @@ export async function GET(request: NextRequest) {
         displayName: name ?? null,
         accessTokenEncrypted: encrypted.access_token_encrypted,
         refreshTokenEncrypted: encrypted.refresh_token_encrypted,
-        tokenExpiresAt: new Date(
-          Date.now() + (tokenData.expires_in ?? 3600) * 1000
-        ),
+        tokenExpiresAt,
         imapHost: config.imapHost,
         imapPort: config.imapPort,
         smtpHost: config.smtpHost,
@@ -112,9 +125,7 @@ export async function GET(request: NextRequest) {
           displayName: name ?? null,
           accessTokenEncrypted: encrypted.access_token_encrypted,
           refreshTokenEncrypted: encrypted.refresh_token_encrypted,
-          tokenExpiresAt: new Date(
-            Date.now() + (tokenData.expires_in ?? 3600) * 1000
-          ),
+          tokenExpiresAt,
           imapHost: config.imapHost,
           imapPort: config.imapPort,
           smtpHost: config.smtpHost,
