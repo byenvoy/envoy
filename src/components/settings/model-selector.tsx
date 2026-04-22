@@ -163,11 +163,13 @@ export function ModelSelector({
       </div>
 
       <div
-        className={`mt-4 grid transition-all duration-200 ease-in-out ${
-          pendingModel ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
+        className="transition-all duration-300 ease-in-out"
+        style={{ marginTop: pendingModel ? "1rem" : "0" }}
       >
-        <div className="overflow-hidden">
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{ maxHeight: pendingModel ? "15rem" : "0", opacity: pendingModel ? 1 : 0 }}
+        >
           <div className="rounded-lg border border-border bg-surface p-4">
             <p className="mb-3 font-display text-sm font-medium text-text-primary">
               {pendingModel?.providerLabel ?? ""} API key required
