@@ -7,9 +7,11 @@ import type { Integration } from "@/lib/types/database";
 export function ShopifyConnection({
   integration,
   hasShopifyClientId,
+  compact,
 }: {
   integration: Integration | null;
   hasShopifyClientId: boolean;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [shopDomain, setShopDomain] = useState("");
@@ -78,10 +80,14 @@ export function ShopifyConnection({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-display font-medium text-text-primary">Shopify</h3>
-      <p className="text-sm text-text-secondary">
-        Connect your Shopify store to pull order details, customer history, and product data into customer context to enhance drafted and auto-sent support emails.
-      </p>
+      {!compact && (
+        <>
+          <h3 className="text-sm font-display font-medium text-text-primary">Shopify</h3>
+          <p className="text-sm text-text-secondary">
+            Connect your Shopify store to pull order details, customer history, and product data into customer context to enhance drafted and auto-sent support emails.
+          </p>
+        </>
+      )}
       {hasShopifyClientId && !showManual && (
         <div className="space-y-1">
           <label

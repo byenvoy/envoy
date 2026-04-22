@@ -30,6 +30,7 @@ export function ShopifyStep({
         <ShopifyConnection
           integration={integration}
           hasShopifyClientId={hasShopifyClientId}
+          compact
         />
       </div>
 
