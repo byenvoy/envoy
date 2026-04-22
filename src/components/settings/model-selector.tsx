@@ -162,42 +162,44 @@ export function ModelSelector({
         })}
       </div>
 
-      {saving && (
-        <p className="mt-2 text-xs text-text-secondary">Saving...</p>
-      )}
-
-      {pendingModel && (
-        <div className="mt-4 rounded-lg border border-border bg-surface p-4">
-          <p className="mb-3 font-display text-sm font-medium text-text-primary">
-            {pendingModel.providerLabel} API key required
-          </p>
-          <p className="mb-3 text-xs text-text-secondary">
-            Add your API key to use {pendingModel.label}. Your key is encrypted and stored securely.
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder={`Paste your ${pendingModel.providerLabel} API key`}
-              className="flex-1 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleSaveKeyAndSwitch}
-              disabled={savingKey || !apiKey.trim()}
-              className="rounded-lg bg-primary px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
-            >
-              {savingKey ? "Saving..." : "Save"}
-            </button>
-          </div>
-          {error && (
-            <p className="mt-2 text-xs text-error">
-              {error}
+      <div
+        className={`mt-4 grid transition-all duration-200 ease-in-out ${
+          pendingModel ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <p className="mb-3 font-display text-sm font-medium text-text-primary">
+              {pendingModel?.providerLabel ?? ""} API key required
             </p>
-          )}
+            <p className="mb-3 text-xs text-text-secondary">
+              Add your API key to use {pendingModel?.label ?? "this model"}. Your key is encrypted and stored securely.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={pendingModel ? `Paste your ${pendingModel.providerLabel} API key` : ""}
+                className="flex-1 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleSaveKeyAndSwitch}
+                disabled={savingKey || !apiKey.trim()}
+                className="rounded-lg bg-primary px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+              >
+                {savingKey ? "Saving..." : "Save"}
+              </button>
+            </div>
+            {error && (
+              <p className="mt-2 text-xs text-error">
+                {error}
+              </p>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
