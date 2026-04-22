@@ -26,11 +26,13 @@ export function LoginForm({ redirect }: { redirect?: string }) {
     });
 
     if (error) {
-      setError(
-        error.status === 403
+      const message =
+        error.code === "EMAIL_NOT_VERIFIED"
           ? "Please confirm your email address first. Check your inbox for a confirmation link."
-          : error.message ?? "Sign in failed"
-      );
+          : error.code === "INVALID_EMAIL_OR_PASSWORD"
+            ? "Invalid email or password."
+            : error.message ?? "Sign in failed";
+      setError(message);
       setLoading(false);
       return;
     }
