@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { emailConnections, organizations } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { withAuth } from "@/lib/db/helpers/auth";
 import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
@@ -39,7 +39,7 @@ export async function POST() {
   const connection = await db
     .select()
     .from(emailConnections)
-    .where(and(eq(emailConnections.orgId, orgId), eq(emailConnections.status, "active")))
+    .where(and(eq(emailConnections.orgId, orgId), inArray(emailConnections.status, ["active", "error"])))
     .then((r) => r[0]);
 
   if (!connection) {

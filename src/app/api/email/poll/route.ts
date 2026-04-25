@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { emailConnections, organizations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { tryAdvisoryLock, advisoryUnlock, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
 import { isCloud } from "@/lib/config";
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const connections = await db
       .select()
       .from(emailConnections)
-      .where(eq(emailConnections.status, "active"));
+      .where(inArray(emailConnections.status, ["active", "error"]));
 
     let polled = 0;
     let errors = 0;
