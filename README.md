@@ -29,6 +29,10 @@ npx drizzle-kit push
 
 # Start dev server
 npm run dev
+
+# In a separate terminal, start the KB crawl worker
+# (required for knowledge base syncs to actually run)
+npm run worker
 ```
 
 Open http://localhost:3000 and create an account. The onboarding wizard walks you through connecting your knowledge base, choosing an AI model, and linking your email.

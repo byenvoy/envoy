@@ -9,6 +9,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 ## Commands
 
 - `npm run dev` — Start development server
+- `npm run worker` — Start KB crawl worker (required for knowledge base sync; run in a separate terminal)
 - `npm run build` — Production build
 - `npm run lint` — Run ESLint
 - `npm start` — Start production server
