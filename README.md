@@ -105,7 +105,7 @@ The Blueprint provisions a web service, Postgres database, and cron jobs for ema
 - **Auth:** Better Auth
 - **Embeddings:** OpenAI text-embedding-3-small
 - **LLM:** Provider-agnostic (Anthropic, OpenAI, Google, Mistral, DeepSeek)
-- **Email:** IMAP/SMTP via OAuth (Google, Microsoft)
+- **Email:** Gmail REST API via OAuth (`gmail.modify` scope); IMAP/SMTP transport preserved for Microsoft (currently dormant)
 
 ## License
 

@@ -28,7 +28,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 - **Auth:** Better Auth (email/password, sessions stored in Postgres)
 - **Embeddings:** OpenAI text-embedding-3-small (1536 dimensions)
 - **LLM:** Anthropic Claude Haiku (default), abstracted behind provider interface
-- **Email:** OAuth (Google/Microsoft) via IMAP/SMTP
+- **Email:** Gmail via REST API (OAuth, `gmail.modify` scope); IMAP/SMTP transport preserved for Microsoft (currently dormant)
 - **Web scraping:** Mozilla Readability + Turndown (local, no external APIs)
 
 ## Conventions
