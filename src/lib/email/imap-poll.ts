@@ -60,7 +60,11 @@ export async function pollConnection(
   // --- Phase 2: Escalation checks + draft generation ---
   for (const conversationId of touchedConversationIds) {
     const lastMsg = await db
-      .select({ direction: messages.direction, bodyText: messages.bodyText })
+      .select({
+        direction: messages.direction,
+        bodyText: messages.bodyText,
+        isAutomated: messages.isAutomated,
+      })
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
       .orderBy(desc(messages.createdAt))
@@ -75,6 +79,10 @@ export async function pollConnection(
         .where(eq(conversations.id, conversationId));
       continue;
     }
+
+    // Skip marketing / automated mail — drafting a reply is not useful and
+    // these emails (long marketing HTML, mailing lists) trip RAG embedding limits.
+    if (lastMsg.isAutomated) continue;
 
     // Skip if a pending draft already exists
     const existingDraft = await db
@@ -152,7 +160,7 @@ export async function pollConnection(
     if (touchedConversationIds.has(stuckId)) continue;
 
     const lastMsg = await db
-      .select({ direction: messages.direction })
+      .select({ direction: messages.direction, isAutomated: messages.isAutomated })
       .from(messages)
       .where(eq(messages.conversationId, stuckId))
       .orderBy(desc(messages.createdAt))
@@ -160,6 +168,7 @@ export async function pollConnection(
       .then((r) => r[0]);
 
     if (lastMsg?.direction !== "inbound") continue;
+    if (lastMsg.isAutomated) continue;
 
     try {
       await generateDraftForConversation(stuckId);

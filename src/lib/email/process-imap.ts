@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { conversations, messages, emailConnections } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import type { MessageSource } from "./transports/types";
+import { isAutomatedEmail } from "./detect-automated";
 
 type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
@@ -111,6 +112,7 @@ export async function processImapEmail(
     inReplyTo,
     source,
     connectionId: connection.id,
+    isAutomated: isAutomatedEmail(parsed),
     sentAt: parsed.date ?? new Date(),
   });
 

@@ -99,6 +99,13 @@
       "when": 1777658070179,
       "tag": "0013_adorable_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1777678701994,
+      "tag": "0014_fancy_frightful_four",
+      "breakpoints": true
     }
   ]
 }
