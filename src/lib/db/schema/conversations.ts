@@ -29,6 +29,7 @@ export const conversations = pgTable(
     status: conversationStatusEnum("status").notNull().default("open"),
     customerEmail: text("customer_email").notNull(),
     customerName: text("customer_name"),
+    gmailThreadId: text("gmail_thread_id"),
     autopilotDisabled: boolean("autopilot_disabled").notNull().default(false),
     lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

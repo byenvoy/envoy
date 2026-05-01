@@ -42,6 +42,7 @@ export const emailConnections = pgTable(
     lastPolledAt: timestamp("last_polled_at", { withTimezone: true }),
     lastUid: text("last_uid"),
     lastSentUid: text("last_sent_uid"),
+    historyId: text("history_id"),
     status: text("status").notNull().default("active"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
