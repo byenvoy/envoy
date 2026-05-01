@@ -35,11 +35,13 @@ export const emailConnections = pgTable(
     accessTokenEncrypted: text("access_token_encrypted").notNull(),
     refreshTokenEncrypted: text("refresh_token_encrypted").notNull(),
     tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }).notNull(),
+    // IMAP/SMTP transport only (Microsoft). Populated but unused for Gmail rows, which use the REST transport.
     imapHost: text("imap_host").notNull(),
     imapPort: integer("imap_port").notNull().default(993),
     smtpHost: text("smtp_host").notNull(),
     smtpPort: integer("smtp_port").notNull().default(587),
     lastPolledAt: timestamp("last_polled_at", { withTimezone: true }),
+    // IMAP UID watermarks; Gmail uses historyId instead.
     lastUid: text("last_uid"),
     lastSentUid: text("last_sent_uid"),
     historyId: text("history_id"),
