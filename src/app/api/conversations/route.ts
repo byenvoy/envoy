@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
-import { conversations } from "@/lib/db/schema";
-import { eq, and, or, desc, ilike, sql, getTableColumns } from "drizzle-orm";
+import { conversations, messages, drafts } from "@/lib/db/schema";
+import { eq, and, or, not, desc, ilike, sql, getTableColumns } from "drizzle-orm";
 import { parseSearch } from "@/lib/search/parse-search";
 import type { ConversationStatus } from "@/lib/types/database";
 
@@ -22,6 +22,20 @@ export async function GET(request: NextRequest) {
   if (status && status !== "all") {
     conditions.push(eq(conversations.status, status as ConversationStatus));
   }
+
+  // Hide conversations stuck in the draft-generation race window:
+  // status='open' (last inbound, awaiting our response) but no pending draft
+  // exists yet. These appear once the draft completes — usually within seconds.
+  // Status 'waiting'/'closed' are unaffected. Conversations whose latest
+  // message is automated (marketing/list mail) are also kept visible — they
+  // intentionally don't get a draft.
+  conditions.push(
+    or(
+      not(eq(conversations.status, "open")),
+      sql`EXISTS (SELECT 1 FROM ${drafts} d WHERE d.conversation_id = ${conversations.id} AND d.status = 'pending')`,
+      sql`(SELECT m.is_automated FROM ${messages} m WHERE m.conversation_id = ${conversations.id} ORDER BY m.created_at DESC LIMIT 1) = TRUE`
+    )!
+  );
 
   let searchFreeText: string | null = null;
 
