@@ -332,7 +332,7 @@ export function InboxView({
             </div>
             {/* Right panel — customer context + draft */}
             {showRightPanel && (
-              <div className="border-t border-border md:border-t-0 h-auto md:h-full w-full md:w-[380px] flex-shrink-0 overflow-y-auto bg-surface-alt">
+              <div className="border-t border-border md:border-t-0 h-auto md:h-full w-full md:w-[380px] flex-shrink-0 overflow-y-auto bg-surface-alt md:overflow-hidden">
                 <DraftPanel
                   key={detailData.conversation.id}
                   conversation={detailData.conversation}

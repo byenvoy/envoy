@@ -242,7 +242,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
 
       {/* Draft section */}
       {draft && isPending && (
-        <div className="flex flex-1 flex-col gap-2 p-3 md:gap-3 md:p-4">
+        <div className="flex flex-1 flex-col gap-2 p-3 md:min-h-0 md:gap-3 md:p-4">
           {/* Gate 3 warning — draft flagged as needing human review */}
           {autopilotEval?.gate3_passed === false && (
             <div className="rounded-md border border-ai-accent/30 bg-ai-light px-3 py-2">
@@ -298,7 +298,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               onChange={(e) => handleContentChange(e.target.value)}
               onBlur={() => setIsEditing(false)}
               rows={10}
-              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:px-4 md:py-3"
+              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:min-h-0 md:px-4 md:py-3"
             />
           ) : (
             <div
@@ -309,7 +309,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 clearActiveSources();
                 setIsEditing(true);
               }}
-              className="max-h-[200px] cursor-text overflow-y-auto break-words rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:bg-ai-accent-light"
+              className="max-h-[200px] cursor-text overflow-y-auto break-words rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:min-h-0 md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:bg-ai-accent-light"
               dangerouslySetInnerHTML={{ __html: annotatedHtml }}
             />
           )}
