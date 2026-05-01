@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { emailConnections, conversations, messages, drafts } from "@/lib/db/schema";
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, isNull, gte, sql } from "drizzle-orm";
 import { processImapEmail } from "./process-imap";
 import { processSentEmail } from "./process-sent";
 import { generateDraftForConversation } from "./generate-draft";
@@ -8,6 +8,9 @@ import { checkAndEscalateThread } from "@/lib/autopilot/escalation";
 import { getTransport } from "./transports";
 
 type EmailConnectionRow = typeof emailConnections.$inferSelect;
+
+const STUCK_RETRY_LOOKBACK_MS = 24 * 60 * 60 * 1000;
+const STUCK_RETRY_LIMIT_PER_POLL = 5;
 
 /**
  * Poll an email connection for new messages, ingest them, and trigger
@@ -116,7 +119,53 @@ export async function pollConnection(
       }
     }
 
-    await generateDraftForConversation(conversationId);
+    try {
+      await generateDraftForConversation(conversationId);
+    } catch (err) {
+      // Per-conversation isolation: a single draft failure must not block
+      // the rest of the loop or fail the poll. recordLLMError inside
+      // generateDraftForConversation already surfaces non-retryable errors
+      // (auth/quota) via the org-level llmErrorMessage banner.
+      console.error(`Draft generation failed for conversation ${conversationId}:`, err);
+    }
+  }
+
+  // --- Phase 2.5: Retry recently-stuck conversations ---
+  // Conversations whose last message is inbound but never got a draft (e.g.
+  // because an earlier poll's draft loop bailed mid-iteration). Bounded by
+  // a 24h window so genuinely failing-forever conversations age out.
+  const stuckCutoff = new Date(Date.now() - STUCK_RETRY_LOOKBACK_MS);
+  const stuckCandidates = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.orgId, connection.orgId),
+        gte(conversations.lastMessageAt, stuckCutoff),
+        sql`NOT EXISTS (SELECT 1 FROM ${drafts} WHERE ${drafts.conversationId} = ${conversations.id})`
+      )
+    )
+    .orderBy(desc(conversations.lastMessageAt))
+    .limit(STUCK_RETRY_LIMIT_PER_POLL);
+
+  for (const { id: stuckId } of stuckCandidates) {
+    if (touchedConversationIds.has(stuckId)) continue;
+
+    const lastMsg = await db
+      .select({ direction: messages.direction })
+      .from(messages)
+      .where(eq(messages.conversationId, stuckId))
+      .orderBy(desc(messages.createdAt))
+      .limit(1)
+      .then((r) => r[0]);
+
+    if (lastMsg?.direction !== "inbound") continue;
+
+    try {
+      await generateDraftForConversation(stuckId);
+    } catch (err) {
+      console.error(`Stuck-conversation draft retry failed for ${stuckId}:`, err);
+    }
   }
 
   // --- Phase 3: Update connection state ---
