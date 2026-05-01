@@ -15,11 +15,12 @@ interface DraftPanelProps {
   draft: Draft | null;
   shopifyCustomer: ShopifyCustomerContext | null;
   draftUsedCustomerData: boolean;
+  latestIsAutomated?: boolean;
   onRefresh: () => void;
   onSent: () => void;
 }
 
-export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent }: DraftPanelProps) {
+export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, latestIsAutomated = false, onRefresh, onSent }: DraftPanelProps) {
   const router = useRouter();
 
   // Extract autopilot evaluation data if present (joined via Supabase relation)
@@ -238,6 +239,26 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           customerContext={shopifyCustomer}
           defaultExpanded={draftUsedCustomerData}
         />
+      )}
+
+      {/* Empty state for automated mail with no draft */}
+      {!isPending && latestIsAutomated && (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
+          <div className="font-display text-sm font-semibold text-text-primary">
+            No draft generated
+          </div>
+          <p className="max-w-xs text-xs text-text-secondary">
+            This message looks like marketing or automated mail. Envoy skipped drafting a reply.
+          </p>
+          <button
+            onClick={handleRegenerate}
+            disabled={loading !== null}
+            className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-text-secondary disabled:opacity-50"
+          >
+            {loading === "regenerate" ? "Generating..." : "Draft anyway"}
+          </button>
+          {error && <p className="text-xs text-error">{error}</p>}
+        </div>
       )}
 
       {/* Draft section */}

@@ -215,7 +215,9 @@ export function InboxView({
 
   const hasPendingDraft = detailData?.draft && detailData.draft.status === "pending";
   const hasShopifyCustomer = !!(detailData?.shopifyCustomer && (detailData.shopifyCustomer.customer || detailData.shopifyCustomer.recent_orders?.length));
-  const showRightPanel = hasPendingDraft || hasShopifyCustomer;
+  const latestMessage = detailData?.messages?.[detailData.messages.length - 1];
+  const latestIsAutomated = !!latestMessage?.is_automated && latestMessage.direction === "inbound";
+  const showRightPanel = hasPendingDraft || hasShopifyCustomer || latestIsAutomated;
 
   const showNudge = showAutopilotNudge && !nudgeDismissed;
 
@@ -339,6 +341,7 @@ export function InboxView({
                   draft={hasPendingDraft ? detailData.draft! : null}
                   shopifyCustomer={detailData.shopifyCustomer}
                   draftUsedCustomerData={!!detailData.draft?.customer_context}
+                  latestIsAutomated={latestIsAutomated}
                   onRefresh={handleDetailRefresh}
                   onSent={handleConversationSent}
                 />
