@@ -31,9 +31,9 @@ export async function pollConnection(
   for (const msg of allMessages) {
     let conversationId: string | null = null;
     if (msg.folder === "inbox") {
-      conversationId = await processImapEmail(msg.parsed, connection);
+      conversationId = await processImapEmail(msg.parsed, connection, msg.source);
     } else {
-      conversationId = await processSentEmail(msg.parsed, connection);
+      conversationId = await processSentEmail(msg.parsed, connection, msg.source);
     }
     if (conversationId) {
       touchedConversationIds.add(conversationId);

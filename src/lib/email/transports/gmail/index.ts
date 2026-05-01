@@ -58,6 +58,7 @@ async function collectFromMessageIds(
       folder: isSent ? "sent" : "inbox",
       parsed,
       date: parsed.date ?? new Date(0),
+      source: "gmail",
       providerThreadId: msg.threadId,
     });
   }

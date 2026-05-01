@@ -2,6 +2,7 @@ import type { ParsedMail } from "mailparser";
 import { db } from "@/lib/db";
 import { conversations, messages, emailConnections } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
+import type { MessageSource } from "./transports/types";
 
 type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
@@ -12,7 +13,8 @@ type EmailConnectionRow = typeof emailConnections.$inferSelect;
  */
 export async function processSentEmail(
   parsed: ParsedMail,
-  connection: EmailConnectionRow
+  connection: EmailConnectionRow,
+  source: MessageSource
 ): Promise<string | null> {
   const fromAddr = parsed.from?.value?.[0]?.address ?? "";
   const fromName = parsed.from?.value?.[0]?.name ?? null;
@@ -84,7 +86,7 @@ export async function processSentEmail(
     bodyHtml,
     messageId,
     inReplyTo,
-    source: "imap",
+    source,
     connectionId: connection.id,
     sentAt: parsed.date ?? new Date(),
   });

@@ -3,10 +3,14 @@ import type { emailConnections } from "@/lib/db/schema";
 
 export type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
+/** Tag persisted on messages.source — identifies which transport ingested it. */
+export type MessageSource = "gmail" | "imap";
+
 export interface CollectedMessage {
   folder: "inbox" | "sent";
   parsed: ParsedMail;
   date: Date;
+  source: MessageSource;
   /** Provider-native thread identifier (Gmail threadId). Undefined for IMAP. */
   providerThreadId?: string;
 }

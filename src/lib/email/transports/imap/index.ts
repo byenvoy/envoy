@@ -59,6 +59,7 @@ async function collectFromFolder(
         folder: isSent ? "sent" : "inbox",
         parsed,
         date: parsed.date ?? new Date(0),
+        source: "imap",
       });
 
       if (!maxUid || Number(uid) > Number(maxUid)) {
