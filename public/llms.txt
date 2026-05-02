@@ -2,7 +2,7 @@
 
 > Envoy is AI customer support that runs itself. It learns your business from your knowledge base, drafts replies to incoming customer emails, and lets your team review and send. Open source, self-hosted or managed.
 
-Envoy works with Gmail and Microsoft 365. Teams can pick any supported model (Claude, GPT-4o, Gemini, Mistral, DeepSeek) and switch anytime, with model costs passed through directly and no markup. Autopilot can auto-reply to topics you've calibrated; anything it isn't sure about routes to a human for approval.
+Envoy works with Gmail and Microsoft 365. Teams can pick any supported model (Claude, GPT-4o, Gemini, Mistral) and switch anytime, with model costs passed through directly and no markup. Autopilot can auto-reply to topics you've calibrated; anything it isn't sure about routes to a human for approval.
 
 ## Product
 

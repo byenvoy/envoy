@@ -6,7 +6,7 @@ AI-powered customer support with a human-in-the-loop. Envoy crawls your knowledg
 
 - **RAG Pipeline** — Crawls your docs/help center, chunks and embeds content, retrieves relevant context for each customer email
 - **Email Integration** — Connects to Gmail and Outlook via OAuth. Polls for new emails, threads replies automatically
-- **Draft Generation** — Uses Claude, GPT-4o, Gemini, Mistral, or DeepSeek to draft replies grounded in your knowledge base
+- **Draft Generation** — Uses Claude, GPT-4o, Gemini, or Mistral to draft replies grounded in your knowledge base
 - **Autopilot** — Automatically send replies for well-understood topics with configurable quality gates
 - **Shopify Integration** — Pulls order, return, and customer data into draft context
 - **Team Management** — Invite agents with role-based permissions (owner, admin, agent)
@@ -100,7 +100,7 @@ The Blueprint provisions a web service, Postgres database, and cron jobs for ema
 - **Database:** Postgres + pgvector, Drizzle ORM
 - **Auth:** Better Auth
 - **Embeddings:** OpenAI text-embedding-3-small
-- **LLM:** Provider-agnostic (Anthropic, OpenAI, Google, Mistral, DeepSeek)
+- **LLM:** Provider-agnostic (Anthropic, OpenAI, Google, Mistral)
 - **Email:** IMAP/SMTP via OAuth (Google, Microsoft)
 
 ## License

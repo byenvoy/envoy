@@ -118,7 +118,6 @@ export function ModelLogos() {
     { name: "GPT-4o", src: "/logos/openai.svg", darkSrc: "/logos/OpenAI-white-monoblossom.svg" },
     { name: "Gemini", src: "/logos/gemini-icon.png" },
     { name: "Mistral", src: "/logos/mistral.svg" },
-    { name: "DeepSeek", src: "/logos/deepseek.svg" },
   ];
 
   return (

@@ -150,15 +150,6 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     costPer1kInput: 0.0001,
     costPer1kOutput: 0.0003,
   },
-  "deepseek-chat": {
-    provider: "openai",
-    label: "DeepSeek V3",
-    logo: "/logos/deepseek.svg",
-    baseUrl: "https://api.deepseek.com/v1",
-    envKey: "DEEPSEEK_API_KEY",
-    costPer1kInput: 0.00014,
-    costPer1kOutput: 0.00028,
-  },
 };
 
 class AnthropicProvider implements LLMProvider {
