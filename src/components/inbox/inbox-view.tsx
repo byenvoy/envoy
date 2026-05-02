@@ -175,13 +175,28 @@ export function InboxView({
 
   async function handleClose() {
     if (!selectedId) return;
+    const idBeingClosed = selectedId;
     setClosing(true);
+    // Optimistically hide while the close request is in flight.
+    setOptimisticallyHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(idBeingClosed);
+      return next;
+    });
     try {
-      const res = await fetch(`/api/conversations/${selectedId}/close`, {
+      const res = await fetch(`/api/conversations/${idBeingClosed}/close`, {
         method: "POST",
       });
-      if (!res.ok) return;
-      detailCache.current.delete(selectedId);
+      if (!res.ok) {
+        // Restore on failure.
+        setOptimisticallyHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(idBeingClosed);
+          return next;
+        });
+        return;
+      }
+      detailCache.current.delete(idBeingClosed);
       setSelectedId(null);
       setDetailData(null);
       const params = new URLSearchParams(searchParams.toString());
