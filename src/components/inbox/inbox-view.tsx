@@ -50,6 +50,9 @@ export function InboxView({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [extraConversations, setExtraConversations] = useState<Conversation[]>([]);
+  // IDs hidden optimistically while a Send is in flight, so the conversation
+  // disappears from the list immediately instead of waiting for router.refresh.
+  const [optimisticallyHiddenIds, setOptimisticallyHiddenIds] = useState<Set<string>>(new Set());
   const [nudgeDismissed, setNudgeDismissed] = useState(true);
   useEffect(() => {
     setNudgeDismissed(localStorage.getItem("autopilot-nudge-dismissed") === "1");
@@ -62,7 +65,9 @@ export function InboxView({
     }
   }, [initialDetail]);
 
-  const allConversations = [...conversations, ...extraConversations];
+  const allConversations = [...conversations, ...extraConversations].filter(
+    (c) => !optimisticallyHiddenIds.has(c.id)
+  );
 
   // Infinite scroll — load more when sentinel enters viewport
   const loadingMoreRef = useRef(false);
@@ -131,6 +136,26 @@ export function InboxView({
       // Invalidate cache and re-fetch
       detailCache.current.delete(selectedId);
       fetchDetail(selectedId);
+    }
+  }
+
+  function handleSendStart() {
+    if (selectedId) {
+      setOptimisticallyHiddenIds((prev) => {
+        const next = new Set(prev);
+        next.add(selectedId);
+        return next;
+      });
+    }
+  }
+
+  function handleSendError() {
+    if (selectedId) {
+      setOptimisticallyHiddenIds((prev) => {
+        const next = new Set(prev);
+        next.delete(selectedId);
+        return next;
+      });
     }
   }
 
@@ -211,6 +236,10 @@ export function InboxView({
   useEffect(() => {
     setExtraConversations([]);
     setHasMore(initialHasMore);
+    // Server data has refreshed — clear any stale optimistic hides. Sent
+    // conversations have moved out of the open list on the server; failed
+    // sends were already restored via handleSendError.
+    setOptimisticallyHiddenIds(new Set());
   }, [conversations, initialHasMore]);
 
   const hasPendingDraft = detailData?.draft && detailData.draft.status === "pending";
@@ -344,6 +373,8 @@ export function InboxView({
                   latestIsAutomated={latestIsAutomated}
                   onRefresh={handleDetailRefresh}
                   onSent={handleConversationSent}
+                  onSendStart={handleSendStart}
+                  onSendError={handleSendError}
                 />
               </div>
             )}

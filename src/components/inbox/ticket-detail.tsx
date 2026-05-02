@@ -18,9 +18,11 @@ interface DraftPanelProps {
   latestIsAutomated?: boolean;
   onRefresh: () => void;
   onSent: () => void;
+  onSendStart?: () => void;
+  onSendError?: () => void;
 }
 
-export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, latestIsAutomated = false, onRefresh, onSent }: DraftPanelProps) {
+export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, latestIsAutomated = false, onRefresh, onSent, onSendStart, onSendError }: DraftPanelProps) {
   const router = useRouter();
 
   // Extract autopilot evaluation data if present (joined via Supabase relation)
@@ -112,6 +114,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   async function handleSend(close: boolean = false) {
     setLoading(close ? "send-close" : "send");
     setError(null);
+    onSendStart?.();
 
     try {
       const res = await fetch(`/api/conversations/${conversation.id}/approve`, {
@@ -128,6 +131,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
       onSent();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
+      onSendError?.();
     } finally {
       setLoading(null);
     }
