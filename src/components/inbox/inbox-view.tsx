@@ -257,6 +257,28 @@ export function InboxView({
     setOptimisticallyHiddenIds(new Set());
   }, [conversations, initialHasMore]);
 
+  // Auto-refresh after the user just enabled polling so the inbox populates
+  // on its own as the fire-and-forget initial poll generates drafts.
+  // Stops after 60s; strips the query param so reloads don't restart it.
+  const justEnabled = searchParams.get("just-enabled") === "1";
+  useEffect(() => {
+    if (!justEnabled) return;
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 5000);
+    const stop = setTimeout(() => {
+      clearInterval(interval);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("just-enabled");
+      const qs = params.toString();
+      window.history.replaceState(null, "", `/inbox${qs ? `?${qs}` : ""}`);
+    }, 60_000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(stop);
+    };
+  }, [justEnabled, router, searchParams]);
+
   const hasPendingDraft = detailData?.draft && detailData.draft.status === "pending";
   const hasShopifyCustomer = !!(detailData?.shopifyCustomer && (detailData.shopifyCustomer.customer || detailData.shopifyCustomer.recent_orders?.length));
   const latestMessage = detailData?.messages?.[detailData.messages.length - 1];
@@ -408,6 +430,17 @@ export function InboxView({
                   <p className="mt-1 text-xs text-text-secondary">
                     No conversations match &ldquo;{searchParams.get("search")}&rdquo;
                   </p>
+                </>
+              ) : justEnabled ? (
+                <>
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface-alt">
+                    <svg className="h-5 w-5 animate-spin text-text-secondary" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+                    </svg>
+                  </div>
+                  <p className="font-display text-sm font-semibold text-text-primary">Syncing your first emails…</p>
+                  <p className="mt-1 text-xs text-text-secondary">Conversations will appear as drafts complete.</p>
                 </>
               ) : (searchParams.get("status") ?? "open") === "open" ? (
                 <>
