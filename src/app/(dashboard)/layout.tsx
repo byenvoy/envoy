@@ -10,6 +10,9 @@ import { isActiveSubscription } from "@/lib/db/helpers";
 import type { Role } from "@/lib/permissions";
 
 const AUTH_ERROR_PATTERN = /401|403|invalid_grant|invalid_token|invalid_scope|authentication\s*failed|token refresh failed|unauthorized|permission denied/i;
+// Wait one full cron cycle (2 min) plus margin before surfacing a generic
+// connection error — a single failed poll often clears on the next attempt.
+const TRANSIENT_GRACE_MS = 5 * 60 * 1000;
 
 export default async function DashboardLayout({
   children,
@@ -57,23 +60,32 @@ export default async function DashboardLayout({
 
     llmErrorMessage = org?.llmErrorMessage ?? null;
 
-    // Look up any errored email connections for this org
-    const erroredConn = await db
-      .select({ errorMessage: emailConnections.errorMessage })
+    // Look up errored email connections for this org. Auth-shaped errors
+    // surface immediately (they don't auto-recover); other errors only
+    // surface if the connection hasn't successfully polled for at least
+    // one cron cycle, so brief transient errors don't flash a banner.
+    const erroredConns = await db
+      .select({
+        errorMessage: emailConnections.errorMessage,
+        lastPolledAt: emailConnections.lastPolledAt,
+      })
       .from(emailConnections)
       .where(
         and(
           eq(emailConnections.orgId, profile.orgId),
           eq(emailConnections.status, "error")
         )
-      )
-      .limit(1)
-      .then((r) => r[0] ?? null);
+      );
 
-    if (erroredConn) {
-      emailConnectionErrored = true;
-      emailConnectionNeedsReconnect = !!erroredConn.errorMessage &&
-        AUTH_ERROR_PATTERN.test(erroredConn.errorMessage);
+    for (const conn of erroredConns) {
+      const isAuth = !!conn.errorMessage && AUTH_ERROR_PATTERN.test(conn.errorMessage);
+      const isStale =
+        !conn.lastPolledAt ||
+        Date.now() - new Date(conn.lastPolledAt).getTime() > TRANSIENT_GRACE_MS;
+      if (isAuth || isStale) {
+        emailConnectionErrored = true;
+        if (isAuth) emailConnectionNeedsReconnect = true;
+      }
     }
 
     // On cloud: check subscription status
