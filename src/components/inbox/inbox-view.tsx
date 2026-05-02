@@ -139,35 +139,46 @@ export function InboxView({
     }
   }
 
+  // Track the id of an in-flight send so handleSendError can restore it.
+  const inFlightSendId = useRef<string | null>(null);
+
   function handleSendStart() {
-    if (selectedId) {
-      setOptimisticallyHiddenIds((prev) => {
-        const next = new Set(prev);
-        next.add(selectedId);
-        return next;
-      });
-    }
-  }
+    if (!selectedId) return;
+    const id = selectedId;
+    inFlightSendId.current = id;
 
-  function handleSendError() {
-    if (selectedId) {
-      setOptimisticallyHiddenIds((prev) => {
-        const next = new Set(prev);
-        next.delete(selectedId);
-        return next;
-      });
-    }
-  }
-
-  function handleConversationSent() {
-    if (selectedId) {
-      detailCache.current.delete(selectedId);
-    }
+    // Clear the right panel + URL immediately — same as a successful send,
+    // just earlier. The auto-select effect will pick the next conversation.
+    detailCache.current.delete(id);
     setSelectedId(null);
     setDetailData(null);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("id");
     window.history.replaceState(null, "", `/inbox?${params.toString()}`);
+
+    // Hide from the list while the send is in flight.
+    setOptimisticallyHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }
+
+  function handleSendError() {
+    const id = inFlightSendId.current;
+    inFlightSendId.current = null;
+    if (!id) return;
+    // Restore the row in the list so the user can re-open and retry.
+    setOptimisticallyHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }
+
+  function handleConversationSent() {
+    inFlightSendId.current = null;
+    // Local UI was already cleared in handleSendStart. Just sync server data.
     router.refresh();
   }
 
