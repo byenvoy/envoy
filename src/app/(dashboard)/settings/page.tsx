@@ -31,7 +31,6 @@ const PROVIDER_LABELS: Record<string, string> = {
   OPENAI_API_KEY: "OpenAI",
   GOOGLE_AI_KEY: "Google",
   MISTRAL_API_KEY: "Mistral",
-  DEEPSEEK_API_KEY: "DeepSeek",
 };
 
 /** Collect unique providers from SUPPORTED_MODELS for the API key UI. */
