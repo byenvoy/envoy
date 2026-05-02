@@ -37,7 +37,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(latestIsAutomated && !draft);
   const [activeSources, setActiveSources] = useState<Set<string>>(new Set());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -51,10 +51,17 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   // Auto-save with debounce
   const autoSave = useCallback(
     async (content: string) => {
-      if (!draft || draft.status !== "pending") return;
-      // Don't save if content matches the original draft
-      if (content === draft.draft_content && !draft.edited_content) return;
-      if (content === draft.edited_content) return;
+      // For existing drafts: skip when nothing changed.
+      if (draft && draft.status === "pending") {
+        if (content === draft.draft_content && !draft.edited_content) return;
+        if (content === draft.edited_content) return;
+      } else if (!latestIsAutomated) {
+        // No draft yet, and not an automated/empty case → nothing to save.
+        return;
+      } else if (content.trim().length === 0) {
+        // Don't create an empty manual draft on initial render.
+        return;
+      }
 
       setSaveStatus("saving");
       try {
@@ -66,12 +73,17 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         if (res.ok) {
           setSaveStatus("saved");
           setTimeout(() => setSaveStatus("idle"), 2000);
+          const data = await res.json().catch(() => ({}));
+          if (data?.created) {
+            // First save just created the draft — refresh so Send/Approve enable.
+            onRefresh();
+          }
         }
       } catch {
         setSaveStatus("idle");
       }
     },
-    [conversation.id, draft]
+    [conversation.id, draft, latestIsAutomated, onRefresh]
   );
 
   function handleContentChange(value: string) {
@@ -241,29 +253,21 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         />
       )}
 
-      {/* Empty state for automated mail with no draft */}
-      {!isPending && latestIsAutomated && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
-          <div className="font-display text-sm font-semibold text-text-primary">
-            No draft generated
-          </div>
-          <p className="max-w-xs text-xs text-text-secondary">
-            This message looks like marketing or automated mail. Envoy skipped drafting a reply.
-          </p>
-          <button
-            onClick={handleRegenerate}
-            disabled={loading !== null}
-            className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-text-secondary disabled:opacity-50"
-          >
-            {loading === "regenerate" ? "Generating..." : "Draft anyway"}
-          </button>
-          {error && <p className="text-xs text-error">{error}</p>}
-        </div>
-      )}
-
-      {/* Draft section */}
-      {draft && isPending && (
+      {/* Draft section — shown for pending drafts, and for automated mail
+          (no auto-draft) so the user can compose manually if they want. */}
+      {((draft && isPending) || (latestIsAutomated && !draft)) && (
         <div className="flex flex-1 flex-col gap-2 p-3 md:min-h-0 md:gap-3 md:p-4">
+          {/* Notice for automated mail */}
+          {latestIsAutomated && !draft && (
+            <div className="rounded-md border border-border bg-surface px-3 py-2">
+              <p className="font-display text-xs font-medium text-text-primary">
+                No draft generated
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                This looks like marketing or automated mail. Type a reply or click Regenerate.
+              </p>
+            </div>
+          )}
           {/* Gate 3 warning — draft flagged as needing human review */}
           {autopilotEval?.gate3_passed === false && (
             <div className="rounded-md border border-ai-accent/30 bg-ai-light px-3 py-2">
@@ -318,6 +322,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               value={editedContent}
               onChange={(e) => handleContentChange(e.target.value)}
               onBlur={() => setIsEditing(false)}
+              placeholder="Type your reply..."
               rows={10}
               className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:min-h-0 md:px-4 md:py-3"
             />
@@ -402,14 +407,14 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               <div className="flex gap-2">
                 <button
                   onClick={() => handleSend(true)}
-                  disabled={loading !== null}
+                  disabled={loading !== null || !draft}
                   className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
                 >
                   {loading === "send-close" ? "..." : "Send & Close"}
                 </button>
                 <button
                   onClick={() => handleSend(false)}
-                  disabled={loading !== null}
+                  disabled={loading !== null || !draft}
                   className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
                 >
                   {loading === "send" ? "Sending..." : "Send"}
