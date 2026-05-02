@@ -2,12 +2,14 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { profiles, organizations, subscriptions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { profiles, organizations, subscriptions, emailConnections } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { isCloud } from "@/lib/config";
 import { isActiveSubscription } from "@/lib/db/helpers";
 import type { Role } from "@/lib/permissions";
+
+const AUTH_ERROR_PATTERN = /401|403|invalid_grant|invalid_token|invalid_scope|authentication\s*failed|token refresh failed|unauthorized|permission denied/i;
 
 export default async function DashboardLayout({
   children,
@@ -35,6 +37,8 @@ export default async function DashboardLayout({
 
   let subscriptionStatus: string | null = null;
   let llmErrorMessage: string | null = null;
+  let emailConnectionErrored = false;
+  let emailConnectionNeedsReconnect = false;
 
   // Check onboarding status
   if (profile) {
@@ -52,6 +56,25 @@ export default async function DashboardLayout({
     }
 
     llmErrorMessage = org?.llmErrorMessage ?? null;
+
+    // Look up any errored email connections for this org
+    const erroredConn = await db
+      .select({ errorMessage: emailConnections.errorMessage })
+      .from(emailConnections)
+      .where(
+        and(
+          eq(emailConnections.orgId, profile.orgId),
+          eq(emailConnections.status, "error")
+        )
+      )
+      .limit(1)
+      .then((r) => r[0] ?? null);
+
+    if (erroredConn) {
+      emailConnectionErrored = true;
+      emailConnectionNeedsReconnect = !!erroredConn.errorMessage &&
+        AUTH_ERROR_PATTERN.test(erroredConn.errorMessage);
+    }
 
     // On cloud: check subscription status
     if (isCloud() && org?.onboardingCompletedAt) {
@@ -89,6 +112,8 @@ export default async function DashboardLayout({
       userRole={(profile?.role ?? "agent") as Role}
       subscriptionStatus={subscriptionStatus}
       llmErrorMessage={llmErrorMessage}
+      emailConnectionErrored={emailConnectionErrored}
+      emailConnectionNeedsReconnect={emailConnectionNeedsReconnect}
     >
       {children}
     </DashboardShell>
