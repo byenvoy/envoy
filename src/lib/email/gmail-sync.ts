@@ -7,12 +7,24 @@ import { getValidTokens } from "./oauth-tokens";
 type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
 // Hierarchical so future child labels (Replied, Discarded, Escalated…) nest
-// cleanly under the same parent without a data migration.
-const ENVOY_LABEL_NAME = "Envoy/Handled";
+// cleanly under the same parent without a data migration. Gmail's UI only
+// renders the slash as a hierarchy when BOTH parent and child labels exist
+// — creating just "Envoy/Handled" without "Envoy" leaves it visually flat.
+const ENVOY_PARENT_LABEL = "Envoy";
+const ENVOY_HANDLED_LABEL = "Envoy/Handled";
+
+async function findOrCreateLabel(client: GmailClient, name: string): Promise<string> {
+  const existing = await client.listLabels();
+  const found = (existing.labels ?? []).find((l) => l.name === name);
+  if (found) return found.id;
+  const created = await client.createLabel(name);
+  return created.id;
+}
 
 /**
- * Look up or create the org's "Envoy" Gmail label and cache its id on the
- * connection row. Idempotent across runs.
+ * Look up or create both the parent "Envoy" label and the "Envoy/Handled"
+ * child. Returns the child id (the one we actually apply to threads).
+ * Caches the child id on the connection row to skip the lookup next time.
  */
 async function getOrCreateEnvoyLabel(
   client: GmailClient,
@@ -20,23 +32,16 @@ async function getOrCreateEnvoyLabel(
 ): Promise<string> {
   if (connection.gmailLabelId) return connection.gmailLabelId;
 
-  const existing = await client.listLabels();
-  const found = (existing.labels ?? []).find((l) => l.name === ENVOY_LABEL_NAME);
-
-  let labelId: string;
-  if (found) {
-    labelId = found.id;
-  } else {
-    const created = await client.createLabel(ENVOY_LABEL_NAME);
-    labelId = created.id;
-  }
+  // Ensure the parent exists first so Gmail's UI nests the child.
+  await findOrCreateLabel(client, ENVOY_PARENT_LABEL);
+  const childId = await findOrCreateLabel(client, ENVOY_HANDLED_LABEL);
 
   await db
     .update(emailConnections)
-    .set({ gmailLabelId: labelId, updatedAt: new Date() })
+    .set({ gmailLabelId: childId, updatedAt: new Date() })
     .where(eq(emailConnections.id, connection.id));
 
-  return labelId;
+  return childId;
 }
 
 /**
