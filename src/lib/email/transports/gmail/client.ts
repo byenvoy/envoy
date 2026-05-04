@@ -45,6 +45,24 @@ export interface GmailSendResponse {
   labelIds?: string[];
 }
 
+export interface GmailLabel {
+  id: string;
+  name: string;
+  type?: "system" | "user";
+  messageListVisibility?: "show" | "hide";
+  labelListVisibility?: "labelShow" | "labelShowIfUnread" | "labelHide";
+  color?: { textColor: string; backgroundColor: string };
+}
+
+export interface GmailListLabelsResponse {
+  labels?: GmailLabel[];
+}
+
+export interface GmailModifyLabelsArgs {
+  addLabelIds?: string[];
+  removeLabelIds?: string[];
+}
+
 export class GmailHistoryExpiredError extends Error {
   constructor() {
     super("Gmail history expired (404 from /history endpoint)");
@@ -128,6 +146,38 @@ export class GmailClient {
       body: JSON.stringify({
         raw: rawBase64Url,
         ...(threadId ? { threadId } : {}),
+      }),
+    });
+  }
+
+  /**
+   * Add and/or remove labels on a thread. Operates on every message in the
+   * thread. Idempotent — adding a label already present is a no-op.
+   */
+  async modifyThread(
+    threadId: string,
+    args: GmailModifyLabelsArgs
+  ): Promise<{ id: string }> {
+    return this.request<{ id: string }>(`/threads/${threadId}/modify`, {
+      method: "POST",
+      body: JSON.stringify({
+        addLabelIds: args.addLabelIds ?? [],
+        removeLabelIds: args.removeLabelIds ?? [],
+      }),
+    });
+  }
+
+  async listLabels(): Promise<GmailListLabelsResponse> {
+    return this.request<GmailListLabelsResponse>("/labels");
+  }
+
+  async createLabel(name: string): Promise<GmailLabel> {
+    return this.request<GmailLabel>("/labels", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        labelListVisibility: "labelShow",
+        messageListVisibility: "show",
       }),
     });
   }

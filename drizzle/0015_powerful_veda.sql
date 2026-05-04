@@ -1,0 +1,1 @@
+ALTER TABLE "email_connections" ADD COLUMN "gmail_label_id" text;

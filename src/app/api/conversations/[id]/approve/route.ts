@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
-import { conversations, messages, drafts, emailAddresses, autopilotEvaluations } from "@/lib/db/schema";
+import { conversations, messages, drafts, emailAddresses, emailConnections, autopilotEvaluations } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { sendReply } from "@/lib/email/send-reply";
+import { archiveAndLabelGmailThread } from "@/lib/email/gmail-sync";
 import { marked } from "marked";
 
 
@@ -148,11 +149,23 @@ export async function POST(
     }
 
     // If close requested, override the "waiting" status set by sendReply
+    // and mirror the closed state to Gmail (archive + label).
     if (closeAfterSend) {
       await db
         .update(conversations)
         .set({ status: "closed" })
         .where(eq(conversations.id, id));
+
+      if (conversation.gmailThreadId) {
+        const conn = await db
+          .select()
+          .from(emailConnections)
+          .where(and(eq(emailConnections.orgId, orgId), eq(emailConnections.provider, "google")))
+          .then((r) => r[0] ?? null);
+        if (conn) {
+          void archiveAndLabelGmailThread(conversation.gmailThreadId, conn);
+        }
+      }
     }
 
     return NextResponse.json({ ok: true });

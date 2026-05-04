@@ -45,6 +45,9 @@ export const emailConnections = pgTable(
     lastUid: text("last_uid"),
     lastSentUid: text("last_sent_uid"),
     historyId: text("history_id"),
+    // Cached id of the org's "Envoy" Gmail label (Gmail-only). Lazily
+    // populated on first archive/label sync.
+    gmailLabelId: text("gmail_label_id"),
     status: text("status").notNull().default("active"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
