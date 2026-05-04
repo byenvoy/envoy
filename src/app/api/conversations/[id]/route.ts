@@ -2,9 +2,8 @@ import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
-import { conversations, messages, drafts, autopilotEvaluations, emailConnections } from "@/lib/db/schema";
+import { conversations, messages, drafts, autopilotEvaluations } from "@/lib/db/schema";
 import { eq, and, desc, asc } from "drizzle-orm";
-import { markGmailThreadRead } from "@/lib/email/gmail-sync";
 
 export async function GET(
   _request: Request,
@@ -54,20 +53,6 @@ export async function GET(
       .from(autopilotEvaluations)
       .where(eq(autopilotEvaluations.id, draft.autopilotEvaluationId))
       .then((r) => r[0] ?? null);
-  }
-
-  // Fire-and-forget: mark the Gmail thread as read so the user's actual
-  // Gmail inbox mirrors the fact that they've now seen this in Envoy.
-  // No-op if there's no Gmail thread id or the connection isn't Gmail.
-  if (conversation.gmailThreadId) {
-    void (async () => {
-      const conn = await db
-        .select()
-        .from(emailConnections)
-        .where(and(eq(emailConnections.orgId, orgId), eq(emailConnections.provider, "google")))
-        .then((r) => r[0] ?? null);
-      if (conn) await markGmailThreadRead(conversation.gmailThreadId, conn);
-    })();
   }
 
   // Fetch Shopify customer context independently (if Shopify is connected)

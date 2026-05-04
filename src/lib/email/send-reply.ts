@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { messages, conversations, emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getTransport } from "./transports";
+import { markGmailThreadRead } from "./gmail-sync";
 
 interface SendReplyParams {
   conversation: {
@@ -106,6 +107,16 @@ export async function sendReply({
     .update(conversations)
     .set({ status: "waiting", updatedAt: new Date(), lastMessageAt: new Date() })
     .where(eq(conversations.id, conversation.id));
+
+  // Fire-and-forget: now that we've responded, mark the Gmail thread as
+  // read. Centralized here so every send path (user-triggered, autopilot,
+  // anything future) inherits the behavior automatically. Uses the
+  // freshest threadId — sendResult takes precedence since it might have
+  // been populated for the first time on this very send.
+  const threadIdForSync = sendResult.providerThreadId ?? conversationRow?.gmailThreadId ?? null;
+  if (threadIdForSync) {
+    void markGmailThreadRead(threadIdForSync, connection);
+  }
 
   return outboundMsg.id;
 }
