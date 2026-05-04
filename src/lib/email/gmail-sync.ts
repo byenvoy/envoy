@@ -6,7 +6,9 @@ import { getValidTokens } from "./oauth-tokens";
 
 type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
-const ENVOY_LABEL_NAME = "Envoy";
+// Hierarchical so future child labels (Replied, Discarded, Escalated…) nest
+// cleanly under the same parent without a data migration.
+const ENVOY_LABEL_NAME = "Envoy/Handled";
 
 /**
  * Look up or create the org's "Envoy" Gmail label and cache its id on the
