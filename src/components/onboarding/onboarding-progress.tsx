@@ -1,6 +1,6 @@
 "use client";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 export function OnboardingProgress({ currentStep }: { currentStep: number }) {
   if (currentStep > TOTAL_STEPS) return null;

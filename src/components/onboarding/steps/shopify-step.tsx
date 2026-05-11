@@ -45,7 +45,7 @@ export function ShopifyStep({
           onClick={integration ? onNext : onSkip}
           className="rounded-lg bg-primary px-8 py-2.5 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
         >
-          Finish
+          Continue
         </button>
       </div>
     </div>
