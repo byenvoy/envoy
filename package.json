@@ -30,6 +30,8 @@
     "openai": "^6.27.0",
     "pdf-parse": "^2.4.5",
     "postgres": "^3.4.8",
+    "posthog-js": "^1.373.0",
+    "posthog-node": "^5.21.2",
     "puppeteer": "^24.38.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",

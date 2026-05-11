@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
@@ -38,6 +39,8 @@ export function InviteSignupForm({
       return;
     }
 
+    posthog.capture("user_signed_up", { source: "team_invite" });
+
     // Email is pre-verified for invite signups, so sign in directly
     const { error: signInError } = await authClient.signIn.email({
       email,
@@ -49,6 +52,8 @@ export function InviteSignupForm({
       setLoading(false);
       return;
     }
+
+    posthog.capture("user_logged_in", { method: "team_invite" });
 
     router.push(callbackURL);
   }

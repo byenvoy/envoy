@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
@@ -33,6 +34,11 @@ export function SignupForm() {
       setLoading(false);
       return;
     }
+
+    posthog.capture("user_signed_up", {
+      source: "self_signup",
+      has_company: Boolean(companyName),
+    });
 
     // Email verification required — redirect to check-email page
     router.push(`/check-email?email=${encodeURIComponent(email)}`);

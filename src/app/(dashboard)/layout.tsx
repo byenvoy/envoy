@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { profiles, organizations, subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { PostHogIdentify } from "@/components/posthog-identify";
 import { isCloud } from "@/lib/config";
 import { isActiveSubscription } from "@/lib/db/helpers";
 import type { Role } from "@/lib/permissions";
@@ -82,15 +83,23 @@ export default async function DashboardLayout({
     .slice(0, 2) || session.user.email?.[0]?.toUpperCase() || "?";
 
   return (
-    <DashboardShell
-      userInitials={initials}
-      userName={fullName}
-      userEmail={session.user.email ?? ""}
-      userRole={(profile?.role ?? "agent") as Role}
-      subscriptionStatus={subscriptionStatus}
-      llmErrorMessage={llmErrorMessage}
-    >
-      {children}
-    </DashboardShell>
+    <>
+      <PostHogIdentify
+        userId={session.user.id}
+        email={session.user.email ?? ""}
+        orgId={profile?.orgId}
+        fullName={profile?.fullName}
+      />
+      <DashboardShell
+        userInitials={initials}
+        userName={fullName}
+        userEmail={session.user.email ?? ""}
+        userRole={(profile?.role ?? "agent") as Role}
+        subscriptionStatus={subscriptionStatus}
+        llmErrorMessage={llmErrorMessage}
+      >
+        {children}
+      </DashboardShell>
+    </>
   );
 }
