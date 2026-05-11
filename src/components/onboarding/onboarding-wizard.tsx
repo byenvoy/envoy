@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { OnboardingProgress } from "./onboarding-progress";
 import { EmailStep } from "./steps/email-step";
 import { ModelStep } from "./steps/model-step";
 import { ShopifyStep } from "./steps/shopify-step";
 import type { EmailConnection, Integration } from "@/lib/types/database";
+
+const STEP_NAMES = ["email", "model", "shopify"] as const;
 
 interface ModelOption {
   id: string;
@@ -41,6 +44,10 @@ export function OnboardingWizard({
   const router = useRouter();
   const [step, setStep] = useState(Math.min(initialStep, 3));
 
+  useEffect(() => {
+    posthog.capture("onboarding_started", { initial_step: initialStep });
+  }, [initialStep]);
+
   async function persistStep(nextStep: number) {
     await fetch("/api/onboarding/progress", {
       method: "POST",
@@ -50,6 +57,11 @@ export function OnboardingWizard({
   }
 
   async function finishOnboarding() {
+    posthog.capture("onboarding_step_completed", {
+      step: 3,
+      step_name: STEP_NAMES[2],
+    });
+    posthog.capture("onboarding_completed", { is_cloud: isCloud });
     await persistStep(4);
 
     if (isCloud) {
@@ -74,6 +86,10 @@ export function OnboardingWizard({
       finishOnboarding();
       return;
     }
+    posthog.capture("onboarding_step_completed", {
+      step,
+      step_name: STEP_NAMES[step - 1],
+    });
     const next = step + 1;
     setStep(next);
     persistStep(next);
@@ -84,7 +100,17 @@ export function OnboardingWizard({
   }
 
   function skipStep() {
-    goNext();
+    posthog.capture("onboarding_step_skipped", {
+      step,
+      step_name: STEP_NAMES[step - 1],
+    });
+    if (step >= 3) {
+      finishOnboarding();
+      return;
+    }
+    const next = step + 1;
+    setStep(next);
+    persistStep(next);
   }
 
   return (

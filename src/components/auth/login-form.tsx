@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
@@ -36,6 +37,8 @@ export function LoginForm({ redirect }: { redirect?: string }) {
       setLoading(false);
       return;
     }
+
+    posthog.capture("user_logged_in", { method: "password" });
 
     router.push(safeRedirect || "/inbox");
     router.refresh();
