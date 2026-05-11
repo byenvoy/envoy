@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { autopilotTopics } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { embedText } from "@/lib/rag/embeddings";
+import { syncAutopilotSkill } from "@/lib/skills/renderers/autopilot";
 
 export async function GET() {
   const auth = await withAuth();
@@ -92,6 +93,9 @@ export async function POST(request: NextRequest) {
         createdAt: autopilotTopics.createdAt,
       })
       .then((r) => r[0]);
+
+    // Re-render the autopilot skill so the agent pipeline sees the new topic
+    await syncAutopilotSkill(orgId, auth.context.userId);
 
     return NextResponse.json({
       topic: {

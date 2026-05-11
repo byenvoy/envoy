@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { autopilotTopics } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { embedText } from "@/lib/rag/embeddings";
+import { syncAutopilotSkill } from "@/lib/skills/renderers/autopilot";
 
 export async function PUT(
   request: NextRequest,
@@ -54,6 +55,9 @@ export async function PUT(
       .update(autopilotTopics)
       .set(update)
       .where(and(eq(autopilotTopics.id, id), eq(autopilotTopics.orgId, orgId)));
+
+    // Re-render the autopilot skill so the agent sees the updated topic
+    await syncAutopilotSkill(orgId, auth.context.userId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -75,6 +79,9 @@ export async function DELETE(
     await db
       .delete(autopilotTopics)
       .where(and(eq(autopilotTopics.id, id), eq(autopilotTopics.orgId, orgId)));
+
+    // Re-render the autopilot skill — drops the deleted topic from the body
+    await syncAutopilotSkill(orgId, auth.context.userId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
