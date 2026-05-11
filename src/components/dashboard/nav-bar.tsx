@@ -108,6 +108,7 @@ export function NavBar({ userInitials, userName, userEmail, userRole, onOpenComm
                   </a>
                   <button
                     onClick={async () => {
+                      posthog.reset();
                       await authClient.signOut();
                       window.location.href = "/login";
                     }}
