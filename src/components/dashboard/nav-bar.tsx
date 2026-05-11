@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import posthog from "posthog-js";
 import { authClient } from "@/lib/auth-client";
 import { getNavItems, type Role } from "@/lib/permissions";
 
@@ -200,6 +201,7 @@ export function MobileNavMenu({ userName, userEmail, role }: { userName?: string
               </a>
               <button
                 onClick={async () => {
+                  posthog.reset();
                   await authClient.signOut();
                   window.location.href = "/login";
                 }}

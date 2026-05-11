@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { PostHogIdentify } from "@/components/posthog-identify";
 
 export default async function OnboardingLayout({
   children,
@@ -17,6 +18,10 @@ export default async function OnboardingLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-surface px-4">
+      <PostHogIdentify
+        userId={session.user.id}
+        email={session.user.email ?? ""}
+      />
       <div className="py-6 text-center">
         <span className="font-display text-xl font-bold tracking-tight text-primary">
           envoy
