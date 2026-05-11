@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireOwner } from "@/lib/permissions";
+import { syncVoiceSkill } from "@/lib/skills/renderers/voice";
 
 const VALID_TONES = ["professional", "casual", "technical", "friendly"];
 
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest) {
       .update(organizations)
       .set(update)
       .where(eq(organizations.id, orgId));
+
+    // Re-render the voice skill so the agent pipeline reflects the new settings
+    await syncVoiceSkill(orgId, auth.context.userId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
