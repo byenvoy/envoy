@@ -7,9 +7,11 @@ import { OnboardingProgress } from "./onboarding-progress";
 import { EmailStep } from "./steps/email-step";
 import { ModelStep } from "./steps/model-step";
 import { ShopifyStep } from "./steps/shopify-step";
-import type { EmailConnection, Integration } from "@/lib/types/database";
+import { TeamStep } from "./steps/team-step";
+import type { EmailConnection, Integration, TeamInvite } from "@/lib/types/database";
 
-const STEP_NAMES = ["email", "model", "shopify"] as const;
+const STEP_NAMES = ["email", "model", "shopify", "team"] as const;
+const TOTAL_STEPS = STEP_NAMES.length;
 
 interface ModelOption {
   id: string;
@@ -29,6 +31,7 @@ export function OnboardingWizard({
   hasMicrosoftClientId,
   shopifyIntegration,
   hasShopifyClientId,
+  teamInvites,
   isCloud,
 }: {
   initialStep: number;
@@ -39,10 +42,11 @@ export function OnboardingWizard({
   hasMicrosoftClientId: boolean;
   shopifyIntegration: Integration | null;
   hasShopifyClientId: boolean;
+  teamInvites: TeamInvite[];
   isCloud: boolean;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState(Math.min(initialStep, 3));
+  const [step, setStep] = useState(Math.min(initialStep, TOTAL_STEPS));
 
   useEffect(() => {
     posthog.capture("onboarding_started", { initial_step: initialStep });
@@ -57,12 +61,8 @@ export function OnboardingWizard({
   }
 
   async function finishOnboarding() {
-    posthog.capture("onboarding_step_completed", {
-      step: 3,
-      step_name: STEP_NAMES[2],
-    });
     posthog.capture("onboarding_completed", { is_cloud: isCloud });
-    await persistStep(4);
+    await persistStep(TOTAL_STEPS + 1);
 
     if (isCloud) {
       try {
@@ -82,14 +82,14 @@ export function OnboardingWizard({
   }
 
   function goNext() {
-    if (step >= 3) {
-      finishOnboarding();
-      return;
-    }
     posthog.capture("onboarding_step_completed", {
       step,
       step_name: STEP_NAMES[step - 1],
     });
+    if (step >= TOTAL_STEPS) {
+      finishOnboarding();
+      return;
+    }
     const next = step + 1;
     setStep(next);
     persistStep(next);
@@ -104,7 +104,7 @@ export function OnboardingWizard({
       step,
       step_name: STEP_NAMES[step - 1],
     });
-    if (step >= 3) {
+    if (step >= TOTAL_STEPS) {
       finishOnboarding();
       return;
     }
@@ -139,6 +139,14 @@ export function OnboardingWizard({
         <ShopifyStep
           integration={shopifyIntegration}
           hasShopifyClientId={hasShopifyClientId}
+          onNext={goNext}
+          onBack={goBack}
+          onSkip={skipStep}
+        />
+      )}
+      {step === 4 && (
+        <TeamStep
+          invites={teamInvites}
           onNext={goNext}
           onBack={goBack}
           onSkip={skipStep}

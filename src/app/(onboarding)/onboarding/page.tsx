@@ -7,6 +7,7 @@ import {
   organizations,
   emailConnections,
   integrations,
+  teamInvites,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
@@ -17,6 +18,7 @@ import type {
   EmailConnection,
   Integration,
   Organization,
+  TeamInvite,
 } from "@/lib/types/database";
 
 function getUniqueProviders() {
@@ -46,7 +48,7 @@ export default async function OnboardingPage() {
 
   if (!profile) redirect("/login");
 
-  const [orgRow, connectionRows, integrationRows] = await Promise.all([
+  const [orgRow, connectionRows, integrationRows, inviteRows] = await Promise.all([
     db
       .select({
         preferredModel: organizations.preferredModel,
@@ -64,6 +66,10 @@ export default async function OnboardingPage() {
       .select()
       .from(integrations)
       .where(eq(integrations.orgId, profile.orgId)),
+    db
+      .select()
+      .from(teamInvites)
+      .where(eq(teamInvites.orgId, profile.orgId)),
   ]);
 
   const orgData = orgRow
@@ -136,6 +142,18 @@ export default async function OnboardingPage() {
       (i) => i.provider === "shopify" && i.is_active
     ) ?? null;
 
+  const invitesSnake = inviteRows.map((i) => ({
+    id: i.id,
+    org_id: i.orgId,
+    email: i.email,
+    role: i.role,
+    invited_by: i.invitedBy,
+    token: i.token,
+    accepted_at: i.acceptedAt?.toISOString() ?? null,
+    expires_at: i.expiresAt.toISOString(),
+    created_at: i.createdAt.toISOString(),
+  })) as TeamInvite[];
+
   return (
     <OnboardingWizard
       initialStep={orgData?.onboarding_step ?? 1}
@@ -146,6 +164,7 @@ export default async function OnboardingPage() {
       hasMicrosoftClientId={!!process.env.MICROSOFT_CLIENT_ID}
       shopifyIntegration={shopifyIntegration}
       hasShopifyClientId={!!process.env.SHOPIFY_CLIENT_ID}
+      teamInvites={invitesSnake}
       isCloud={isCloud()}
     />
   );

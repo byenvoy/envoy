@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   const { orgId } = auth.context;
 
   const { step } = await request.json();
-  if (typeof step !== "number" || step < 1 || step > 4) {
+  if (typeof step !== "number" || step < 1 || step > 5) {
     return NextResponse.json({ error: "Invalid step" }, { status: 400 });
   }
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     onboardingStep: step,
   };
 
-  if (step === 4) {
+  if (step === 5) {
     updates.onboardingCompletedAt = new Date();
   }
 
