@@ -127,3 +127,111 @@ export interface SuiteReport<T> {
     totalOutputTokens: number;
   };
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Agent pipeline suite — tests the full skill-driven pipeline (triage
+// agent + draft generation) against fixtures with hand-labeled expected
+// outcomes. Each fixture is a self-contained ticket + org-state snapshot.
+// ──────────────────────────────────────────────────────────────────────
+
+/** A simplified topic shape for fixtures. Suite expands to AutopilotTopicRow. */
+export interface AgentFixtureTopic {
+  id: string;
+  name: string;
+  description: string;
+  mode: "shadow" | "auto";
+  /** Confidence threshold as a decimal string, e.g. "0.85". Matches the
+   *  way autopilot_topics stores numeric in the DB. */
+  confidenceThreshold: string;
+}
+
+/** A simplified org-skill overlay for fixtures (e.g. voice, autopilot). */
+export interface AgentFixtureSkill {
+  name: string;
+  description: string;
+  body: string;
+}
+
+/** Optional range constraint on a numeric check (e.g. autopilotConfidence). */
+export interface NumericRange {
+  min?: number;
+  max?: number;
+}
+
+export interface AgentFixture {
+  id: string;
+  description: string;
+  /** Free-form labels for slicing results, e.g. ["happy_path", "vip"]. */
+  labels?: string[];
+  input: {
+    customerEmail: string;
+    customerName?: string | null;
+    body: string;
+    conversationHistory?: { role: "customer" | "agent"; content: string }[];
+    /** Simulates per-thread escalation: agent skips autopilot topic loading. */
+    autopilotDisabled?: boolean;
+  };
+  org: {
+    companyName: string;
+    /** Org-level skill overlays (e.g. voice, autopilot). Core skills
+     *  still load from src/skills/core/ on the filesystem. */
+    orgSkills?: AgentFixtureSkill[];
+    /** Active (shadow|auto mode) autopilot topics for this org. */
+    autopilotTopics?: AgentFixtureTopic[];
+  };
+  expected: {
+    /** Exact-match category check. Omit to skip. */
+    category?: string;
+    /**
+     * Expected autopilotTopicId. Use `null` to assert the agent should
+     * NOT match any topic. Omit to skip this check.
+     */
+    autopilotTopicId?: string | null;
+    /** Range check on autopilotConfidence. Omit to skip. */
+    autopilotConfidence?: NumericRange;
+    /** Expected escalationFlag. Omit to skip. */
+    escalationFlag?: boolean;
+    /** Substrings that must appear in the draft (case-insensitive). */
+    draftMustMention?: string[];
+    /** Substrings that must NOT appear in the draft (case-insensitive). */
+    draftMustNotMention?: string[];
+    /** If true, expect NO draft was generated (e.g. escalation path). */
+    draftShouldBeAbsent?: boolean;
+  };
+}
+
+/** Result of one dimension check on one fixture. */
+export interface AgentCheckResult {
+  pass: boolean;
+  /** Explanation when pass=false. Optional when pass=true. */
+  note?: string;
+}
+
+export interface AgentResult {
+  fixtureId: string;
+  description: string;
+  labels: string[];
+  /** The raw outputs from the pipeline — useful for debugging failures. */
+  actual: {
+    category: string | null;
+    autopilotTopicId: string | null;
+    autopilotConfidence: number | null;
+    escalationFlag: boolean | null;
+    escalationReason: string | null;
+    draft: string | null;
+  };
+  /** Per-dimension check results. Only fields the fixture specified appear. */
+  checks: {
+    category?: AgentCheckResult;
+    autopilotTopic?: AgentCheckResult;
+    autopilotConfidence?: AgentCheckResult;
+    escalation?: AgentCheckResult;
+    draftPresence?: AgentCheckResult;
+    mustMention?: AgentCheckResult;
+    mustNotMention?: AgentCheckResult;
+  };
+  /** Overall pass: every configured check returned pass=true. */
+  passed: boolean;
+  inputTokens: number;
+  outputTokens: number;
+}
