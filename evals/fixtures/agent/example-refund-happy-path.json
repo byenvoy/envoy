@@ -1,0 +1,42 @@
+{
+  "id": "example-refund-happy-path",
+  "description": "Polite refund request within policy window — should classify as return_refund, match autopilot topic with high confidence, no escalation.",
+  "labels": ["happy_path", "return_refund", "autopilot_eligible", "example"],
+  "input": {
+    "customerEmail": "alice@example.com",
+    "customerName": "Alice Chen",
+    "body": "Hi! I'd like to return order #1042 — the boots don't fit right. They're unworn, still have the tags. Can you start the return process?\n\nThanks,\nAlice"
+  },
+  "org": {
+    "companyName": "Test Outdoor Gear",
+    "autopilotTopics": [
+      {
+        "id": "topic-returns-and-refunds",
+        "name": "Returns & Refunds",
+        "description": "Customer wants to initiate a return or refund for an order. Includes questions about return eligibility, the return process, and refund timing. Excludes warranty claims, damaged-item disputes, or complaints about service.",
+        "mode": "auto",
+        "confidenceThreshold": "0.85"
+      }
+    ],
+    "orgSkills": [
+      {
+        "name": "voice",
+        "description": "Test Outdoor Gear voice — friendly, customer-first tone.",
+        "body": "# Voice and tone\n\n## Tone\nFriendly and warm. Use the customer's first name when known. Keep replies concise.\n\n## Greeting\nBegin with: \"Hi {name}!\"\n\n## Sign-off\nEnd with: \"Cheers,\\nThe Test Outdoor Gear Team\""
+      }
+    ]
+  },
+  "expected": {
+    "category": "return_refund",
+    "autopilotTopicId": "topic-returns-and-refunds",
+    "autopilotConfidence": { "min": 0.80 },
+    "escalationFlag": false,
+    "draftShouldBeAbsent": false,
+    "draftMustMention": ["#1042"],
+    "draftMustNotMention": [
+      "I've processed your refund",
+      "I've issued",
+      "I have refunded"
+    ]
+  }
+}

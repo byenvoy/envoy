@@ -1,5 +1,11 @@
 import { config } from "dotenv";
-import { printDraftResults, printValidatorResults, saveReport } from "./lib/report";
+import {
+  printAgentResults,
+  printDraftResults,
+  printValidatorResults,
+  saveReport,
+} from "./lib/report";
+import { runAgentSuite } from "./suites/agent";
 import { runDraftSuite } from "./suites/draft";
 import { runValidatorSuite } from "./suites/validator";
 
@@ -10,7 +16,10 @@ import { runValidatorSuite } from "./suites/validator";
 config({ path: ".env.local", override: true });
 config({ path: ".env", override: true });
 
-function parseArgs(): { suites: ("draft" | "validator")[]; model: string | undefined } {
+type Suite = "draft" | "validator" | "agent";
+const VALID_SUITES: readonly Suite[] = ["draft", "validator", "agent"] as const;
+
+function parseArgs(): { suites: Suite[]; model: string | undefined } {
   const args = process.argv.slice(2);
   const modelIdx = args.indexOf("--model");
   const model = modelIdx >= 0 ? args[modelIdx + 1] : undefined;
@@ -18,13 +27,13 @@ function parseArgs(): { suites: ("draft" | "validator")[]; model: string | undef
   const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--model");
   const suiteArg = positional[0];
 
-  let suites: ("draft" | "validator")[];
+  let suites: Suite[];
   if (!suiteArg || suiteArg === "all") {
-    suites = ["draft", "validator"];
-  } else if (suiteArg === "draft" || suiteArg === "validator") {
-    suites = [suiteArg];
+    suites = ["draft", "validator", "agent"];
+  } else if ((VALID_SUITES as readonly string[]).includes(suiteArg)) {
+    suites = [suiteArg as Suite];
   } else {
-    console.error(`Unknown suite: ${suiteArg}. Valid: draft, validator, all`);
+    console.error(`Unknown suite: ${suiteArg}. Valid: ${VALID_SUITES.join(", ")}, all`);
     process.exit(1);
   }
 
@@ -42,16 +51,23 @@ async function main() {
 
   for (const suite of suites) {
     if (suite === "draft") {
-      console.log("\nRunning draft generation suite...");
+      console.log("\nRunning draft generation suite (classic pipeline)...");
       const report = await runDraftSuite(model);
       printDraftResults(report);
       const path = await saveReport(report);
       console.log(`  saved to ${path}`);
       if (report.summary.failed > 0) anyFailed = true;
     } else if (suite === "validator") {
-      console.log("\nRunning validator suite...");
+      console.log("\nRunning validator suite (classic pipeline)...");
       const report = await runValidatorSuite(model);
       printValidatorResults(report);
+      const path = await saveReport(report);
+      console.log(`  saved to ${path}`);
+      if (report.summary.failed > 0) anyFailed = true;
+    } else if (suite === "agent") {
+      console.log("\nRunning agent pipeline suite...");
+      const report = await runAgentSuite(model);
+      printAgentResults(report);
       const path = await saveReport(report);
       console.log(`  saved to ${path}`);
       if (report.summary.failed > 0) anyFailed = true;
