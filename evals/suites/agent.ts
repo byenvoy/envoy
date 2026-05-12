@@ -68,6 +68,7 @@ export async function runAgentSuite(
           customerName: fixture.input.customerName ?? null,
           conversationHistory: fixture.input.conversationHistory ?? [],
           autopilotDisabled: fixture.input.autopilotDisabled ?? false,
+          model,
         },
         {
           skills,

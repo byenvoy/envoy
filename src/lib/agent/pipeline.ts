@@ -12,11 +12,10 @@ import type { AutopilotTopicRow } from "@/lib/autopilot/types";
 import type { Skill } from "@/lib/skills/types";
 
 /**
- * Haiku for now — uniform model across analysis and draft phases.
- * Tiering (e.g. Haiku for triage + Sonnet for draft) can come later
- * once we have eval data to justify it.
+ * Default Anthropic model when an org has no preferred_model set.
+ * Matches the router's fallback in src/lib/email/generate-draft.ts.
  */
-const AGENT_MODEL = "claude-haiku-4-5-20251001";
+export const DEFAULT_AGENT_MODEL = "claude-haiku-4-5-20251001";
 
 interface ConversationMessage {
   role: "customer" | "agent";
@@ -33,6 +32,12 @@ export interface AgentPipelineInput {
   conversationHistory: ConversationMessage[];
   /** Per-thread escalation: if true, skip autopilot topic loading. */
   autopilotDisabled: boolean;
+  /**
+   * Anthropic model to use for both the agent loop and the draft phase.
+   * Caller is responsible for ensuring this is an Anthropic model (the
+   * provider router upstream guarantees this in production).
+   */
+  model: string;
 }
 
 /**
@@ -126,7 +131,7 @@ export async function runAgentPipeline(
 
   await runAgentLoop({
     client,
-    model: AGENT_MODEL,
+    model: input.model,
     skills,
     input: {
       companyName: input.companyName,
@@ -148,7 +153,7 @@ export async function runAgentPipeline(
   let draft: DraftResult | null = null;
   if (ctx.analysis && !ctx.analysis.escalationFlag) {
     draft = await generateDraft({
-      model: AGENT_MODEL,
+      model: input.model,
       apiKey,
       companyName: input.companyName,
       customerMessage: input.customerMessage,
@@ -169,6 +174,6 @@ export async function runAgentPipeline(
     matchedTopic,
     activeTopics,
     analysisUsage: ctx.usage,
-    model: AGENT_MODEL,
+    model: input.model,
   };
 }
