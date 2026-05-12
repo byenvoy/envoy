@@ -9,6 +9,7 @@ import { generateDraft, type DraftResult } from "./draft";
 import type { AgentContext, AgentAnalysis, RetrievedChunk } from "./types";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
 import type { AutopilotTopicRow } from "@/lib/autopilot/types";
+import type { Skill } from "@/lib/skills/types";
 
 /**
  * Haiku for now — uniform model across analysis and draft phases.
@@ -32,6 +33,21 @@ export interface AgentPipelineInput {
   conversationHistory: ConversationMessage[];
   /** Per-thread escalation: if true, skip autopilot topic loading. */
   autopilotDisabled: boolean;
+}
+
+/**
+ * Optional overrides for evaluation / testing contexts. When provided,
+ * the pipeline uses the supplied values instead of querying the database.
+ * Production callers pass no overrides; behavior is identical to the
+ * pre-override version when omitted.
+ */
+export interface AgentPipelineOverrides {
+  /** Skill set to use instead of loading from filesystem + org_skills. */
+  skills?: Skill[];
+  /** Active autopilot topics instead of querying autopilot_topics. */
+  activeTopics?: AutopilotTopicRow[];
+  /** Anthropic API key instead of resolving via getOrgApiKey. */
+  apiKey?: string;
 }
 
 export interface AgentPipelineResult {
@@ -59,29 +75,37 @@ export interface AgentPipelineResult {
  * caller (Phase 4 router).
  */
 export async function runAgentPipeline(
-  input: AgentPipelineInput
+  input: AgentPipelineInput,
+  overrides: AgentPipelineOverrides = {}
 ): Promise<AgentPipelineResult> {
   // Load active autopilot topics (skip if escalation already in place for the thread)
-  const activeTopics: AutopilotTopicRow[] = input.autopilotDisabled
-    ? []
-    : await db
-        .select()
-        .from(autopilotTopics)
-        .where(
-          and(
-            eq(autopilotTopics.orgId, input.orgId),
-            inArray(autopilotTopics.mode, ["shadow", "auto"])
-          )
-        );
+  let activeTopics: AutopilotTopicRow[];
+  if (overrides.activeTopics !== undefined) {
+    activeTopics = input.autopilotDisabled ? [] : overrides.activeTopics;
+  } else {
+    activeTopics = input.autopilotDisabled
+      ? []
+      : await db
+          .select()
+          .from(autopilotTopics)
+          .where(
+            and(
+              eq(autopilotTopics.orgId, input.orgId),
+              inArray(autopilotTopics.mode, ["shadow", "auto"])
+            )
+          );
+  }
 
-  // Load skill set (core + org overlays merged)
-  const skills = await loadSkills(input.orgId);
+  // Load skill set (core + org overlays merged) — or use override
+  const skills = overrides.skills ?? (await loadSkills(input.orgId));
 
   // Resolve org's Anthropic API key — the router upstream guarantees we
   // only run this pipeline when the org's preferredModel is Anthropic.
-  const apiKey = await getOrgApiKey(input.orgId, "ANTHROPIC_API_KEY", {
-    allowEnvFallback: false,
-  });
+  const apiKey =
+    overrides.apiKey ??
+    (await getOrgApiKey(input.orgId, "ANTHROPIC_API_KEY", {
+      allowEnvFallback: false,
+    }));
   if (!apiKey) {
     throw new Error("No Anthropic API key configured for this organization");
   }
