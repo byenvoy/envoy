@@ -8,7 +8,7 @@ import {
   organizations,
 } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { runAgentPipeline } from "@/lib/agent/pipeline";
+import { runAgentPipeline, DEFAULT_AGENT_MODEL } from "@/lib/agent/pipeline";
 import { autoSendDraft } from "@/lib/autopilot/auto-send";
 import { recordLLMError, clearLLMError } from "@/lib/rag/llm-errors";
 import { logUsage } from "@/lib/usage/log";
@@ -38,7 +38,7 @@ export async function generateDraftAgent(
   if (!conversation) throw new Error("Conversation not found");
 
   const org = await db
-    .select({ name: organizations.name })
+    .select({ name: organizations.name, preferredModel: organizations.preferredModel })
     .from(organizations)
     .where(eq(organizations.id, conversation.orgId))
     .then((r) => r[0]);
@@ -66,6 +66,10 @@ export async function generateDraftAgent(
 
   const companyName = org?.name ?? "Our Company";
   const customerMessage = latestMessage.bodyText ?? conversation.subject ?? "";
+  // Use the org's selected Anthropic model. The router upstream guarantees
+  // this is an Anthropic-provider model; if preferredModel is unset, the
+  // router defaulted to Haiku and routed here.
+  const model = org?.preferredModel ?? DEFAULT_AGENT_MODEL;
 
   // Run the agent pipeline (triage → draft with citations)
   let result;
@@ -79,6 +83,7 @@ export async function generateDraftAgent(
       customerName: conversation.customerName,
       conversationHistory,
       autopilotDisabled: conversation.autopilotDisabled,
+      model,
     });
     await clearLLMError(conversation.orgId);
   } catch (error) {
