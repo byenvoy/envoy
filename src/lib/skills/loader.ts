@@ -11,8 +11,11 @@ const CORE_SKILLS_DIR = join(process.cwd(), "src", "skills", "core");
 /**
  * Load all core skills from the filesystem. Each subdirectory under
  * `src/skills/core/` must contain a SKILL.md file.
+ *
+ * Exported so the eval suite can build a skill set from filesystem core
+ * + fixture-supplied org overlays without touching the database.
  */
-async function loadCoreSkills(): Promise<Skill[]> {
+export async function loadCoreSkills(): Promise<Skill[]> {
   const entries = await readdir(CORE_SKILLS_DIR, { withFileTypes: true }).catch(() => []);
   const skills: Skill[] = [];
 
