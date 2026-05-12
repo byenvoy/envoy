@@ -147,6 +147,10 @@ export async function generateDraftClassic(
       citationsMetadata: result.citationBlocks ?? null,
       customerContext: result.customerContext ?? null,
       classificationResult: result.classification ?? null,
+      // Classic pipeline classifier emits query_type. Promote into the
+      // top-level category column so downstream filters/aggregations
+      // see a unified view across both pipelines.
+      category: result.classification?.query_type ?? null,
       isRegeneration,
     })
     .returning({ id: drafts.id })

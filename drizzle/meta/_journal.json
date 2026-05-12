@@ -99,6 +99,13 @@
       "when": 1778541605835,
       "tag": "0013_add_org_skills",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1778612641372,
+      "tag": "0014_add_draft_category",
+      "breakpoints": true
     }
   ]
 }

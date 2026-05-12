@@ -133,6 +133,8 @@ export async function generateDraftAgent(
               escalationReason: result.analysis.escalationReason,
             }
           : null,
+        // Promoted out of classification_result for indexable queries.
+        category: result.analysis?.category ?? null,
         isRegeneration,
       })
       .returning({ id: drafts.id })
