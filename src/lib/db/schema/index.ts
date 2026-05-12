@@ -8,3 +8,4 @@ export * from "./integrations";
 export * from "./admin";
 export * from "./autopilot";
 export * from "./subscriptions";
+export * from "./skills";
