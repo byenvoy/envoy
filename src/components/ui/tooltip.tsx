@@ -7,6 +7,7 @@ interface TooltipProps {
   label: string;
   children: ReactNode;
   className?: string;
+  delay?: number;
 }
 
 /**
@@ -14,8 +15,9 @@ interface TooltipProps {
  * `overflow: hidden / auto` ancestor that would otherwise clip it.
  * Positions itself above the wrapped child on hover.
  */
-export function Tooltip({ label, children, className = "" }: TooltipProps) {
+export function Tooltip({ label, children, className = "", delay = 600 }: TooltipProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
@@ -28,14 +30,32 @@ export function Tooltip({ label, children, className = "" }: TooltipProps) {
     });
   }, [open]);
 
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const show = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setOpen(true), delay);
+  };
+  const hide = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setOpen(false);
+  };
+
   return (
     <div
       ref={wrapperRef}
       className={`relative ${className}`}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={hide}
     >
       {children}
       {open && coords && typeof document !== "undefined" &&
