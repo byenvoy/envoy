@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { organizations, profiles } from "@/lib/db/schema";
 import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
+import { verifyEmail, resetPassword } from "@/lib/email/templates";
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -32,11 +33,13 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
+      const { subject, html, text } = resetPassword({ url });
       const { error } = await getResend().emails.send({
         from: fromEmail,
         to: user.email,
-        subject: "Reset your password",
-        html: `<p>Click the link below to reset your password:</p><p><a href="${url}">Reset Password</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
+        subject,
+        html,
+        text,
       });
       if (error) console.error("[Resend] password reset email failed:", error);
     },
@@ -48,11 +51,13 @@ export const auth = betterAuth({
       // Skip sending for invite signups — they're already verified
       if (inviteSignupEmails.delete(user.email)) return;
 
+      const { subject, html, text } = verifyEmail({ url });
       const { error } = await getResend().emails.send({
         from: fromEmail,
         to: user.email,
-        subject: "Verify your email address",
-        html: `<p>Click the link below to verify your email:</p><p><a href="${url}">Verify Email</a></p>`,
+        subject,
+        html,
+        text,
       });
       if (error) console.error("[Resend] verification email failed:", error);
     },
