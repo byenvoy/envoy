@@ -152,6 +152,7 @@ export async function runAgentPipeline(
       apiKey,
       companyName: input.companyName,
       customerMessage: input.customerMessage,
+      customerEmail: input.customerEmail,
       customerName: input.customerName,
       conversationHistory: input.conversationHistory,
       chunks: ctx.retrievedChunks,

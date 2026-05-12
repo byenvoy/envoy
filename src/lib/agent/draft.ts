@@ -16,6 +16,7 @@ interface DraftParams {
   apiKey: string;
   companyName: string;
   customerMessage: string;
+  customerEmail: string;
   customerName: string | null;
   conversationHistory: ConversationMessage[];
   chunks: RetrievedChunk[];
@@ -111,6 +112,10 @@ function buildDraftSystemPrompt(params: DraftParams): string {
 
 function buildDraftUserMessage(params: DraftParams): string {
   const parts: string[] = [];
+
+  const senderLines = [`email: ${params.customerEmail}`];
+  if (params.customerName) senderLines.push(`name (from From header): ${params.customerName}`);
+  parts.push(`<sender>\n${senderLines.join("\n")}\n</sender>`);
 
   if (params.conversationHistory.length > 0) {
     const history = params.conversationHistory
