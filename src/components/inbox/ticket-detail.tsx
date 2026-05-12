@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { marked, Renderer } from "marked";
 import { useKeyboardShortcut, useIsMac } from "@/lib/hooks/use-keyboard-shortcut";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const draftRenderer = new Renderer();
 draftRenderer.link = ({ href, text }) =>
@@ -421,35 +422,38 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           <div className="sticky bottom-0 -mx-4 bg-surface-alt px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3 md:static md:mx-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
-                <button
-                  onClick={() => handleSend(true)}
-                  disabled={loading !== null}
-                  className="rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
-                >
-                  {loading === "send-close" ? "..." : "Send & Close"}
-                </button>
-                <button
-                  onClick={() => handleSend(false)}
-                  disabled={loading !== null}
-                  aria-keyshortcuts={`${isMac ? "Meta" : "Control"}+Enter`}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
-                >
-                  <span>{loading === "send" ? "Sending..." : "Send"}</span>
-                  {loading !== "send" && (
-                    <span className="hidden font-mono text-[10px] font-normal text-white/70 md:inline">
-                      {modKey}↵
-                    </span>
-                  )}
-                </button>
+                <Tooltip label={`Send & Close (${modKey}⇧↵)`}>
+                  <button
+                    onClick={() => handleSend(true)}
+                    disabled={loading !== null}
+                    aria-keyshortcuts={`${isMac ? "Meta" : "Control"}+Shift+Enter`}
+                    className="w-full rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
+                  >
+                    {loading === "send-close" ? "..." : "Send & Close"}
+                  </button>
+                </Tooltip>
+                <Tooltip label={`Send (${modKey}↵)`} className="flex-1">
+                  <button
+                    onClick={() => handleSend(false)}
+                    disabled={loading !== null}
+                    aria-keyshortcuts={`${isMac ? "Meta" : "Control"}+Enter`}
+                    className="w-full rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                  >
+                    {loading === "send" ? "Sending..." : "Send"}
+                  </button>
+                </Tooltip>
               </div>
               {/* Desktop: regenerate below send buttons */}
-              <button
-                onClick={handleRegenerate}
-                disabled={loading !== null}
-                className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-text-secondary disabled:opacity-50 md:block"
-              >
-                {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
-              </button>
+              <Tooltip label="Regenerate (C)" className="hidden md:block">
+                <button
+                  onClick={handleRegenerate}
+                  disabled={loading !== null}
+                  aria-keyshortcuts="c"
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-text-secondary disabled:opacity-50"
+                >
+                  {loading === "regenerate" ? "Regenerating..." : "Regenerate"}
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>

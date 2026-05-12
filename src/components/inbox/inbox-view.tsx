@@ -421,15 +421,6 @@ export function InboxView({
         </div>
       )}
       </div>
-      <button
-        type="button"
-        onClick={() => setHelpOpen(true)}
-        className="fixed bottom-4 right-4 z-30 hidden items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px] text-text-secondary shadow-sm transition-colors hover:text-text-primary md:inline-flex"
-        aria-label="Show keyboard shortcuts"
-      >
-        Shortcuts
-        <kbd className="rounded border border-border bg-surface-alt px-1 text-[10px]">?</kbd>
-      </button>
       <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
