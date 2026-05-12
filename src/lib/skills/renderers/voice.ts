@@ -47,10 +47,11 @@ export async function renderVoiceSkill(orgId: string): Promise<{
   const sections: string[] = ["# Voice and tone", "", "## Tone", toneDescription];
 
   if (org.greetingTemplate) {
+    const fallbackGreeting = org.greetingTemplate.replace(/ ?\{name\} ?/g, "");
     sections.push(
       "",
       "## Greeting",
-      `Begin replies with the template: "${org.greetingTemplate}". The \`{name}\` placeholder should be replaced with the customer's first name (identifiable from their email signature or address). If the customer uses a different name or nickname for themselves, use that instead.`
+      `Begin replies with the template: "${org.greetingTemplate}". Replace the \`{name}\` placeholder with the customer's first name. Prefer the name they sign their email with; if they don't sign, fall back to the name on their email address (provided in \`<sender>\`). If neither is available, drop the \`{name}\` placeholder and open with "${fallbackGreeting}".`
     );
   } else {
     sections.push(
