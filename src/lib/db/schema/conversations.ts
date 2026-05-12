@@ -93,6 +93,15 @@ export const drafts = pgTable(
     citationsMetadata: jsonb("citations_metadata"),
     customerContext: jsonb("customer_context"),
     classificationResult: jsonb("classification_result"),
+    /**
+     * Ticket category emitted by the triage step. Promoted out of
+     * classification_result for indexable filtering / aggregation.
+     *
+     * Agent pipeline writes the analysis.category value.
+     * Classic pipeline writes the classifier's query_type value.
+     * Backfilled from classification_result for pre-existing rows.
+     */
+    category: text("category"),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     approvedBy: text("approved_by"),
     autopilotEvaluationId: uuid("autopilot_evaluation_id"),
@@ -103,5 +112,6 @@ export const drafts = pgTable(
   (table) => [
     index("drafts_conversation_id").on(table.conversationId),
     index("drafts_org_id").on(table.orgId),
+    index("drafts_org_category").on(table.orgId, table.category),
   ]
 );
