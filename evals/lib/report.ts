@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
+  AgentResult,
   DraftResult,
   SuiteReport,
   ValidatorResult,
@@ -81,6 +82,65 @@ export function printValidatorResults(report: SuiteReport<ValidatorResult>): voi
     if (!r.overallMatch) {
       console.log(
         `      ${c.yellow}↪${c.reset} shouldAutoSend mismatch: ${c.dim}expected ${r.expected.shouldAutoSend}, confidence ${r.verdict.confidence}${c.reset}`
+      );
+    }
+  }
+
+  const { summary } = report;
+  console.log(c.dim + "─".repeat(60) + c.reset);
+  const rate = summary.total === 0 ? 0 : (summary.passed / summary.total) * 100;
+  console.log(
+    `${c.bold}${summary.passed}/${summary.total}${c.reset} passed (${rate.toFixed(0)}%)  ${c.dim}${summary.totalInputTokens} in / ${summary.totalOutputTokens} out${c.reset}`
+  );
+}
+
+export function printAgentResults(report: SuiteReport<AgentResult>): void {
+  console.log(`\n${c.bold}Agent pipeline suite${c.reset} ${c.dim}(${report.model})${c.reset}`);
+  console.log(c.dim + "─".repeat(60) + c.reset);
+
+  const checkOrder: (keyof AgentResult["checks"])[] = [
+    "category",
+    "autopilotTopic",
+    "autopilotConfidence",
+    "escalation",
+    "draftPresence",
+    "mustMention",
+    "mustNotMention",
+  ];
+
+  for (const r of report.results) {
+    console.log(
+      `${pill(r.passed)}  ${c.bold}${r.fixtureId}${c.reset} ${c.dim}— ${r.description}${c.reset}`
+    );
+    for (const name of checkOrder) {
+      const check = r.checks[name];
+      if (!check) continue;
+      const mark = check.pass ? c.green + "✓" : c.red + "✗";
+      const note = check.note ? `${c.dim}${check.note}${c.reset}` : "";
+      console.log(`      ${mark}${c.reset} ${name}${note ? ": " + note : ""}`);
+    }
+    if (r.labels.length > 0) {
+      console.log(`      ${c.dim}labels: ${r.labels.join(", ")}${c.reset}`);
+    }
+  }
+
+  // Per-label slice if any fixtures had labels
+  const labelStats = new Map<string, { total: number; passed: number }>();
+  for (const r of report.results) {
+    for (const label of r.labels) {
+      const stat = labelStats.get(label) ?? { total: 0, passed: 0 };
+      stat.total++;
+      if (r.passed) stat.passed++;
+      labelStats.set(label, stat);
+    }
+  }
+  if (labelStats.size > 0) {
+    console.log(c.dim + "─".repeat(60) + c.reset);
+    console.log(`${c.bold}By label${c.reset}`);
+    for (const [label, stat] of Array.from(labelStats).sort()) {
+      const rate = stat.total === 0 ? 0 : (stat.passed / stat.total) * 100;
+      console.log(
+        `  ${label}: ${c.bold}${stat.passed}/${stat.total}${c.reset} (${rate.toFixed(0)}%)`
       );
     }
   }
