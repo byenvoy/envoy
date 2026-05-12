@@ -12,6 +12,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 - `npm run build` — Production build
 - `npm run lint` — Run ESLint
 - `npm start` — Start production server
+- `npm run eval` — Run LLM regression suites (see `evals/README.md`); accepts `agent`, `draft`, `validator`, or `all`
 - `docker compose up db -d` — Start local Postgres (required for dev)
 - `docker compose down` — Stop local Postgres (data persists)
 - `npx drizzle-kit push` — Push schema changes to database (dev)
@@ -29,6 +30,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 - **LLM:** Anthropic Claude Haiku (default), abstracted behind provider interface
 - **Email:** OAuth (Google/Microsoft) via IMAP/SMTP
 - **Web scraping:** Mozilla Readability + Turndown (local, no external APIs)
+- **Analytics:** PostHog (server in `src/lib/posthog-server.ts`, browser SDK via `posthog-js`)
 
 ## Conventions
 
@@ -65,6 +67,28 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 - Middleware (`src/middleware.ts`) uses cookie-based check for redirects (no DB call)
 - After-signup hook in `src/lib/auth.ts` creates organization + profile automatically
 - Email verification and password reset: implemented via Resend (`src/lib/auth.ts`)
+
+### Draft generation: agent vs classic pipeline
+
+Two pipelines coexist. `src/lib/email/generate-draft.ts` is the entry point and routes by the org's preferred LLM provider:
+
+- **Agent pipeline** (`src/lib/agent/`) — Anthropic-provider orgs. Two phases: a triage agent loop (`loop.ts`) using Claude tool-use over a skill-driven prompt, then draft generation (`draft.ts`) with native citations. Orchestrated by `runAgentPipeline` in `pipeline.ts`, which accepts overrides (`skills`, `activeTopics`, `apiKey`) so evals can bypass the DB.
+- **Classic pipeline** (`src/lib/email/generate-draft-classic.ts`) — non-Anthropic providers. Single-shot prompt in `src/lib/rag/prompt.ts` plus the four validator gates in `src/lib/autopilot/prompts.ts`.
+
+Both write to the same `drafts` and `autopilot_evaluations` shape — downstream UI / auto-send / analytics don't branch on which pipeline ran.
+
+### Skills system
+
+Skills are the prompt-fragment unit shared across the agent pipeline.
+
+- **Core skills** live as `SKILL.md` files in `src/skills/core/<name>/` (e.g. `triage`, `draft-reply`, `escalation`, `retrieve`, `shopify`, `autopilot-verdict`). Each has frontmatter (`name`, `description`) and a markdown body.
+- **Org overlays** live in the `org_skills` table — same shape, per-tenant overrides. Loaded together with core skills via `loadSkills(orgId)` in `src/lib/skills/loader.ts`, merging by name (org wins).
+- **Rendered skills** (`voice`, `autopilot`) are derived from org state. The renderers in `src/lib/skills/renderers/` rebuild and upsert these whenever the source changes — voice on tone/instructions/greeting/signoff save, autopilot on topic create/update/delete. After raw-SQL edits to topics, run `scripts/resync-autopilot-skill.ts` to rebuild.
+- **Parser / upsert** helpers are in `src/lib/skills/{parser,upsert}.ts`. Use `loadSkills()` rather than reading files directly.
+
+### Evals
+
+`evals/` holds the LLM regression harness — see `evals/README.md`. Three suites: `agent` (agent pipeline, deterministic scoring), `draft` (classic prompt, LLM-judge), `validator` (classic gates, exact-match). Run before merging skill or prompt changes. Requires `ANTHROPIC_API_KEY` in `.env.local`; no DB needed (agent suite uses pipeline overrides).
 
 ### Helpers
 
