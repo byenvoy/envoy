@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
-import { teamInvites, organizations } from "@/lib/db/schema";
+import { teamInvites, organizations, profiles } from "@/lib/db/schema";
+import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { Resend } from "resend";
 import crypto from "crypto";
 import { requireOwner } from "@/lib/permissions";
+import { teamInvite } from "@/lib/email/templates";
+
+const INVITE_EXPIRES_IN_DAYS = 7;
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
@@ -25,7 +29,9 @@ export async function POST(request: NextRequest) {
 
   const inviteRole = inviteRoleInput === "owner" ? "owner" : "agent";
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(
+    Date.now() + INVITE_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
+  );
 
   try {
     const invite = await db
@@ -45,17 +51,35 @@ export async function POST(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const inviteUrl = `${appUrl}/api/invite/${token}`;
 
-    const org = await db
-      .select({ name: organizations.name })
-      .from(organizations)
-      .where(eq(organizations.id, orgId))
-      .then((r) => r[0]);
+    const [org, inviter] = await Promise.all([
+      db
+        .select({ name: organizations.name })
+        .from(organizations)
+        .where(eq(organizations.id, orgId))
+        .then((r) => r[0]),
+      db
+        .select({ fullName: profiles.fullName, email: userTable.email })
+        .from(userTable)
+        .leftJoin(profiles, eq(profiles.id, userTable.id))
+        .where(eq(userTable.id, userId))
+        .then((r) => r[0]),
+    ]);
+
+    const { subject, html, text } = teamInvite({
+      inviterFullName: inviter?.fullName ?? null,
+      inviterEmail: inviter?.email ?? "",
+      orgName: org?.name ?? null,
+      role: inviteRole,
+      url: inviteUrl,
+      expiresInDays: INVITE_EXPIRES_IN_DAYS,
+    });
 
     void getResend().emails.send({
       from: fromEmail,
       to: email,
-      subject: `You've been invited to ${org?.name ?? "a team"} on Envoy`,
-      html: `<p>You've been invited to join <strong>${org?.name ?? "a team"}</strong> on Envoy as an ${inviteRole}.</p><p><a href="${inviteUrl}">Accept Invitation</a></p><p>This invitation expires in 7 days.</p>`,
+      subject,
+      html,
+      text,
     });
 
     return NextResponse.json({
