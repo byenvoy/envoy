@@ -9,6 +9,8 @@ import { InboxFilters } from "./inbox-filters";
 import { StatusBadge } from "./status-badge";
 import { useShell } from "@/components/dashboard/dashboard-shell";
 import { MobileNavMenu } from "@/components/dashboard/nav-bar";
+import { useKeyboardShortcut } from "@/lib/hooks/use-keyboard-shortcut";
+import { ShortcutHelp } from "./shortcut-help";
 import type { Conversation, Message, Draft } from "@/lib/types/database";
 import type { ShopifyCustomerContext } from "@/lib/types/shopify";
 
@@ -193,6 +195,41 @@ export function InboxView({
       setLoadingMore(false);
     }
   }
+
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  // Keyboard navigation: j/k step through the list, ? toggles help, Esc closes help.
+  function step(delta: 1 | -1) {
+    if (allConversations.length === 0) return;
+    const currentIndex = selectedId
+      ? allConversations.findIndex((c) => c.id === selectedId)
+      : -1;
+    const nextIndex = currentIndex === -1
+      ? (delta === 1 ? 0 : allConversations.length - 1)
+      : Math.max(0, Math.min(allConversations.length - 1, currentIndex + delta));
+    if (nextIndex === currentIndex) return;
+    handleSelectConversation(allConversations[nextIndex].id);
+  }
+
+  useKeyboardShortcut({ key: "j" }, () => step(1));
+  useKeyboardShortcut({ key: "k" }, () => step(-1));
+  useKeyboardShortcut(
+    { key: "?", shift: true },
+    () => setHelpOpen((v) => !v)
+  );
+  useKeyboardShortcut(
+    { key: "Escape" },
+    () => {
+      if (helpOpen) {
+        setHelpOpen(false);
+        return;
+      }
+      if (mobileShowDetail) {
+        handleBack();
+      }
+    },
+    { enabled: helpOpen || mobileShowDetail }
+  );
 
   // Auto-select first conversation on desktop when list changes
   useEffect(() => {
@@ -384,6 +421,16 @@ export function InboxView({
         </div>
       )}
       </div>
+      <button
+        type="button"
+        onClick={() => setHelpOpen(true)}
+        className="fixed bottom-4 right-4 z-30 hidden items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 font-mono text-[11px] text-text-secondary shadow-sm transition-colors hover:text-text-primary md:inline-flex"
+        aria-label="Show keyboard shortcuts"
+      >
+        Shortcuts
+        <kbd className="rounded border border-border bg-surface-alt px-1 text-[10px]">?</kbd>
+      </button>
+      <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

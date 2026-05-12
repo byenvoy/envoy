@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { marked, Renderer } from "marked";
+import { useKeyboardShortcut, useIsMac } from "@/lib/hooks/use-keyboard-shortcut";
 
 const draftRenderer = new Renderer();
 draftRenderer.link = ({ href, text }) =>
@@ -21,6 +22,8 @@ interface DraftPanelProps {
 
 export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent }: DraftPanelProps) {
   const router = useRouter();
+  const isMac = useIsMac();
+  const modKey = isMac ? "⌘" : "Ctrl";
 
   // Extract autopilot evaluation data if present (joined via Supabase relation)
   const autopilotEval = (draft as Record<string, unknown> | null)?.autopilot_evaluation as {
@@ -149,6 +152,46 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     setTimeout(() => setCopied(false), 2000);
   }
 
+  // Keyboard shortcuts — only active while a pending draft is open.
+  // Send-class shortcuts work both inside and outside the editor; bare keys
+  // (c, e) only fire outside since the editor must own typing input.
+  const isPending = draft?.status === "pending";
+  const shortcutsEnabled = isPending && loading === null;
+
+  useKeyboardShortcut(
+    { key: "Enter", mod: true },
+    () => { void handleSend(false); },
+    { enabled: shortcutsEnabled, allowInEditable: true }
+  );
+  useKeyboardShortcut(
+    { key: "Enter", mod: true, shift: true },
+    () => { void handleSend(true); },
+    { enabled: shortcutsEnabled, allowInEditable: true }
+  );
+  useKeyboardShortcut(
+    { key: "c", mod: true, shift: true },
+    () => { void handleRegenerate(); },
+    { enabled: shortcutsEnabled, allowInEditable: true }
+  );
+  useKeyboardShortcut(
+    { key: "Escape" },
+    () => {
+      textareaRef.current?.blur();
+      setIsEditing(false);
+    },
+    { enabled: shortcutsEnabled && isEditing, allowInEditable: true, preventDefault: false }
+  );
+  useKeyboardShortcut(
+    { key: "c" },
+    () => { void handleRegenerate(); },
+    { enabled: shortcutsEnabled }
+  );
+  useKeyboardShortcut(
+    { key: "e" },
+    () => { setIsEditing(true); },
+    { enabled: shortcutsEnabled }
+  );
+
   function handleDraftMouseOver(e: React.MouseEvent<HTMLDivElement>) {
     const mark = (e.target as HTMLElement).closest<HTMLElement>(".citation-mark");
     // Skip re-renders when still hovering the same mark
@@ -173,7 +216,6 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
 
   const chunks = draft?.chunks_used ?? [];
   const citationBlocks = draft?.citations_metadata ?? [];
-  const isPending = draft?.status === "pending";
 
   // Build a deduplicated list of cited sources from all citation blocks.
   // A block may carry multiple citations (e.g. KB + Customer Data), so we
@@ -389,9 +431,15 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 <button
                   onClick={() => handleSend(false)}
                   disabled={loading !== null}
-                  className="flex-1 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                  aria-keyshortcuts={`${isMac ? "Meta" : "Control"}+Enter`}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
                 >
-                  {loading === "send" ? "Sending..." : "Send"}
+                  <span>{loading === "send" ? "Sending..." : "Send"}</span>
+                  {loading !== "send" && (
+                    <span className="hidden font-mono text-[10px] font-normal text-white/70 md:inline">
+                      {modKey}↵
+                    </span>
+                  )}
                 </button>
               </div>
               {/* Desktop: regenerate below send buttons */}
