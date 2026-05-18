@@ -44,12 +44,20 @@ export function ToneSettings({
   const [instructions, setInstructions] = useState(currentInstructions ?? "");
   const [greeting, setGreeting] = useState(currentGreeting ?? "");
   const [signOff, setSignOff] = useState(currentSignOff ?? "");
+  const [savedTone, setSavedTone] = useState(currentTone);
+  const [savedInstructions, setSavedInstructions] = useState(currentInstructions ?? "");
+  const [savedGreeting, setSavedGreeting] = useState(currentGreeting ?? "");
+  const [savedSignOff, setSavedSignOff] = useState(currentSignOff ?? "");
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+
+  const isDirty =
+    tone !== savedTone ||
+    instructions !== savedInstructions ||
+    greeting !== savedGreeting ||
+    signOff !== savedSignOff;
 
   async function handleSave() {
     setSaving(true);
-    setSaved(false);
     try {
       await fetch("/api/settings/tone", {
         method: "POST",
@@ -61,8 +69,10 @@ export function ToneSettings({
           sign_off: signOff || null,
         }),
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setSavedTone(tone);
+      setSavedInstructions(instructions);
+      setSavedGreeting(greeting);
+      setSavedSignOff(signOff);
     } finally {
       setSaving(false);
     }
@@ -145,10 +155,14 @@ export function ToneSettings({
       <button
         type="button"
         onClick={handleSave}
-        disabled={saving}
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+        disabled={saving || !isDirty}
+        className={
+          isDirty
+            ? "rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-dark disabled:opacity-70"
+            : "rounded-lg bg-surface-alt border border-border px-4 py-2 text-sm font-medium text-text-secondary cursor-default transition-colors"
+        }
       >
-        {saving ? "Saving..." : saved ? "Saved" : "Save"}
+        Save
       </button>
     </div>
   );
