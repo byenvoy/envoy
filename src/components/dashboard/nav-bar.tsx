@@ -100,6 +100,13 @@ export function NavBar({ userInitials, userName, userEmail, userRole, onOpenComm
                   <p className="font-mono text-xs text-text-secondary">{userEmail}</p>
                 </div>
                 <div className="p-1.5">
+                  <Link
+                    href="/settings"
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-md px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
+                  >
+                    Settings
+                  </Link>
                   <a
                     href="mailto:support@byenvoy.com"
                     className="block rounded-md px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
@@ -194,6 +201,12 @@ export function MobileNavMenu({ userName, userEmail, role }: { userName?: string
                 <p className="font-display text-xs font-medium text-text-primary">{userName}</p>
                 {userEmail && <p className="font-mono text-[10px] text-text-secondary">{userEmail}</p>}
               </div>
+              <Link
+                href="/settings"
+                className="block rounded-md px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"
+              >
+                Settings
+              </Link>
               <a
                 href="mailto:support@byenvoy.com"
                 className="block rounded-md px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-alt hover:text-text-primary"

@@ -37,7 +37,6 @@ const ALL_NAV_ITEMS: (NavItem & { ownerOnly: boolean })[] = [
   { href: "/inbox", label: "Inbox", ownerOnly: false },
   { href: "/autopilot", label: "Autopilot", ownerOnly: false },
   { href: "/knowledge-base", label: "Knowledge Base", ownerOnly: false },
-  { href: "/settings", label: "Settings", ownerOnly: false },
 ];
 
 export function getNavItems(role: Role): NavItem[] {

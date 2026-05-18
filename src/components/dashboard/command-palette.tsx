@@ -16,7 +16,10 @@ export function CommandPalette({ open, onClose, userRole }: CommandPaletteProps)
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const navCommands = useMemo(() => getNavItems(userRole), [userRole]);
+  const navCommands = useMemo(
+    () => [...getNavItems(userRole), { href: "/settings", label: "Settings" }],
+    [userRole]
+  );
   const filtered = navCommands.filter((cmd) =>
     cmd.label.toLowerCase().includes(query.toLowerCase())
   );
