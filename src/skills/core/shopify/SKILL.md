@@ -22,15 +22,54 @@ Use `lookup_shopify_context` to fetch a customer's profile and recent orders. On
 
 ## Handling the response
 
-The tool returns JSON with `customer`, `recent_orders`, and `active_returns`. If it returns an `error` field:
+The tool returns JSON with `customer`, `recent_orders`, and `active_returns`. Shape:
+
+```json
+{
+  "customer": {
+    "id": "gid://shopify/Customer/8472019283746",
+    "email": "alex@example.com",
+    "first_name": "Alex",
+    "last_name": "Chen",
+    "created_at": "2024-03-15T09:12:00Z",
+    "orders_count": 4,
+    "total_spent": "289.5",
+    "currency": "USD"
+  },
+  "recent_orders": [
+    {
+      "id": "gid://shopify/Order/5630293847562",
+      "name": "#1042",
+      "created_at": "2026-05-10T14:22:00Z",
+      "financial_status": "PAID",
+      "fulfillment_status": "FULFILLED",
+      "total_price": "89.99",
+      "currency": "USD",
+      "line_items": [{"title": "Trail Boot", "quantity": 1, "variant_title": null}],
+      "fulfillments": [{"status": "SUCCESS", "tracking_number": "1Z123", "tracking_url": "https://ups.com/track?n=1Z123", "estimated_delivery_at": null}]
+    }
+  ],
+  "active_returns": []
+}
+```
+
+Notes on the response:
+- IDs are Shopify GraphQL global IDs (`gid://shopify/<Type>/<n>`). Use `name` (e.g. `#1042`) when referring to an order in a reply, not `id`.
+- If `customer` is `null`, the email didn't match a known Shopify customer — the lookup succeeded but there's no profile.
+- `active_returns` is currently always `[]`. The Shopify returns API doesn't yet support email-filtered queries, so this field carries no data — don't rely on it for return information.
+
+If the response contains an `error` field instead:
 - "No Shopify integration configured" → proceed without customer data, rely on the knowledge base only.
 - "Shopify lookup failed" → proceed without customer data, note in `draftInstructions` that customer-specific data was unavailable.
 
 ## Interpreting order data
 
-- `financial_status`: `paid`, `partially_paid`, `refunded`, `voided`, `pending`, `authorized`.
-- `fulfillment_status`: `fulfilled` (all items shipped), `partially_fulfilled` (some shipped, some not), `unfulfilled` (not shipped yet), `null` (no fulfillment record).
-- In replies, explain these in plain language rather than quoting the Shopify status string. E.g., "your order has shipped" rather than "your order is in 'fulfilled' status."
+Enum values come back from Shopify's GraphQL Admin API in `SCREAMING_SNAKE_CASE`:
+
+- `financial_status`: `PAID`, `PARTIALLY_PAID`, `REFUNDED`, `PARTIALLY_REFUNDED`, `VOIDED`, `PENDING`, `AUTHORIZED`, `EXPIRED`.
+- `fulfillment_status`: `FULFILLED` (all items shipped), `PARTIALLY_FULFILLED` (some shipped, some not), `UNFULFILLED` (not shipped yet), `null` (no fulfillment record), plus less common values like `IN_PROGRESS`, `ON_HOLD`, `SCHEDULED`, `RESTOCKED`.
+- `fulfillments[].status`: `SUCCESS`, `PENDING`, `OPEN`, `CANCELLED`, `ERROR`, `FAILURE`.
+- In replies, explain these in plain language rather than quoting the Shopify status string. E.g., "your order has shipped" rather than "your order is in 'FULFILLED' status."
 
 ## Picking the right order
 
