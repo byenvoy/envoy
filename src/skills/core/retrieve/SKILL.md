@@ -33,10 +33,13 @@ Avoid:
 
 ## Multiple searches
 
-It's fine to call `search_knowledge_base` 2–3 times with different queries if the ticket spans topics. For example:
-- Ticket about a late order that might need a refund → search for "shipping delays" AND "refund policy"
+When a ticket spans multiple topics, run a separate query for each. Each call returns its own chunks; results accumulate (see "Reading results" below). Worked example:
 
-Don't exceed ~4 searches per ticket — diminishing returns and wastes tokens.
+- **Ticket:** "My order is 5 days late and I want a refund if it doesn't arrive soon."
+- **Search 1:** `"shipping delay policy late delivery"` — looking for the SLA and what counts as late.
+- **Search 2:** `"refund eligibility late delivery"` — looking for whether late shipping qualifies for a refund.
+
+Stop once new searches stop adding relevant chunks — diminishing returns wastes tokens.
 
 ## Reading results
 
@@ -46,4 +49,4 @@ If results look irrelevant, either:
 - Try a different query, or
 - Accept that the knowledge base doesn't cover this topic and note it in `draftInstructions` so the draft-reply phase can hedge.
 
-All retrieved chunks are automatically available to the draft-reply phase — you don't need to pass them anywhere. Just retrieve what's needed for the answer.
+All retrieved chunks accumulate across calls and are automatically available to the draft-reply phase — you don't need to pass them anywhere, and you don't need to re-search for chunks you've already retrieved.
