@@ -115,6 +115,23 @@
   animation: refresh-spin 0.7s linear infinite;
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-block {
+  background-color: var(--border);
+  background-image: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    color-mix(in srgb, var(--surface) 70%, var(--border)) 50%,
+    var(--border) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

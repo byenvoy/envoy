@@ -1,6 +1,6 @@
 ---
 name: autopilot-verdict
-description: Rubric for deciding if a ticket qualifies for autopilot auto-send. Produces a topic match, confidence score, and reasoning.
+description: Decides whether a ticket qualifies for autopilot auto-send. Produces a topic match, confidence score, and reasoning. Apply after triage on every ticket.
 ---
 
 # Autopilot verdict
@@ -45,6 +45,11 @@ Also read the `escalation` skill — if any escalation red flags are present, th
 
 ## Examples
 
-- Ticket: "Where's my order #1042?" Active topic: "Order Status Inquiries". → Match, confidence 0.95.
-- Ticket: "I want to cancel my subscription AND get a refund for the last 3 months." Active topic: "Subscription Cancellations" (confidence threshold 0.9). → The refund request complicates it. Confidence ~0.7. No autopilot match.
-- Ticket: "Can I return this? It broke after a week." Active topic: "Return Requests". → Match, but may depend on warranty. Confidence ~0.85. Flag if there's any hint of legal language.
+- **Ticket:** "Where's my order #1042?" **Active topic:** "Order Status Inquiries".
+  **→** Match, confidence 0.95.
+
+- **Ticket:** "I want to cancel my subscription AND get a refund for the last 3 months." **Active topic:** "Subscription Cancellations" (confidence threshold 0.9).
+  **→** The refund request complicates it. Confidence ~0.7. No autopilot match.
+
+- **Ticket:** "Can I return this? It broke after a week." **Active topic:** "Return Requests".
+  **→** Match, but may depend on warranty. Confidence ~0.85. Flag if there's any hint of legal language.

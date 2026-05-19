@@ -1,6 +1,6 @@
 ---
 name: draft-reply
-description: How to write the customer-facing email body. Covers structure, length, grounding, and tone defaults. The drafter reads this during the draft-reply phase.
+description: Writes the customer-facing email body — structure, length, grounding requirements, and tone defaults. Loaded by the draft-reply phase after triage completes.
 ---
 
 # Draft reply
@@ -9,10 +9,16 @@ You are writing the customer-facing email reply. You see the ticket, retrieved k
 
 ## Structure
 
-The org's `voice` skill defines greeting, tone, and sign-off rules. Follow whatever it says. In the absence of a voice skill, default to:
+Every reply has:
+- **Greeting** (1 line)
+- **Body** — Address the customer's question directly. Reference specific data (order numbers, policies) with their sources. No subject line.
+- **Sign-off** (1 line)
+
+Greeting and sign-off style are controlled by the org's `voice` skill when present; otherwise use the defaults below.
+
+## Defaults (only when no voice skill is set)
 
 - **Greeting** — A simple, neutral opener. Use the customer's first name if you can identify it from their email signature.
-- **Body** — Address the customer's question directly. Reference specific data (order numbers, policies) with their sources.
 - **Sign-off** — A brief professional close.
 
 ## Length
@@ -51,5 +57,18 @@ Professional, concise, helpful. If the triage phase's `draftInstructions` sugges
 
 - Don't invent facts.
 - Don't include a subject line.
-- Don't recommend the customer call a phone number or email a different address unless that's explicitly in the KB.
+- Don't recommend the customer call a phone number or email a different address unless that's explicitly in the knowledge base.
 - Don't apologize more than once.
+
+## Examples
+
+Greeting and sign-off below are rendered per voice skill or defaults — only the body is at issue here.
+
+**Ticket:** "Where's my order #1042?"
+**Retrieved:** Order #1042 shipped Tuesday May 13 via UPS, tracking 1Z123 (https://ups.com/track?n=1Z123), ETA Friday May 16. Customer name from signature: Alex.
+
+**Bad** (padded, vague, missing the data):
+> Hi! Thanks so much for reaching out — we really appreciate your business. Your order is on its way. Let us know if you have any other questions!
+
+**Good** (direct, grounded, every claim sourced):
+> Hi Alex! Your order #1042 shipped Tuesday via UPS — tracking 1Z123 (https://ups.com/track?n=1Z123). It's on track to arrive Friday.
