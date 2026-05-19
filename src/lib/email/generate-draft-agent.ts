@@ -134,8 +134,10 @@ export async function generateDraftAgent(
               category: result.analysis.category,
               autopilotTopicId: result.analysis.autopilotTopicId,
               autopilotConfidence: result.analysis.autopilotConfidence,
+              autopilotReasoning: result.analysis.autopilotReasoning,
               escalationFlag: result.analysis.escalationFlag,
               escalationReason: result.analysis.escalationReason,
+              draftInstructions: result.analysis.draftInstructions,
             }
           : null,
         // Promoted out of classification_result for indexable queries.
