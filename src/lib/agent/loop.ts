@@ -97,6 +97,24 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<void> {
       }))
     );
 
+    // Rolling cache breakpoint on the latest tool_result so the next
+    // iteration reads the accumulated message history from cache instead
+    // of re-tokenizing it. Strip prior breakpoints first — Anthropic
+    // caps requests at 4 cache_control markers; we keep just the system
+    // prompt + this one.
+    for (const msg of messages) {
+      if (msg.role !== "user" || !Array.isArray(msg.content)) continue;
+      for (const block of msg.content) {
+        if (typeof block === "object" && block !== null && "cache_control" in block) {
+          (block as { cache_control?: unknown }).cache_control = undefined;
+        }
+      }
+    }
+    const lastResult = toolResults[toolResults.length - 1];
+    if (lastResult) {
+      lastResult.cache_control = { type: "ephemeral" };
+    }
+
     messages.push({ role: "user", content: toolResults });
 
     // Short-circuit: once submit_analysis is called we have everything we need
