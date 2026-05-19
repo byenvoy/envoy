@@ -1,6 +1,6 @@
 ---
 name: retrieve
-description: How and when to search the knowledge base. Covers query formulation, when to do multiple searches, and when to skip retrieval entirely.
+description: Searches the knowledge base for grounded policy/product information. Covers query formulation, multiple-search patterns, and when to skip retrieval. Apply when a ticket needs facts beyond customer-specific data.
 ---
 
 # Retrieve
@@ -17,7 +17,7 @@ Use `search_knowledge_base` to find grounded information in the organization's d
 
 - **Pure Shopify lookups** — "Where's my order?" with no product/policy question. Use `lookup_shopify_context` instead.
 - **Obvious thanks / acknowledgments** — "Thanks, got it!" doesn't need retrieval.
-- **When the KB clearly won't have it** — Personal account details, order-specific data.
+- **When the knowledge base clearly won't have it** — Personal account details, order-specific data.
 
 ## Query formulation
 
@@ -44,6 +44,6 @@ The tool returns chunks with `similarity` scores (0–1, higher is better), `sou
 
 If results look irrelevant, either:
 - Try a different query, or
-- Accept that the KB doesn't cover this topic and note it in `draftInstructions` so the drafter can hedge.
+- Accept that the knowledge base doesn't cover this topic and note it in `draftInstructions` so the draft-reply phase can hedge.
 
 All retrieved chunks are automatically available to the draft-reply phase — you don't need to pass them anywhere. Just retrieve what's needed for the answer.

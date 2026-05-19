@@ -1,6 +1,6 @@
 ---
 name: draft-reply
-description: How to write the customer-facing email body. Covers structure, length, grounding, and tone defaults. The drafter reads this during the draft-reply phase.
+description: Writes the customer-facing email body — structure, length, grounding requirements, and tone defaults. Loaded by the draft-reply phase after triage completes.
 ---
 
 # Draft reply
@@ -51,5 +51,5 @@ Professional, concise, helpful. If the triage phase's `draftInstructions` sugges
 
 - Don't invent facts.
 - Don't include a subject line.
-- Don't recommend the customer call a phone number or email a different address unless that's explicitly in the KB.
+- Don't recommend the customer call a phone number or email a different address unless that's explicitly in the knowledge base.
 - Don't apologize more than once.

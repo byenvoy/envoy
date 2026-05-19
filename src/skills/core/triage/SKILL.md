@@ -1,6 +1,6 @@
 ---
 name: triage
-description: How to classify an inbound ticket, decide what context to retrieve, and plan the analysis. Read this first on every ticket.
+description: Classifies an inbound ticket, decides what context to retrieve, and plans the analysis. Apply on every ticket.
 ---
 
 # Triage
@@ -28,11 +28,11 @@ Pick exactly one category. Set it as the `category` field on `submit_analysis`.
 3. **Decide retrieval strategy:**
    - For **order_status**, **return_refund**, **account_issue**: look up the customer's Shopify context if a Shopify integration is available. See the `shopify` skill.
    - For **product_question**, **general_policy**: search the knowledge base. See the `retrieve` skill.
-   - For **other**: use judgment — often KB search is enough; sometimes escalation is warranted.
+   - For **other**: use judgment — often knowledge base search is enough; sometimes escalation is warranted.
 4. **Gather context** by calling `search_knowledge_base` and/or `lookup_shopify_context` as needed. Be efficient — don't over-retrieve.
 5. **Apply autopilot-verdict** — read that skill and judge whether this ticket matches an autopilot topic with sufficient confidence.
 6. **Apply escalation** — read that skill and judge whether any escalation red flags are present.
-7. **Call `submit_analysis`** with your complete verdict and a short `draftInstructions` message guiding the drafter.
+7. **Call `submit_analysis`** with your complete verdict and a short `draftInstructions` message guiding the draft-reply phase.
 
 ## Analysis quality
 
@@ -41,4 +41,4 @@ Your `draftInstructions` is how you communicate with the draft-reply phase. Keep
 - Note hedges or uncertainty ("Tracking number not yet available; suggest checking back in 24 hours.")
 - Note tone adjustments beyond the org default ("Customer is frustrated; lead with empathy.")
 
-Do NOT write the actual reply text. That's the drafter's job.
+Do NOT write the actual reply text. That's the draft-reply phase's job.

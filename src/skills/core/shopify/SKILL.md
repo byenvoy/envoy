@@ -1,6 +1,6 @@
 ---
 name: shopify
-description: How to use Shopify customer/order data. Covers when to look up, how to handle missing integrations, and how to interpret fulfillment statuses.
+description: Fetches Shopify customer/order data, interprets fulfillment statuses, and handles missing integrations. Apply when a ticket asks about order status, returns, or account issues AND the org has a Shopify integration.
 ---
 
 # Shopify
@@ -10,10 +10,10 @@ Use `lookup_shopify_context` to fetch a customer's profile and recent orders. On
 ## When to look up
 
 - **Order status / tracking** — Always look up.
-- **Return / refund** — Look up, so the drafter can reference the specific order.
+- **Return / refund** — Look up, so the draft-reply phase can reference the specific order.
 - **Account issues** — Look up if relevant (e.g., "I never received my recent order").
 - **Product questions** — Usually NOT needed — these are about the product itself, not the customer's history.
-- **Policy questions** — Usually NOT needed — these are about policy text, use KB.
+- **Policy questions** — Usually NOT needed — these are about policy text, use the knowledge base.
 
 ## Inputs
 
@@ -23,7 +23,7 @@ Use `lookup_shopify_context` to fetch a customer's profile and recent orders. On
 ## Handling the response
 
 The tool returns JSON with `customer`, `recent_orders`, and `active_returns`. If it returns an `error` field:
-- "No Shopify integration configured" → proceed without customer data, rely on KB only.
+- "No Shopify integration configured" → proceed without customer data, rely on the knowledge base only.
 - "Shopify lookup failed" → proceed without customer data, note in `draftInstructions` that customer-specific data was unavailable.
 
 ## Interpreting order data
@@ -36,7 +36,7 @@ The tool returns JSON with `customer`, `recent_orders`, and `active_returns`. If
 
 If the customer asks about "my order" without a specific number:
 - Prefer the most recent order that matches their question (e.g., if they ask about delivery, the most recent unfulfilled or in-transit order).
-- State which order you're referring to in `draftInstructions` so the drafter includes the order number/date in the reply — this lets the customer correct you if wrong.
+- State which order you're referring to in `draftInstructions` so the draft-reply phase includes the order number/date in the reply — this lets the customer correct you if wrong.
 
 ## What NOT to do
 

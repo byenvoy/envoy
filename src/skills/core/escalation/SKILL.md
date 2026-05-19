@@ -1,6 +1,6 @@
 ---
 name: escalation
-description: Red flags that require human escalation regardless of topic match. Overrides autopilot eligibility when triggered.
+description: Detects red flags that require human escalation regardless of topic match. Overrides autopilot eligibility. Apply on every ticket after autopilot-verdict.
 ---
 
 # Escalation
@@ -23,7 +23,7 @@ Use your discretion on these — when in doubt, escalate:
 - **VIP customer** — If customer data shows high lifetime value (e.g., >$5K spent, or flagged as VIP). Err toward human touch.
 - **Complex multi-part requests** — Ticket asks three unrelated things; probably better handled by a person.
 - **Novel situation** — You genuinely don't know what the right answer is after retrieval.
-- **Contradicting information** — KB says one thing, customer data says another, no clean answer.
+- **Contradicting information** — Knowledge base says one thing, customer data says another, no clean answer.
 
 ## What to submit
 

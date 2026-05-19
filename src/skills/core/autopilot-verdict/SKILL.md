@@ -1,6 +1,6 @@
 ---
 name: autopilot-verdict
-description: Rubric for deciding if a ticket qualifies for autopilot auto-send. Produces a topic match, confidence score, and reasoning.
+description: Decides whether a ticket qualifies for autopilot auto-send. Produces a topic match, confidence score, and reasoning. Apply after triage on every ticket.
 ---
 
 # Autopilot verdict
