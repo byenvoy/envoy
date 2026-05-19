@@ -99,11 +99,16 @@ function buildDraftSystemPrompt(params: DraftParams): string {
   }
 
   // Grounding rule is a safety invariant — always included regardless of skills.
+  // Anti-redirect lives here (not just the skill body) so it's the last word in
+  // the prompt; the rule in the middle of draft-reply.md was being overridden
+  // by the model's instinct to "be helpful" by suggesting a contact channel.
   sections.push(
     "",
     "## Grounding (safety invariant)",
     "Every factual claim must trace to the provided knowledge base documents or customer data documents. " +
       "If the documents do not contain what's needed, briefly say you're checking and will follow up — do not fabricate details.",
+    "Do not redirect the customer to another contact route for the company (a different email address, phone number, contact form, etc.) — they are already in touch with support. " +
+      "Knowledge-base-mentioned third-party contacts (e.g., a carrier's tracking page) are fine.",
     "Output only the email body. No subject line."
   );
 
