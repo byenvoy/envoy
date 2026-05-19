@@ -29,7 +29,7 @@ Pick exactly one category. Set it as the `category` field on `submit_analysis`.
    - For **order_status**, **return_refund**, **account_issue**: look up the customer's Shopify context if a Shopify integration is available. See the `shopify` skill.
    - For **product_question**, **general_policy**: search the knowledge base. See the `retrieve` skill.
    - For **other**: use judgment — often knowledge base search is enough; sometimes escalation is warranted.
-4. **Gather context** by calling `search_knowledge_base` and/or `lookup_shopify_context` as needed. Be efficient — don't over-retrieve.
+4. **Gather context** by calling `search_knowledge_base` and/or `lookup_shopify_context` as needed.
 5. **Apply autopilot-verdict** — read that skill and judge whether this ticket matches an autopilot topic with sufficient confidence.
 6. **Apply escalation** — read that skill and judge whether any escalation red flags are present.
 7. **Call `submit_analysis`** with your complete verdict and a short `draftInstructions` message guiding the draft-reply phase.
@@ -42,3 +42,14 @@ Your `draftInstructions` is how you communicate with the draft-reply phase. Keep
 - Note tone adjustments beyond the org default ("Customer is frustrated; lead with empathy.")
 
 Do NOT write the actual reply text. That's the draft-reply phase's job.
+
+## Examples
+
+- **Ticket:** "Where's my order #1042? Was supposed to arrive yesterday."
+  **→** category `order_status`. Look up Shopify. No escalation. Autopilot-eligible if a topic matches.
+
+- **Ticket:** "Your product gave me a rash and I'm talking to my lawyer."
+  **→** category `return_refund` (the underlying intent is the product complaint). Look up Shopify + knowledge base (warranty policy). `escalationFlag: true` — legal language plus safety concern overrides any autopilot match.
+
+- **Ticket:** "I want to cancel my subscription AND get a refund for the last 3 months."
+  **→** category `account_issue` (primary intent is the cancellation). Knowledge base (cancellation + refund policies). Multi-part request with a backdated refund — soft escalation, judgment call. If matching an autopilot topic, confidence should be low (~0.7) and the verdict should favor human review.
