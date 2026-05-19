@@ -127,6 +127,8 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   async function handleRegenerate() {
     setLoading("regenerate");
     setError(null);
+    // Exit edit mode so the textarea doesn't persist with about-to-be-replaced content
+    setIsEditing(false);
 
     try {
       const res = await fetch(`/api/conversations/${conversation.id}/regenerate`, {
@@ -334,7 +336,25 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           )}
 
           {/* Draft preview / edit */}
-          {isEditing ? (
+          {loading === "regenerate" ? (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-label="Generating new draft"
+              className="flex max-h-[200px] flex-col gap-3 overflow-hidden rounded-lg border border-border bg-surface px-3 py-2.5 md:max-h-none md:flex-1 md:px-4 md:py-3"
+            >
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-ai-accent" />
+                <span className="font-mono text-[11px] text-text-secondary">Generating new draft...</span>
+              </div>
+              <div className="space-y-2">
+                <div className="h-3 w-3/4 animate-pulse rounded bg-border" />
+                <div className="h-3 w-full animate-pulse rounded bg-border" />
+                <div className="h-3 w-5/6 animate-pulse rounded bg-border" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-border" />
+              </div>
+            </div>
+          ) : isEditing ? (
             <textarea
               ref={textareaRef}
               value={editedContent}
