@@ -5,6 +5,7 @@ import { isCloud } from "@/lib/config";
 import { db } from "@/lib/db";
 import { subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(request: NextRequest) {
   if (!isCloud()) {
@@ -60,6 +61,12 @@ export async function POST(request: NextRequest) {
       },
       success_url: `${appUrl}/knowledge-base?welcome=true`,
       cancel_url: `${appUrl}/subscribe`,
+    });
+
+    getPostHogClient().capture({
+      distinctId: auth.context.userId,
+      event: "subscription_started",
+      properties: { org_id: orgId, plan: "trial" },
     });
 
     return NextResponse.json({ url: session.url });

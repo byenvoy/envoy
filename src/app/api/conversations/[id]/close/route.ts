@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
 import { conversations, drafts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(
   _request: NextRequest,
@@ -34,6 +35,12 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: "Failed to close" }, { status: 500 });
   }
+
+  getPostHogClient().capture({
+    distinctId: auth.context.userId,
+    event: "conversation_closed",
+    properties: { org_id: orgId },
+  });
 
   return NextResponse.json({ ok: true });
 }

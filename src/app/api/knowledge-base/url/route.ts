@@ -5,6 +5,7 @@ import { withAuth } from "@/lib/db/helpers";
 import { extractPages } from "@/lib/crawl/extract";
 import { checkPage } from "@/lib/crawl/check-page";
 import { syncPageChunks } from "@/lib/rag/sync";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -73,6 +74,12 @@ export async function POST(request: NextRequest) {
       .then((r) => r[0]);
 
     await syncPageChunks(page);
+
+    getPostHogClient().capture({
+      distinctId: auth.context.userId,
+      event: "knowledge_base_item_added",
+      properties: { source: "url", org_id: orgId },
+    });
 
     return NextResponse.json({ page });
   } catch (error) {

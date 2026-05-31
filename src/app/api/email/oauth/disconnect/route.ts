@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { emailConnections, emailAddresses } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { withAuth } from "@/lib/db/helpers";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -49,6 +50,12 @@ export async function POST(request: NextRequest) {
         )
       );
   }
+
+  getPostHogClient().capture({
+    distinctId: auth.context.userId,
+    event: "email_disconnected",
+    properties: { org_id: orgId, provider },
+  });
 
   return NextResponse.json({ ok: true });
 }

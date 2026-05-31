@@ -4,6 +4,7 @@ import { integrations } from "@/lib/db/schema";
 import { withAuth } from "@/lib/db/helpers";
 import { encrypt } from "@/lib/email/encryption";
 import { ShopifyClient } from "@/lib/integrations/shopify-client";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(request: Request) {
   const auth = await withAuth();
@@ -57,6 +58,12 @@ export async function POST(request: Request) {
     console.error("Failed to save Shopify integration:", error);
     return NextResponse.json({ error: "Failed to save" }, { status: 500 });
   }
+
+  getPostHogClient().capture({
+    distinctId: auth.context.userId,
+    event: "shopify_connected",
+    properties: { org_id: orgId },
+  });
 
   return NextResponse.json({ ok: true, shop_name: shopName });
 }

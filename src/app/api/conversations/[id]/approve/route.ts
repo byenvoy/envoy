@@ -5,6 +5,7 @@ import { conversations, messages, drafts, emailAddresses, autopilotEvaluations }
 import { eq, and, desc } from "drizzle-orm";
 import { sendReply } from "@/lib/email/send-reply";
 import { marked } from "marked";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 
 /** Simple word-level edit distance (Levenshtein on word arrays). */
@@ -145,6 +146,21 @@ export async function POST(
           editDistance,
         })
         .where(eq(autopilotEvaluations.id, draft.autopilotEvaluationId));
+    }
+
+    const wasEdited = !!(editedContent && editedContent !== draft.draftContent);
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: userId,
+      event: "draft_sent",
+      properties: { org_id: orgId, was_edited: wasEdited },
+    });
+    if (wasEdited) {
+      posthog.capture({
+        distinctId: userId,
+        event: "draft_edited",
+        properties: { org_id: orgId },
+      });
     }
 
     // If close requested, override the "waiting" status set by sendReply

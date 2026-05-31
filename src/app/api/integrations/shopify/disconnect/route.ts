@@ -4,6 +4,7 @@ import { integrations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { withAuth } from "@/lib/db/helpers";
 import { decrypt } from "@/lib/email/encryption";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 async function revokeShopifyToken(shopDomain: string, accessToken: string) {
   try {
@@ -49,6 +50,12 @@ export async function POST() {
         eq(integrations.provider, "shopify")
       )
     );
+
+  getPostHogClient().capture({
+    distinctId: auth.context.userId,
+    event: "shopify_disconnected",
+    properties: { org_id: orgId },
+  });
 
   return NextResponse.json({ ok: true });
 }

@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import crypto from "crypto";
 import { requireOwner } from "@/lib/permissions";
 import { teamInvite } from "@/lib/email/templates";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const INVITE_EXPIRES_IN_DAYS = 7;
 
@@ -80,6 +81,12 @@ export async function POST(request: NextRequest) {
       subject,
       html,
       text,
+    });
+
+    getPostHogClient().capture({
+      distinctId: userId,
+      event: "team_member_invited",
+      properties: { org_id: orgId, invite_role: inviteRole },
     });
 
     return NextResponse.json({

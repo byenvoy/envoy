@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { conversations, drafts, autopilotEvaluations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateDraftForConversation } from "@/lib/email/generate-draft";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(
   _request: NextRequest,
@@ -54,6 +55,13 @@ export async function POST(
 
   try {
     await generateDraftForConversation(id, true);
+
+    getPostHogClient().capture({
+      distinctId: auth.context.userId,
+      event: "draft_regenerated",
+      properties: { org_id: orgId },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Failed to regenerate draft:", error);

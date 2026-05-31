@@ -5,6 +5,7 @@ import { autopilotTopics } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { embedText } from "@/lib/rag/embeddings";
 import { syncAutopilotSkill } from "@/lib/skills/renderers/autopilot";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function GET() {
   const auth = await withAuth();
@@ -96,6 +97,12 @@ export async function POST(request: NextRequest) {
 
     // Re-render the autopilot skill so the agent pipeline sees the new topic
     await syncAutopilotSkill(orgId, auth.context.userId);
+
+    getPostHogClient().capture({
+      distinctId: auth.context.userId,
+      event: "autopilot_topic_created",
+      properties: { org_id: orgId, mode: mode ?? "off" },
+    });
 
     return NextResponse.json({
       topic: {
