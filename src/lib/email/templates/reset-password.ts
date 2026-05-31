@@ -83,9 +83,6 @@ a { color:#2D6A4F; }
 </td></tr>
 </table>
 </td></tr>
-<tr><td style="padding:24px 4px 0;">
-<p style="margin:0; font-family:'Instrument Sans', sans-serif; font-size:12px; line-height:1.6; color:#6B6560;">Envoy &middot; Self-hosted AI customer support</p>
-</td></tr>
 </table>
 </td></tr>
 </table>
