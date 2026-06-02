@@ -59,6 +59,7 @@ export async function POST(
     getPostHogClient().capture({
       distinctId: auth.context.userId,
       event: "draft_regenerated",
+      groups: { organization: orgId },
       properties: { org_id: orgId },
     });
 

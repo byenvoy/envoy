@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
     getPostHogClient().capture({
       distinctId: auth.context.userId,
       event: "knowledge_base_item_added",
+      groups: { organization: orgId },
       properties: { source: "upload", org_id: orgId },
     });
 

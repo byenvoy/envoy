@@ -54,6 +54,7 @@ export async function POST() {
   getPostHogClient().capture({
     distinctId: auth.context.userId,
     event: "shopify_disconnected",
+    groups: { organization: orgId },
     properties: { org_id: orgId },
   });
 

@@ -62,6 +62,7 @@ export async function POST(request: Request) {
   getPostHogClient().capture({
     distinctId: auth.context.userId,
     event: "shopify_connected",
+    groups: { organization: orgId },
     properties: { org_id: orgId },
   });
 

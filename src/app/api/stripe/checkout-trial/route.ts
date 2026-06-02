@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
     getPostHogClient().capture({
       distinctId: auth.context.userId,
       event: "subscription_started",
+      groups: { organization: orgId },
       properties: { org_id: orgId, plan: "trial" },
     });
 

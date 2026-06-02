@@ -39,6 +39,7 @@ export async function POST(
   getPostHogClient().capture({
     distinctId: auth.context.userId,
     event: "conversation_closed",
+    groups: { organization: orgId },
     properties: { org_id: orgId },
   });
 

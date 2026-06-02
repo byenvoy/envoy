@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
     getPostHogClient().capture({
       distinctId: auth.context.userId,
       event: "autopilot_topic_created",
+      groups: { organization: orgId },
       properties: { org_id: orgId, mode: mode ?? "off" },
     });
 

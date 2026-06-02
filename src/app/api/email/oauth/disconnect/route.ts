@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
   getPostHogClient().capture({
     distinctId: auth.context.userId,
     event: "email_disconnected",
+    groups: { organization: orgId },
     properties: { org_id: orgId, provider },
   });
 

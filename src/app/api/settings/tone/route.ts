@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     getPostHogClient().capture({
       distinctId: auth.context.userId,
       event: "tone_configured",
+      groups: { organization: orgId },
       properties: { org_id: orgId, tone: tone ?? undefined },
     });
   } catch (error) {

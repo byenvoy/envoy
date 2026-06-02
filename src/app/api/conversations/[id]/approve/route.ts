@@ -153,12 +153,14 @@ export async function POST(
     posthog.capture({
       distinctId: userId,
       event: "draft_sent",
+      groups: { organization: orgId },
       properties: { org_id: orgId, was_edited: wasEdited },
     });
     if (wasEdited) {
       posthog.capture({
         distinctId: userId,
         event: "draft_edited",
+        groups: { organization: orgId },
         properties: { org_id: orgId },
       });
     }

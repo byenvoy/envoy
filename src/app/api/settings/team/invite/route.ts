@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
     getPostHogClient().capture({
       distinctId: userId,
       event: "team_member_invited",
+      groups: { organization: orgId },
       properties: { org_id: orgId, invite_role: inviteRole },
     });
 
