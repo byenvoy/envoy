@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { knowledgeBasePages } from "@/lib/db/schema";
 import { withAuth } from "@/lib/db/helpers";
 import { syncPageChunks } from "@/lib/rag/sync";
-import { getPostHogClient } from "@/lib/posthog-server";
+import { captureEvent } from "@/lib/posthog-server";
 import type { KnowledgeBasePage } from "@/lib/types/database";
 
 export async function POST(request: NextRequest) {
@@ -35,12 +35,7 @@ export async function POST(request: NextRequest) {
 
     await syncPageChunks(page);
 
-    getPostHogClient().capture({
-      distinctId: auth.context.userId,
-      event: "knowledge_base_item_added",
-      groups: { organization: orgId },
-      properties: { source: "manual", org_id: orgId },
-    });
+    captureEvent(auth.context.userId, orgId, "knowledge_base_item_added", { source: "manual" });
 
     return NextResponse.json({ page });
   } catch (error) {

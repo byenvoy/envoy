@@ -130,6 +130,7 @@ export const auth = betterAuth({
 
           // Register the organization as a PostHog group
           getPostHogClient().groupIdentify({
+            distinctId: user.id,
             groupType: "organization",
             groupKey: org.id,
             properties: {
