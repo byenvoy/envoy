@@ -252,7 +252,8 @@ export function InboxView({
 
   const hasPendingDraft = detailData?.draft && detailData.draft.status === "pending";
   const hasShopifyCustomer = !!(detailData?.shopifyCustomer && (detailData.shopifyCustomer.customer || detailData.shopifyCustomer.recent_orders?.length));
-  const showRightPanel = hasPendingDraft || hasShopifyCustomer;
+  const isOpenConversation = detailData?.conversation && detailData.conversation.status !== "closed";
+  const showRightPanel = hasPendingDraft || hasShopifyCustomer || isOpenConversation;
 
   const showNudge = showAutopilotNudge && !nudgeDismissed;
 
