@@ -5,7 +5,7 @@ import { organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireOwner } from "@/lib/permissions";
 import { syncVoiceSkill } from "@/lib/skills/renderers/voice";
-import { getPostHogClient } from "@/lib/posthog-server";
+import { captureEvent } from "@/lib/posthog-server";
 
 const VALID_TONES = ["professional", "casual", "technical", "friendly"];
 
@@ -38,11 +38,7 @@ export async function POST(request: NextRequest) {
     // Re-render the voice skill so the agent pipeline reflects the new settings
     await syncVoiceSkill(orgId, auth.context.userId);
 
-    getPostHogClient().capture({
-      distinctId: auth.context.userId,
-      event: "tone_configured",
-      properties: { org_id: orgId, tone: tone ?? undefined },
-    });
+    captureEvent(auth.context.userId, orgId, "tone_configured", { tone: tone ?? undefined });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

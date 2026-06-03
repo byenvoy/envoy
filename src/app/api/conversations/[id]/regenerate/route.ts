@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { conversations, drafts, autopilotEvaluations } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateDraftForConversation } from "@/lib/email/generate-draft";
-import { getPostHogClient } from "@/lib/posthog-server";
+import { captureEvent } from "@/lib/posthog-server";
 
 export async function POST(
   _request: NextRequest,
@@ -54,13 +54,9 @@ export async function POST(
   }
 
   try {
-    await generateDraftForConversation(id, true);
+    await generateDraftForConversation(id, true, auth.context.userId);
 
-    getPostHogClient().capture({
-      distinctId: auth.context.userId,
-      event: "draft_regenerated",
-      properties: { org_id: orgId },
-    });
+    captureEvent(auth.context.userId, orgId, "draft_regenerated");
 
     return NextResponse.json({ ok: true });
   } catch (error) {

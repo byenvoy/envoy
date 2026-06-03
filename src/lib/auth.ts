@@ -8,6 +8,7 @@ import { organizations, profiles } from "@/lib/db/schema";
 import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { verifyEmail, resetPassword } from "@/lib/email/templates";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -125,6 +126,16 @@ export const auth = betterAuth({
             orgId: org.id,
             fullName: user.name ?? "",
             role: "owner",
+          });
+
+          // Register the organization as a PostHog group
+          getPostHogClient().groupIdentify({
+            distinctId: user.id,
+            groupType: "organization",
+            groupKey: org.id,
+            properties: {
+              name: companyName || "My Organization",
+            },
           });
         },
       },

@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/lib/db";
+import { createAgentClient } from "./anthropic-client";
 import { autopilotTopics } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { loadSkills } from "@/lib/skills/loader";
@@ -38,6 +38,8 @@ export interface AgentPipelineInput {
    * provider router upstream guarantees this in production).
    */
   model: string;
+  /** User who triggered the pipeline (regenerate). Absent for email polling. */
+  userId?: string;
 }
 
 /**
@@ -115,7 +117,8 @@ export async function runAgentPipeline(
     throw new Error("No Anthropic API key configured for this organization");
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = createAgentClient(apiKey);
+  const posthogDistinctId = input.userId ?? "system-agent";
 
   // Phase 1: Agent loop (mutates ctx in place)
   const ctx: AgentContext = {
@@ -142,6 +145,7 @@ export async function runAgentPipeline(
       activeTopics,
     },
     ctx,
+    posthogDistinctId,
   });
 
   // Resolve matched topic (if the agent picked one)
@@ -153,6 +157,9 @@ export async function runAgentPipeline(
   let draft: DraftResult | null = null;
   if (ctx.analysis && !ctx.analysis.escalationFlag) {
     draft = await generateDraft({
+      orgId: input.orgId,
+      conversationId: input.conversationId,
+      posthogDistinctId,
       model: input.model,
       apiKey,
       companyName: input.companyName,

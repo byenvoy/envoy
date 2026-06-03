@@ -30,7 +30,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 - **LLM:** Anthropic Claude Haiku (default), abstracted behind provider interface
 - **Email:** OAuth (Google/Microsoft) via IMAP/SMTP
 - **Web scraping:** Mozilla Readability + Turndown (local, no external APIs)
-- **Analytics:** PostHog (server in `src/lib/posthog-server.ts`, browser SDK via `posthog-js`)
+- **Analytics:** PostHog (server in `src/lib/posthog-server.ts`, browser SDK via `posthog-js`). Group analytics enabled — events are associated with the `organization` group type. Use `captureEvent(userId, orgId, event, properties?)` from `src/lib/posthog-server.ts` for all server-side event capture — it automatically adds `distinctId`, `groups`, and `org_id`.
 
 ## Conventions
 

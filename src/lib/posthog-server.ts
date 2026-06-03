@@ -16,6 +16,20 @@ export function getPostHogClient() {
   return posthogClient;
 }
 
+export function captureEvent(
+  userId: string,
+  orgId: string,
+  event: string,
+  properties?: Record<string, unknown>,
+) {
+  getPostHogClient().capture({
+    distinctId: userId,
+    event,
+    groups: { organization: orgId },
+    properties: { org_id: orgId, ...properties },
+  });
+}
+
 export async function shutdownPostHog() {
   if (posthogClient) {
     await posthogClient.shutdown();

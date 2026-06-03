@@ -5,7 +5,7 @@ import { withAuth } from "@/lib/db/helpers";
 import { parseFile } from "@/lib/parse/file";
 import { syncPageChunks } from "@/lib/rag/sync";
 import { computeHash } from "@/lib/crawl/hash";
-import { getPostHogClient } from "@/lib/posthog-server";
+import { captureEvent } from "@/lib/posthog-server";
 import type { KnowledgeBasePage } from "@/lib/types/database";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -60,11 +60,7 @@ export async function POST(request: NextRequest) {
 
     await syncPageChunks(page);
 
-    getPostHogClient().capture({
-      distinctId: auth.context.userId,
-      event: "knowledge_base_item_added",
-      properties: { source: "upload", org_id: orgId },
-    });
+    captureEvent(auth.context.userId, orgId, "knowledge_base_item_added", { source: "upload" });
 
     return NextResponse.json({ page });
   } catch (error) {

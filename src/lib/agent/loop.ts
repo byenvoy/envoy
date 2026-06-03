@@ -1,4 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import type { PostHogAnthropic } from "@posthog/ai/anthropic";
 import { AGENT_TOOLS, executeTool } from "./tools";
 import type { Skill } from "@/lib/skills/types";
 import type { AgentContext } from "./types";
@@ -21,11 +22,12 @@ interface AgentLoopInput {
 }
 
 interface AgentLoopArgs {
-  client: Anthropic;
+  client: PostHogAnthropic;
   model: string;
   skills: Skill[];
   input: AgentLoopInput;
   ctx: AgentContext;
+  posthogDistinctId: string;
 }
 
 /**
@@ -39,7 +41,7 @@ interface AgentLoopArgs {
  * caches it across calls within the same org.
  */
 export async function runAgentLoop(args: AgentLoopArgs): Promise<void> {
-  const { client, model, skills, input, ctx } = args;
+  const { client, model, skills, input, ctx, posthogDistinctId } = args;
 
   const systemPrompt = buildSystemPrompt(input.companyName, skills);
   const initialUserMessage = buildInitialUserMessage(input);
@@ -49,11 +51,11 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<void> {
   ];
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-    const response = await client.messages.create({
+    // Cast needed: @posthog/ai bundles an older @anthropic-ai/sdk with slightly
+    // different type definitions. The runtime types are compatible.
+    const response = await (client.messages.create as Function)({
       model,
       max_tokens: 2048,
-      // Cache the static system prompt across calls. Skills list and tool
-      // definitions are stable for the lifetime of this skill version.
       system: [
         {
           type: "text",
@@ -63,7 +65,11 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<void> {
       ],
       tools: AGENT_TOOLS,
       messages,
-    });
+      posthogDistinctId,
+      posthogGroups: { organization: ctx.orgId },
+      posthogProperties: { conversation_id: ctx.conversationId },
+      posthogTraceId: ctx.conversationId,
+    }) as Anthropic.Messages.Message;
 
     ctx.usage.inputTokens += response.usage.input_tokens;
     ctx.usage.outputTokens += response.usage.output_tokens;

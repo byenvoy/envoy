@@ -18,6 +18,9 @@ export function PostHogIdentify({ userId, email, orgId, fullName }: PostHogIdent
       ...(orgId ? { org_id: orgId } : {}),
       ...(fullName ? { name: fullName } : {}),
     });
+    if (orgId) {
+      posthog.group("organization", orgId);
+    }
   }, [userId, email, orgId, fullName]);
 
   return null;
