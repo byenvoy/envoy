@@ -285,6 +285,9 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         />
       )}
 
+      {/* No draft — escalated or awaiting generation: manual compose */}
+      {!draft && <ComposePanel conversationId={conversation.id} onSent={onSent} />}
+
       {/* Draft section */}
       {draft && isPending && (
         <div className="flex flex-1 flex-col gap-2 p-3 md:gap-3 md:p-4">
@@ -583,6 +586,101 @@ function CustomerContextCard({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ComposePanel({ conversationId, onSent }: { conversationId: string; onSent: () => void }) {
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMac = useIsMac();
+  const modKey = isMac ? "⌘" : "Ctrl";
+
+  async function handleSend(close: boolean) {
+    if (!content.trim()) return;
+    setLoading(close ? "send-close" : "send");
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/conversations/${conversationId}/compose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, close }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send");
+      }
+
+      onSent();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  useKeyboardShortcut(
+    { key: "Enter", mod: true },
+    () => { void handleSend(false); },
+    { enabled: loading === null && content.trim().length > 0, allowInEditable: true }
+  );
+  useKeyboardShortcut(
+    { key: "Enter", mod: true, shift: true },
+    () => { void handleSend(true); },
+    { enabled: loading === null && content.trim().length > 0, allowInEditable: true }
+  );
+
+  return (
+    <div className="flex flex-1 flex-col gap-2 p-3 md:gap-3 md:p-4">
+      <div className="rounded-md border border-border bg-surface px-3 py-2">
+        <p className="font-display text-xs font-medium text-text-secondary">
+          This conversation was escalated for human review. Write your reply below.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2 font-display text-sm font-semibold">
+        <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+        <span className="text-text-primary">Compose</span>
+      </div>
+
+      <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Write your reply..."
+        autoFocus
+        rows={8}
+        className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:px-4 md:py-3"
+      />
+
+      {error && <p className="text-xs text-error">{error}</p>}
+
+      <div className="sticky bottom-0 -mx-4 bg-surface-alt px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3 md:static md:mx-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
+        <div className="flex gap-2">
+          <Tooltip label={`Send & Close (${modKey}⇧↵)`}>
+            <button
+              onClick={() => handleSend(true)}
+              disabled={loading !== null || !content.trim()}
+              className="w-full rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
+            >
+              {loading === "send-close" ? "..." : "Send & Close"}
+            </button>
+          </Tooltip>
+          <Tooltip label={`Send (${modKey}↵)`} className="flex-1">
+            <button
+              onClick={() => handleSend(false)}
+              disabled={loading !== null || !content.trim()}
+              className="w-full rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+            >
+              {loading === "send" ? "Sending..." : "Send"}
+            </button>
+          </Tooltip>
+        </div>
+      </div>
     </div>
   );
 }
