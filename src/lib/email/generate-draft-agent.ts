@@ -27,7 +27,8 @@ import type { AutopilotTopicRow, AutopilotOutcome } from "@/lib/autopilot/types"
  */
 export async function generateDraftAgent(
   conversationId: string,
-  isRegeneration = false
+  isRegeneration = false,
+  userId?: string
 ): Promise<void> {
   const conversation = await db
     .select()
@@ -84,6 +85,7 @@ export async function generateDraftAgent(
       conversationHistory,
       autopilotDisabled: conversation.autopilotDisabled,
       model,
+      userId,
     });
     await clearLLMError(conversation.orgId);
   } catch (error) {

@@ -1,4 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { createAgentClient } from "./anthropic-client";
 import { buildCustomerContentBlocks } from "@/lib/rag/prompt";
 import { findSkill } from "@/lib/skills/loader";
 import type { Skill } from "@/lib/skills/types";
@@ -12,6 +13,9 @@ interface ConversationMessage {
 }
 
 interface DraftParams {
+  orgId: string;
+  conversationId: string;
+  posthogDistinctId: string;
   model: string;
   apiKey: string;
   companyName: string;
@@ -47,7 +51,7 @@ export interface DraftResult {
  * prompt below.
  */
 export async function generateDraft(params: DraftParams): Promise<DraftResult> {
-  const client = new Anthropic({ apiKey: params.apiKey });
+  const client = createAgentClient(params.apiKey);
 
   const systemPrompt = buildDraftSystemPrompt(params);
   const docBlocks = buildDocumentBlocks(params.chunks, params.customerContext);
@@ -57,11 +61,11 @@ export async function generateDraft(params: DraftParams): Promise<DraftResult> {
     { type: "text", text: buildDraftUserMessage(params) },
   ];
 
-  const response = await client.messages.create({
+  // Cast needed: @posthog/ai bundles an older @anthropic-ai/sdk with slightly
+  // different type definitions. The runtime types are compatible.
+  const response = await (client.messages.create as Function)({
     model: params.model,
     max_tokens: 1024,
-    // Cache the system prompt — voice skill + draft-reply skill are stable
-    // across many requests for the same org.
     system: [
       {
         type: "text",
@@ -70,7 +74,11 @@ export async function generateDraft(params: DraftParams): Promise<DraftResult> {
       },
     ],
     messages: [{ role: "user", content: userContent }],
-  });
+    posthogDistinctId: params.posthogDistinctId,
+    posthogGroups: { organization: params.orgId },
+    posthogProperties: { conversation_id: params.conversationId },
+    posthogTraceId: params.conversationId,
+  }) as Anthropic.Messages.Message;
 
   return parseDraftResponse(response, params);
 }

@@ -18,12 +18,13 @@ import { generateDraftAgent } from "./generate-draft-agent";
  */
 export async function generateDraftForConversation(
   conversationId: string,
-  isRegeneration = false
+  isRegeneration = false,
+  userId?: string
 ): Promise<void> {
   const provider = await resolveProvider(conversationId);
 
   if (provider === "anthropic") {
-    await generateDraftAgent(conversationId, isRegeneration);
+    await generateDraftAgent(conversationId, isRegeneration, userId);
   } else {
     await generateDraftClassic(conversationId, isRegeneration);
   }
