@@ -118,6 +118,7 @@ export async function GET(
       in_reply_to: m.inReplyTo,
       source: m.source,
       connection_id: m.connectionId,
+      is_automated: m.isAutomated,
       sent_by_autopilot: m.sentByAutopilot,
       sent_at: m.sentAt,
       created_at: m.createdAt,

@@ -108,8 +108,9 @@ export interface Message {
   body_html: string | null;
   message_id: string | null;
   in_reply_to: string | null;
-  source: "imap" | "smtp" | "manual";
+  source: "imap" | "smtp" | "manual" | "gmail";
   connection_id: string | null;
+  is_automated: boolean;
   sent_by_autopilot: boolean;
   sent_at: string;
   created_at: string;

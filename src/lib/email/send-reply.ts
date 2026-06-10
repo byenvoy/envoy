@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { messages, conversations, emailConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { getValidTokens } from "./oauth-tokens";
-import { createTransport } from "nodemailer";
+import { getTransport } from "./transports";
+import { markGmailThreadRead } from "./gmail-sync";
 
 interface SendReplyParams {
   conversation: {
@@ -22,8 +22,8 @@ interface SendReplyParams {
 }
 
 /**
- * Sends a reply via SMTP and creates an outbound message row.
- * Returns the created message ID.
+ * Sends a reply via the connection's transport (Gmail REST or IMAP/SMTP)
+ * and creates an outbound message row. Returns the created message ID.
  */
 export async function sendReply({
   conversation,
@@ -42,18 +42,12 @@ export async function sendReply({
 
   if (!connection) throw new Error("Email connection not found");
 
-  const tokens = await getValidTokens(connection);
-
-  const transport = createTransport({
-    host: connection.smtpHost,
-    port: connection.smtpPort,
-    secure: false,
-    auth: {
-      type: "OAuth2",
-      user: connection.emailAddress,
-      accessToken: tokens.access_token,
-    },
-  });
+  // Look up cached Gmail threadId for this conversation, if any
+  const conversationRow = await db
+    .select({ gmailThreadId: conversations.gmailThreadId })
+    .from(conversations)
+    .where(eq(conversations.id, conversation.id))
+    .then((r) => r[0]);
 
   const from = emailAddr.displayName
     ? `${emailAddr.displayName} <${emailAddr.emailAddress}>`
@@ -63,7 +57,8 @@ export async function sendReply({
     ? `Re: ${conversation.subject.replace(/^Re:\s*/i, "")}`
     : undefined;
 
-  const info = await transport.sendMail({
+  const transport = getTransport(connection);
+  const sendResult = await transport.send(connection, {
     from,
     to: conversation.customerEmail,
     subject,
@@ -73,9 +68,19 @@ export async function sendReply({
     references: latestInboundMessage.messageId
       ? [latestInboundMessage.messageId]
       : undefined,
+    providerThreadId: conversationRow?.gmailThreadId ?? undefined,
   });
 
-  // Create outbound message row with the sent message ID
+  // Persist provider thread ID if we discovered one
+  if (sendResult.providerThreadId && !conversationRow?.gmailThreadId) {
+    await db
+      .update(conversations)
+      .set({ gmailThreadId: sendResult.providerThreadId })
+      .where(eq(conversations.id, conversation.id));
+  }
+
+  const source = connection.provider === "google" ? "gmail" : "smtp";
+
   const outboundMsg = await db
     .insert(messages)
     .values({
@@ -87,9 +92,9 @@ export async function sendReply({
       toEmail: conversation.customerEmail,
       bodyText: replyContent,
       bodyHtml: replyHtml,
-      messageId: info.messageId ?? null,
+      messageId: sendResult.messageId ?? null,
       inReplyTo: latestInboundMessage.messageId,
-      source: "smtp",
+      source,
       connectionId,
       sentByAutopilot,
     })
@@ -98,11 +103,20 @@ export async function sendReply({
 
   if (!outboundMsg) throw new Error("Failed to insert outbound message");
 
-  // Update conversation status to waiting
   await db
     .update(conversations)
     .set({ status: "waiting", updatedAt: new Date(), lastMessageAt: new Date() })
     .where(eq(conversations.id, conversation.id));
+
+  // Fire-and-forget: now that we've responded, mark the Gmail thread as
+  // read. Centralized here so every send path (user-triggered, autopilot,
+  // anything future) inherits the behavior automatically. Uses the
+  // freshest threadId — sendResult takes precedence since it might have
+  // been populated for the first time on this very send.
+  const threadIdForSync = sendResult.providerThreadId ?? conversationRow?.gmailThreadId ?? null;
+  if (threadIdForSync) {
+    void markGmailThreadRead(threadIdForSync, connection);
+  }
 
   return outboundMsg.id;
 }

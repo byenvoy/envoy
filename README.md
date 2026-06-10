@@ -29,6 +29,10 @@ npx drizzle-kit push
 
 # Start dev server
 npm run dev
+
+# In a separate terminal, start the KB crawl worker
+# (required for knowledge base syncs to actually run)
+npm run worker
 ```
 
 Open http://localhost:3000 and create an account. The onboarding wizard walks you through connecting your knowledge base, choosing an AI model, and linking your email.
@@ -101,7 +105,7 @@ The Blueprint provisions a web service, Postgres database, and cron jobs for ema
 - **Auth:** Better Auth
 - **Embeddings:** OpenAI text-embedding-3-small
 - **LLM:** Provider-agnostic (Anthropic, OpenAI, Google, Mistral)
-- **Email:** IMAP/SMTP via OAuth (Google, Microsoft)
+- **Email:** Gmail REST API via OAuth (`gmail.modify` scope); IMAP/SMTP transport preserved for Microsoft (currently dormant)
 
 ## License
 
