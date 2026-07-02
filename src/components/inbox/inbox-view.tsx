@@ -52,6 +52,10 @@ export function InboxView({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [extraConversations, setExtraConversations] = useState<Conversation[]>([]);
+  // IDs hidden optimistically while a Send/Close is in flight, so the
+  // conversation disappears from the list immediately instead of waiting
+  // for the server round-trip + router.refresh.
+  const [optimisticallyHiddenIds, setOptimisticallyHiddenIds] = useState<Set<string>>(new Set());
   const [nudgeDismissed, setNudgeDismissed] = useState(true);
   useEffect(() => {
     setNudgeDismissed(localStorage.getItem("autopilot-nudge-dismissed") === "1");
@@ -64,7 +68,16 @@ export function InboxView({
     }
   }, [initialDetail]);
 
-  const allConversations = [...conversations, ...extraConversations];
+  // Server data refreshed — clear stale optimistic hides. Sent/closed
+  // conversations have left the open list server-side; failed sends were
+  // already restored by handleSendError.
+  useEffect(() => {
+    setOptimisticallyHiddenIds(new Set());
+  }, [conversations]);
+
+  const allConversations = [...conversations, ...extraConversations].filter(
+    (c) => !optimisticallyHiddenIds.has(c.id)
+  );
 
   // Infinite scroll — load more when sentinel enters viewport
   const loadingMoreRef = useRef(false);
@@ -136,15 +149,47 @@ export function InboxView({
     }
   }
 
-  function handleConversationSent() {
-    if (selectedId) {
-      detailCache.current.delete(selectedId);
-    }
+  // Track the id of an in-flight send so handleSendError can restore it
+  // after selectedId has already been cleared.
+  const inFlightSendId = useRef<string | null>(null);
+
+  function handleSendStart() {
+    if (!selectedId) return;
+    const id = selectedId;
+    inFlightSendId.current = id;
+
+    // Clear the panel + URL immediately — same as a successful send, just
+    // earlier. The auto-select effect picks the next conversation.
+    detailCache.current.delete(id);
     setSelectedId(null);
     setDetailData(null);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("id");
     window.history.replaceState(null, "", `/inbox?${params.toString()}`);
+
+    // Hide from the list while the send is in flight.
+    setOptimisticallyHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }
+
+  function handleSendError() {
+    const id = inFlightSendId.current;
+    inFlightSendId.current = null;
+    if (!id) return;
+    // Restore the row so the user can re-open and retry.
+    setOptimisticallyHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }
+
+  function handleConversationSent() {
+    inFlightSendId.current = null;
+    // Local UI was already cleared in handleSendStart; just sync server data.
     router.refresh();
   }
 
@@ -152,13 +197,28 @@ export function InboxView({
 
   async function handleClose() {
     if (!selectedId) return;
+    const idBeingClosed = selectedId;
     setClosing(true);
+    // Optimistically hide while the close request is in flight.
+    setOptimisticallyHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(idBeingClosed);
+      return next;
+    });
     try {
-      const res = await fetch(`/api/conversations/${selectedId}/close`, {
+      const res = await fetch(`/api/conversations/${idBeingClosed}/close`, {
         method: "POST",
       });
-      if (!res.ok) return;
-      detailCache.current.delete(selectedId);
+      if (!res.ok) {
+        // Restore on failure.
+        setOptimisticallyHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(idBeingClosed);
+          return next;
+        });
+        return;
+      }
+      detailCache.current.delete(idBeingClosed);
       setSelectedId(null);
       setDetailData(null);
       const params = new URLSearchParams(searchParams.toString());
@@ -249,6 +309,28 @@ export function InboxView({
     setExtraConversations([]);
     setHasMore(initialHasMore);
   }, [conversations, initialHasMore]);
+
+  // Auto-refresh after the user just enabled polling so the inbox populates
+  // on its own while the fire-and-forget initial poll generates drafts.
+  // Stops after 60s; strips the query param so reloads don't restart it.
+  const justEnabled = searchParams.get("just-enabled") === "1";
+  useEffect(() => {
+    if (!justEnabled) return;
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 5000);
+    const stop = setTimeout(() => {
+      clearInterval(interval);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("just-enabled");
+      const qs = params.toString();
+      window.history.replaceState(null, "", `/inbox${qs ? `?${qs}` : ""}`);
+    }, 60_000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(stop);
+    };
+  }, [justEnabled, router, searchParams]);
 
   const hasPendingDraft = detailData?.draft && detailData.draft.status === "pending";
   const hasShopifyCustomer = !!(detailData?.shopifyCustomer && (detailData.shopifyCustomer.customer || detailData.shopifyCustomer.recent_orders?.length));
@@ -370,7 +452,7 @@ export function InboxView({
             </div>
             {/* Right panel — customer context + draft */}
             {showRightPanel && (
-              <div className="border-t border-border md:border-t-0 h-auto md:h-full w-full md:w-[380px] flex-shrink-0 overflow-y-auto bg-surface-alt">
+              <div className="border-t border-border md:border-t-0 h-auto md:h-full w-full md:w-[380px] flex-shrink-0 overflow-y-auto bg-surface-alt md:overflow-hidden">
                 <DraftPanel
                   key={detailData.conversation.id}
                   conversation={detailData.conversation}
@@ -379,6 +461,8 @@ export function InboxView({
                   draftUsedCustomerData={!!detailData.draft?.customer_context}
                   onRefresh={handleDetailRefresh}
                   onSent={handleConversationSent}
+                  onSendStart={handleSendStart}
+                  onSendError={handleSendError}
                 />
               </div>
             )}
@@ -397,6 +481,17 @@ export function InboxView({
                   <p className="mt-1 text-xs text-text-secondary">
                     No conversations match &ldquo;{searchParams.get("search")}&rdquo;
                   </p>
+                </>
+              ) : justEnabled ? (
+                <>
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface-alt">
+                    <svg className="h-5 w-5 animate-spin text-text-secondary" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+                    </svg>
+                  </div>
+                  <p className="font-display text-sm font-semibold text-text-primary">Syncing your first emails…</p>
+                  <p className="mt-1 text-xs text-text-secondary">Conversations will appear as drafts complete.</p>
                 </>
               ) : (searchParams.get("status") ?? "open") === "open" ? (
                 <>
