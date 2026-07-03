@@ -80,6 +80,13 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         // Don't save if content matches the original draft
         if (content === draft.draft_content && !draft.edited_content) return;
         if (content === draft.edited_content) return;
+        // Emptying an AI draft isn't a saveable state — the server rejects
+        // it, so don't pretend to save. (Emptying a manual draft deletes
+        // it server-side, which IS saveable.)
+        if (!content.trim() && draft.model_used !== "manual") {
+          setSaveStatus("idle");
+          return;
+        }
       }
 
       setSaveStatus("saving");
@@ -96,6 +103,9 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
             // The parent's cached detail no longer matches the server —
             // without this, navigating away and back shows pre-save state.
             onCacheInvalidate?.();
+          } else {
+            // Rejected save (e.g. validation) — don't leave "Saving..." stuck.
+            setSaveStatus("idle");
           }
         } catch {
           setSaveStatus("idle");
