@@ -54,13 +54,22 @@ export async function POST(
   }
 
   try {
-    await generateDraftForConversation(id, true, auth.context.userId);
+    const outcome = await generateDraftForConversation(id, true, auth.context.userId);
+    await db
+      .update(conversations)
+      .set({ draftState: outcome, updatedAt: new Date() })
+      .where(eq(conversations.id, id));
 
     captureEvent(auth.context.userId, orgId, "draft_regenerated");
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Failed to regenerate draft:", error);
+    await db
+      .update(conversations)
+      .set({ draftState: "failed", updatedAt: new Date() })
+      .where(eq(conversations.id, id))
+      .catch(() => {});
     return NextResponse.json(
       { error: "Failed to regenerate draft" },
       { status: 500 }

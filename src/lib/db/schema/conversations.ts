@@ -30,6 +30,13 @@ export const conversations = pgTable(
     customerEmail: text("customer_email").notNull(),
     customerName: text("customer_name"),
     gmailThreadId: text("gmail_thread_id"),
+    /**
+     * What the draft pipeline decided about the latest inbound message:
+     * 'generating' | 'drafted' | 'escalated' | 'skipped' (automated mail) |
+     * 'failed'. Null for legacy rows (treated as decided). Written by the
+     * poll dispatcher; drives inbox visibility and the compose-panel notice.
+     */
+    draftState: text("draft_state"),
     autopilotDisabled: boolean("autopilot_disabled").notNull().default(false),
     lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

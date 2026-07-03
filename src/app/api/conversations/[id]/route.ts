@@ -100,6 +100,7 @@ export async function GET(
       status: conversation.status,
       customer_email: conversation.customerEmail,
       customer_name: conversation.customerName,
+      draft_state: conversation.draftState,
       autopilot_disabled: conversation.autopilotDisabled,
       created_at: conversation.createdAt,
       updated_at: conversation.updatedAt,

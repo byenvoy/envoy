@@ -289,10 +289,11 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         />
       )}
 
-      {/* No draft — escalated or awaiting generation: manual compose */}
+      {/* No draft — escalated, skipped, or failed: manual compose */}
       {!draft && (
         <ComposePanel
           conversationId={conversation.id}
+          draftState={conversation.draft_state ?? null}
           onSent={onSent}
           onSendStart={onSendStart}
           onSendError={onSendError}
@@ -601,13 +602,23 @@ function CustomerContextCard({
   );
 }
 
+/** Contextual explanation for why there's no AI draft to review. */
+const COMPOSE_NOTICES: Record<string, string> = {
+  escalated: "This conversation was escalated for human review. Write your reply below.",
+  skipped: "This looks like marketing or automated mail, so Envoy didn't draft a reply.",
+  failed: "Envoy couldn't draft a reply for this conversation. Write your reply below.",
+};
+const COMPOSE_NOTICE_DEFAULT = "No AI draft for this conversation. Write your reply below.";
+
 function ComposePanel({
   conversationId,
+  draftState,
   onSent,
   onSendStart,
   onSendError,
 }: {
   conversationId: string;
+  draftState: string | null;
   onSent: () => void;
   onSendStart?: () => void;
   onSendError?: () => void;
@@ -658,10 +669,10 @@ function ComposePanel({
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-2 p-3 md:gap-3 md:p-4">
+    <div className="flex flex-1 flex-col gap-2 p-3 md:min-h-0 md:gap-3 md:p-4">
       <div className="rounded-md border border-border bg-surface px-3 py-2">
         <p className="font-display text-xs font-medium text-text-secondary">
-          This conversation was escalated for human review. Write your reply below.
+          {COMPOSE_NOTICES[draftState ?? ""] ?? COMPOSE_NOTICE_DEFAULT}
         </p>
       </div>
 

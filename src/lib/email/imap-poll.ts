@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { emailConnections, conversations, messages, drafts } from "@/lib/db/schema";
-import { eq, and, desc, isNull, gte, sql } from "drizzle-orm";
+import { eq, and, desc, isNull, gte, inArray } from "drizzle-orm";
 import { processImapEmail } from "./process-imap";
 import { processSentEmail } from "./process-sent";
 import { generateDraftForConversation } from "./generate-draft";
@@ -11,6 +11,16 @@ type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
 const STUCK_RETRY_LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const STUCK_RETRY_LIMIT_PER_POLL = 5;
+
+type DraftState = "generating" | "drafted" | "escalated" | "skipped" | "failed";
+
+/** Record the pipeline's decision for the conversation's latest message. */
+async function setDraftState(conversationId: string, state: DraftState): Promise<void> {
+  await db
+    .update(conversations)
+    .set({ draftState: state, updatedAt: new Date() })
+    .where(eq(conversations.id, conversationId));
+}
 
 /**
  * Poll an email connection for new messages, ingest them, and trigger
@@ -82,7 +92,10 @@ export async function pollConnection(
 
     // Skip marketing / automated mail — drafting a reply is not useful and
     // these emails (long marketing HTML, mailing lists) trip RAG embedding limits.
-    if (lastMsg.isAutomated) continue;
+    if (lastMsg.isAutomated) {
+      await setDraftState(conversationId, "skipped");
+      continue;
+    }
 
     // Skip if a pending draft already exists
     const existingDraft = await db
@@ -97,7 +110,10 @@ export async function pollConnection(
       .limit(1)
       .then((r) => r[0]);
 
-    if (existingDraft) continue;
+    if (existingDraft) {
+      await setDraftState(conversationId, "drafted");
+      continue;
+    }
 
     // Escalation check: was the last approved draft auto-sent?
     if (lastMsg.bodyText) {
@@ -128,19 +144,22 @@ export async function pollConnection(
     }
 
     try {
-      await generateDraftForConversation(conversationId);
+      const outcome = await generateDraftForConversation(conversationId);
+      await setDraftState(conversationId, outcome);
     } catch (err) {
       // Per-conversation isolation: a single draft failure must not block
       // the rest of the loop or fail the poll. recordLLMError inside
       // generateDraftForConversation already surfaces non-retryable errors
       // (auth/quota) via the org-level llmErrorMessage banner.
       console.error(`Draft generation failed for conversation ${conversationId}:`, err);
+      await setDraftState(conversationId, "failed").catch(() => {});
     }
   }
 
   // --- Phase 2.5: Retry recently-stuck conversations ---
-  // Conversations whose last message is inbound but never got a draft (e.g.
-  // because an earlier poll's draft loop bailed mid-iteration). Bounded by
+  // Conversations whose pipeline never reached a decision ('generating' —
+  // e.g. an earlier poll crashed mid-run) or failed outright. Escalated /
+  // skipped / drafted states are decisions and are not retried. Bounded by
   // a 24h window so genuinely failing-forever conversations age out.
   const stuckCutoff = new Date(Date.now() - STUCK_RETRY_LOOKBACK_MS);
   const stuckCandidates = await db
@@ -150,7 +169,7 @@ export async function pollConnection(
       and(
         eq(conversations.orgId, connection.orgId),
         gte(conversations.lastMessageAt, stuckCutoff),
-        sql`NOT EXISTS (SELECT 1 FROM ${drafts} WHERE ${drafts.conversationId} = ${conversations.id})`
+        inArray(conversations.draftState, ["generating", "failed"])
       )
     )
     .orderBy(desc(conversations.lastMessageAt))
@@ -171,9 +190,11 @@ export async function pollConnection(
     if (lastMsg.isAutomated) continue;
 
     try {
-      await generateDraftForConversation(stuckId);
+      const outcome = await generateDraftForConversation(stuckId);
+      await setDraftState(stuckId, outcome);
     } catch (err) {
       console.error(`Stuck-conversation draft retry failed for ${stuckId}:`, err);
+      await setDraftState(stuckId, "failed").catch(() => {});
     }
   }
 

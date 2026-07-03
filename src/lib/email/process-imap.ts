@@ -73,7 +73,9 @@ export async function processImapEmail(
     }
   }
 
-  // Create new conversation if no thread found
+  // Create new conversation if no thread found. draft_state starts at
+  // 'generating' — the dispatcher records the pipeline's decision
+  // (drafted/escalated/skipped/failed) once it processes this message.
   if (!conversationId) {
     const conversation = await db
       .insert(conversations)
@@ -81,6 +83,7 @@ export async function processImapEmail(
         orgId: connection.orgId,
         subject,
         status: "open",
+        draftState: "generating",
         customerEmail: fromAddr,
         customerName: fromName,
         lastMessageAt: parsed.date ?? new Date(),
@@ -91,10 +94,16 @@ export async function processImapEmail(
     if (!conversation) throw new Error("Failed to create conversation");
     conversationId = conversation.id;
   } else {
-    // Reopen conversation if it was waiting/closed
+    // Reopen conversation if it was waiting/closed; reset draft_state for
+    // the new inbound so the pipeline decision is re-recorded.
     await db
       .update(conversations)
-      .set({ status: "open", updatedAt: new Date(), lastMessageAt: parsed.date ?? new Date() })
+      .set({
+        status: "open",
+        draftState: "generating",
+        updatedAt: new Date(),
+        lastMessageAt: parsed.date ?? new Date(),
+      })
       .where(eq(conversations.id, conversationId));
   }
 
