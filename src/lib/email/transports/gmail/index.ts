@@ -178,10 +178,26 @@ export const gmailTransport: EmailTransport = {
     const tokens = await getValidTokens(connection);
     const client = new GmailClient(tokens.access_token);
 
-    const { raw, messageId } = await buildRawMessage(args);
+    const { raw, messageId: composedMessageId } = await buildRawMessage(args);
     const rawBase64Url = raw.toString("base64url");
 
     const sent = await client.sendMessage(rawBase64Url, args.providerThreadId);
+
+    // Gmail rewrites the Message-ID header on API sends (our composed
+    // <...@domain> id becomes <...@mail.gmail.com>). Persisting the composed
+    // id breaks sent-copy dedup on the next poll — the ingested copy's id
+    // matches nothing, creating a duplicate outbound message. Fetch the
+    // final header so we store what the mailbox actually contains.
+    let messageId = composedMessageId;
+    try {
+      const meta = await client.getMessage(sent.id, "metadata", ["Message-ID"]);
+      const header = meta.payload?.headers?.find(
+        (h) => h.name.toLowerCase() === "message-id"
+      )?.value;
+      if (header) messageId = header;
+    } catch (err) {
+      console.error(`Failed to fetch sent message metadata for ${sent.id}:`, err);
+    }
 
     return {
       messageId,
