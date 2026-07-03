@@ -12,6 +12,8 @@ export interface GmailMessage {
   raw?: string;
   historyId?: string;
   internalDate?: string;
+  /** Present on format=metadata/full fetches */
+  payload?: { headers?: { name: string; value: string }[] };
 }
 
 export interface GmailHistoryRecord {
@@ -110,9 +112,11 @@ export class GmailClient {
 
   async getMessage(
     id: string,
-    format: "raw" | "minimal" | "metadata" | "full" = "raw"
+    format: "raw" | "minimal" | "metadata" | "full" = "raw",
+    metadataHeaders?: string[]
   ): Promise<GmailMessage> {
     const params = new URLSearchParams({ format });
+    for (const h of metadataHeaders ?? []) params.append("metadataHeaders", h);
     return this.request<GmailMessage>(`/messages/${id}?${params}`);
   }
 
