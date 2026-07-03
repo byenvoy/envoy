@@ -1,3 +1,5 @@
+import { FluidScale } from "./fluid-scale";
+
 const conversations = [
   {
     id: "1",
@@ -140,8 +142,8 @@ const statusFilters = [
 export function DemoInbox() {
   return (
     <div className="overflow-hidden bg-surface">
-      {/* Nav bar — hidden on mobile where the scaled view has its own */}
-      <nav className="hidden border-b border-border bg-surface sm:block">
+      {/* Nav bar — hidden below lg where the scaled view has its own */}
+      <nav className="hidden border-b border-border bg-surface lg:block">
         <div className="flex h-14 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
             <span className="mr-4 font-display text-[15px] font-bold tracking-tight text-primary">
@@ -185,9 +187,8 @@ export function DemoInbox() {
         </div>
       </nav>
 
-      {/* Full three-column layout, scaled down on mobile */}
-      <div className="overflow-hidden sm:hidden" style={{ height: 236 }}>
-        <div className="origin-top-left scale-[0.33]" style={{ width: 1080 }}>
+      {/* Full three-column layout, scaled to fill the card width below lg */}
+      <FluidScale designWidth={1080} designHeight={676} className="lg:hidden">
           {/* Scaled nav */}
           <nav className="border-b border-border bg-surface">
             <div className="flex h-14 items-center justify-between px-6">
@@ -412,11 +413,10 @@ export function DemoInbox() {
             </div>
           </div>
           </div>
-        </div>
-      </div>
+      </FluidScale>
 
-      {/* Desktop: Three-column layout */}
-      <div className="hidden sm:flex" style={{ height: 620 }}>
+      {/* Desktop: Three-column layout (native size at lg and up) */}
+      <div className="hidden lg:flex" style={{ height: 620 }}>
         {/* Conversation list — mirrors inbox-view.tsx left column */}
         <div className="hidden w-[220px] flex-shrink-0 flex-col border-r border-border bg-surface sm:flex lg:w-[260px]">
           {/* Filters — mirrors inbox-filters.tsx */}
