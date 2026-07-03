@@ -4,11 +4,8 @@ import { db } from "@/lib/db";
 import { subscriptions, profiles } from "@/lib/db/schema";
 import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
-import { Resend } from "resend";
+import { sendTransactionalEmail } from "@/lib/email/send-transactional";
 import type Stripe from "stripe";
-
-const getResend = () => new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 async function getOwnerEmail(stripeCustomerId: string): Promise<string | null> {
   const sub = await db
@@ -152,11 +149,12 @@ export async function POST(request: NextRequest) {
           "en-US",
           { month: "long", day: "numeric", year: "numeric" }
         );
-        void getResend().emails.send({
-          from: fromEmail,
+        const settingsUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/settings`;
+        void sendTransactionalEmail({
           to: ownerEmail,
           subject: "Your Envoy trial ends in 3 days",
-          html: `<p>Your 14-day free trial ends on ${endDate}.</p><p>After that, your Pro subscription ($15/mo) will begin automatically and your card will be charged.</p><p>You can manage or cancel your subscription anytime from <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/settings">Settings</a>.</p>`,
+          html: `<p>Your 14-day free trial ends on ${endDate}.</p><p>After that, your Pro subscription ($15/mo) will begin automatically and your card will be charged.</p><p>You can manage or cancel your subscription anytime from <a href="${settingsUrl}">Settings</a>.</p>`,
+          text: `Your 14-day free trial ends on ${endDate}. After that, your Pro subscription ($15/mo) will begin automatically and your card will be charged. You can manage or cancel your subscription anytime from Settings: ${settingsUrl}`,
         });
       }
       break;

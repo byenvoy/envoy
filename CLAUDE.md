@@ -67,7 +67,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 - Server components use `auth.api.getSession({ headers: await headers() })` directly
 - Middleware (`src/middleware.ts`) uses cookie-based check for redirects (no DB call)
 - After-signup hook in `src/lib/auth.ts` creates organization + profile automatically
-- Email verification and password reset: implemented via Resend (`src/lib/auth.ts`)
+- Email verification and password reset: sent via Cloudflare Email Sending (`src/lib/email/send-transactional.ts`, used by `src/lib/auth.ts`)
 
 ### Draft generation: agent vs classic pipeline
 
