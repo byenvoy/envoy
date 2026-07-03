@@ -5,10 +5,7 @@ import { profiles, teamInvites, organizations } from "@/lib/db/schema";
 import { user } from "@/lib/db/schema/auth";
 import { eq, and } from "drizzle-orm";
 import { requireOwner } from "@/lib/permissions";
-import { Resend } from "resend";
-
-const getResend = () => new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
+import { sendTransactionalEmail } from "@/lib/email/send-transactional";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -71,11 +68,11 @@ export async function POST(request: NextRequest) {
       .where(eq(organizations.id, orgId))
       .then((r) => r[0]);
 
-    void getResend().emails.send({
-      from: fromEmail,
+    void sendTransactionalEmail({
       to: targetUser.email,
       subject: `You've been removed from ${org?.name ?? "a team"} on Envoy`,
       html: `<p>You've been removed from <strong>${org?.name ?? "a team"}</strong> on Envoy. If you think this was a mistake, please contact your team administrator.</p>`,
+      text: `You've been removed from ${org?.name ?? "a team"} on Envoy. If you think this was a mistake, please contact your team administrator.`,
     });
   }
 

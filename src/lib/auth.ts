@@ -2,20 +2,13 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { createAuthMiddleware } from "better-auth/api";
-import { Resend } from "resend";
 import { db } from "@/lib/db";
 import { organizations, profiles } from "@/lib/db/schema";
 import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { verifyEmail, resetPassword } from "@/lib/email/templates";
+import { sendTransactionalEmail } from "@/lib/email/send-transactional";
 import { getPostHogClient } from "@/lib/posthog-server";
-
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
-  return _resend;
-}
-const fromEmail = process.env.RESEND_FROM_EMAIL!;
 
 // Track invite signups so we can skip sending them the verification email.
 // The before hook adds emails here; sendVerificationEmail checks and removes them.
@@ -35,14 +28,7 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
       const { subject, html, text } = resetPassword({ url });
-      const { error } = await getResend().emails.send({
-        from: fromEmail,
-        to: user.email,
-        subject,
-        html,
-        text,
-      });
-      if (error) console.error("[Resend] password reset email failed:", error);
+      await sendTransactionalEmail({ to: user.email, subject, html, text });
     },
   },
   emailVerification: {
@@ -53,14 +39,7 @@ export const auth = betterAuth({
       if (inviteSignupEmails.delete(user.email)) return;
 
       const { subject, html, text } = verifyEmail({ url });
-      const { error } = await getResend().emails.send({
-        from: fromEmail,
-        to: user.email,
-        subject,
-        html,
-        text,
-      });
-      if (error) console.error("[Resend] verification email failed:", error);
+      await sendTransactionalEmail({ to: user.email, subject, html, text });
     },
   },
   hooks: {

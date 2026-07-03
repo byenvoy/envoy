@@ -32,9 +32,11 @@ services:
         sync: false
       - key: MICROSOFT_CLIENT_SECRET
         sync: false
-      - key: RESEND_API_KEY
+      - key: CLOUDFLARE_ACCOUNT_ID
         sync: false
-      - key: RESEND_FROM_EMAIL
+      - key: CLOUDFLARE_EMAIL_API_TOKEN
+        sync: false
+      - key: EMAIL_FROM
         sync: false
       - key: SHOPIFY_CLIENT_ID
         sync: false

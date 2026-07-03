@@ -70,7 +70,7 @@ docker compose -f docker-compose.prod.yml up -d
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Gmail OAuth |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | Outlook OAuth |
 | `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET` | Shopify integration |
-| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Transactional email (verification, invites) |
+| `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_EMAIL_API_TOKEN` / `EMAIL_FROM` | Transactional email via Cloudflare Email Sending (verification, invites). The `EMAIL_FROM` domain must be onboarded: `npx wrangler email sending enable <domain>` |
 
 ### Email Polling
 

@@ -4,16 +4,13 @@ import { db } from "@/lib/db";
 import { teamInvites, organizations, profiles } from "@/lib/db/schema";
 import { user as userTable } from "@/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
-import { Resend } from "resend";
 import crypto from "crypto";
 import { requireOwner } from "@/lib/permissions";
 import { teamInvite } from "@/lib/email/templates";
+import { sendTransactionalEmail } from "@/lib/email/send-transactional";
 import { captureEvent } from "@/lib/posthog-server";
 
 const INVITE_EXPIRES_IN_DAYS = 7;
-
-const getResend = () => new Resend(process.env.RESEND_API_KEY);
-const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Envoy <onboarding@resend.dev>";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -75,13 +72,7 @@ export async function POST(request: NextRequest) {
       expiresInDays: INVITE_EXPIRES_IN_DAYS,
     });
 
-    void getResend().emails.send({
-      from: fromEmail,
-      to: email,
-      subject,
-      html,
-      text,
-    });
+    void sendTransactionalEmail({ to: email, subject, html, text });
 
     captureEvent(userId, orgId, "team_member_invited", { invite_role: inviteRole });
 
