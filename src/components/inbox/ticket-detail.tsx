@@ -19,9 +19,11 @@ interface DraftPanelProps {
   draftUsedCustomerData: boolean;
   onRefresh: () => void;
   onSent: () => void;
+  onSendStart?: () => void;
+  onSendError?: () => void;
 }
 
-export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent }: DraftPanelProps) {
+export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent, onSendStart, onSendError }: DraftPanelProps) {
   const router = useRouter();
   const isMac = useIsMac();
   const modKey = isMac ? "⌘" : "Ctrl";
@@ -103,6 +105,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   async function handleSend(close: boolean = false) {
     setLoading(close ? "send-close" : "send");
     setError(null);
+    onSendStart?.();
 
     try {
       const res = await fetch(`/api/conversations/${conversation.id}/approve`, {
@@ -119,6 +122,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
       onSent();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
+      onSendError?.();
     } finally {
       setLoading(null);
     }
@@ -285,12 +289,20 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         />
       )}
 
-      {/* No draft — escalated or awaiting generation: manual compose */}
-      {!draft && <ComposePanel conversationId={conversation.id} onSent={onSent} />}
+      {/* No draft — escalated, skipped, or failed: manual compose */}
+      {!draft && (
+        <ComposePanel
+          conversationId={conversation.id}
+          draftState={conversation.draft_state ?? null}
+          onSent={onSent}
+          onSendStart={onSendStart}
+          onSendError={onSendError}
+        />
+      )}
 
       {/* Draft section */}
       {draft && isPending && (
-        <div className="flex flex-1 flex-col gap-2 p-3 md:gap-3 md:p-4">
+        <div className="flex flex-1 flex-col gap-2 p-3 md:min-h-0 md:gap-3 md:p-4">
           {/* Gate 3 warning — draft flagged as needing human review */}
           {autopilotEval?.gate3_passed === false && (
             <div className="rounded-md border border-ai-accent/30 bg-ai-light px-3 py-2">
@@ -364,7 +376,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               onChange={(e) => handleContentChange(e.target.value)}
               onBlur={() => setIsEditing(false)}
               rows={10}
-              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:px-4 md:py-3"
+              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:min-h-0 md:px-4 md:py-3"
             />
           ) : (
             <div
@@ -375,7 +387,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 clearActiveSources();
                 setIsEditing(true);
               }}
-              className="max-h-[200px] cursor-text overflow-y-auto break-words rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:bg-ai-accent-light"
+              className="max-h-[200px] cursor-text overflow-y-auto break-words rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary hover:border-primary/50 md:max-h-none md:min-h-0 md:flex-1 md:px-4 md:py-3 [&_a]:text-primary [&_a]:underline [&_p]:mb-2 [&_p:last-child]:mb-0 [&_.citation-mark]:bg-ai-accent-light"
               dangerouslySetInnerHTML={{ __html: annotatedHtml }}
             />
           )}
@@ -590,7 +602,27 @@ function CustomerContextCard({
   );
 }
 
-function ComposePanel({ conversationId, onSent }: { conversationId: string; onSent: () => void }) {
+/** Contextual explanation for why there's no AI draft to review. */
+const COMPOSE_NOTICES: Record<string, string> = {
+  escalated: "This conversation was escalated for human review. Write your reply below.",
+  skipped: "This looks like marketing or automated mail, so Envoy didn't draft a reply.",
+  failed: "Envoy couldn't draft a reply for this conversation. Write your reply below.",
+};
+const COMPOSE_NOTICE_DEFAULT = "No AI draft for this conversation. Write your reply below.";
+
+function ComposePanel({
+  conversationId,
+  draftState,
+  onSent,
+  onSendStart,
+  onSendError,
+}: {
+  conversationId: string;
+  draftState: string | null;
+  onSent: () => void;
+  onSendStart?: () => void;
+  onSendError?: () => void;
+}) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -602,6 +634,7 @@ function ComposePanel({ conversationId, onSent }: { conversationId: string; onSe
     if (!content.trim()) return;
     setLoading(close ? "send-close" : "send");
     setError(null);
+    onSendStart?.();
 
     try {
       const res = await fetch(`/api/conversations/${conversationId}/compose`, {
@@ -618,6 +651,7 @@ function ComposePanel({ conversationId, onSent }: { conversationId: string; onSe
       onSent();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
+      onSendError?.();
     } finally {
       setLoading(null);
     }
@@ -635,10 +669,10 @@ function ComposePanel({ conversationId, onSent }: { conversationId: string; onSe
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-2 p-3 md:gap-3 md:p-4">
+    <div className="flex flex-1 flex-col gap-2 p-3 md:min-h-0 md:gap-3 md:p-4">
       <div className="rounded-md border border-border bg-surface px-3 py-2">
         <p className="font-display text-xs font-medium text-text-secondary">
-          This conversation was escalated for human review. Write your reply below.
+          {COMPOSE_NOTICES[draftState ?? ""] ?? COMPOSE_NOTICE_DEFAULT}
         </p>
       </div>
 

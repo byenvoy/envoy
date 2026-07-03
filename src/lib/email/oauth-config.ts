@@ -16,7 +16,7 @@ export const OAUTH_PROVIDERS: Record<"google" | "microsoft", OAuthProviderConfig
     authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
     tokenUrl: "https://oauth2.googleapis.com/token",
     scopes: [
-      "https://mail.google.com/",
+      "https://www.googleapis.com/auth/gmail.modify",
       "openid",
       "email",
       "profile",

@@ -80,6 +80,8 @@ export interface EmailConnection {
 
 export type ConversationStatus = "open" | "waiting" | "closed";
 
+export type DraftState = "generating" | "drafted" | "escalated" | "skipped" | "failed";
+
 export interface Conversation {
   id: string;
   org_id: string;
@@ -87,6 +89,8 @@ export interface Conversation {
   status: ConversationStatus;
   customer_email: string;
   customer_name: string | null;
+  /** Pipeline decision for the latest inbound message. Null on legacy rows. */
+  draft_state?: DraftState | null;
   autopilot_disabled: boolean;
   created_at: string;
   updated_at: string;
@@ -108,8 +112,9 @@ export interface Message {
   body_html: string | null;
   message_id: string | null;
   in_reply_to: string | null;
-  source: "imap" | "smtp" | "manual";
+  source: "imap" | "smtp" | "manual" | "gmail";
   connection_id: string | null;
+  is_automated: boolean;
   sent_by_autopilot: boolean;
   sent_at: string;
   created_at: string;

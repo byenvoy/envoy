@@ -16,3 +16,4 @@ export {
   hasActiveRecrawlJob,
   getActiveResyncUrlsForOrg,
 } from "./crawl-jobs";
+export { conversationDecidedFilter } from "./conversation-visibility";

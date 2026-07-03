@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
-import { conversations, messages, drafts, emailAddresses } from "@/lib/db/schema";
+import { conversations, messages, drafts, emailAddresses, emailConnections } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { sendReply } from "@/lib/email/send-reply";
+import { archiveAndLabelGmailThread } from "@/lib/email/gmail-sync";
 import { marked } from "marked";
 import { captureEvent } from "@/lib/posthog-server";
 
@@ -95,11 +96,27 @@ export async function POST(
 
     captureEvent(userId, orgId, "manual_reply_sent");
 
+    // If close requested, mirror the closed state to Gmail (archive +
+    // Envoy/Handled label). Re-read gmailThreadId via returning() —
+    // sendReply may have populated it for the first time on this send.
     if (closeAfterSend) {
-      await db
+      const closedConversation = await db
         .update(conversations)
         .set({ status: "closed" })
-        .where(eq(conversations.id, id));
+        .where(eq(conversations.id, id))
+        .returning({ gmailThreadId: conversations.gmailThreadId })
+        .then((r) => r[0]);
+
+      if (closedConversation?.gmailThreadId) {
+        const conn = await db
+          .select()
+          .from(emailConnections)
+          .where(and(eq(emailConnections.orgId, orgId), eq(emailConnections.provider, "google")))
+          .then((r) => r[0] ?? null);
+        if (conn) {
+          void archiveAndLabelGmailThread(closedConversation.gmailThreadId, conn);
+        }
+      }
     }
 
     return NextResponse.json({ ok: true });

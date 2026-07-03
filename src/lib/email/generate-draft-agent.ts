@@ -29,7 +29,7 @@ export async function generateDraftAgent(
   conversationId: string,
   isRegeneration = false,
   userId?: string
-): Promise<void> {
+): Promise<"drafted" | "escalated"> {
   const conversation = await db
     .select()
     .from(conversations)
@@ -216,6 +216,8 @@ export async function generateDraftAgent(
       });
     }
   }
+
+  return result.draft ? "drafted" : "escalated";
 }
 
 /**

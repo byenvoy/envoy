@@ -12,7 +12,9 @@ export function PollingOptIn() {
     try {
       const res = await fetch("/api/settings/polling", { method: "POST" });
       if (res.ok) {
-        router.refresh();
+        // ?just-enabled=1 tells InboxView to auto-refresh while the
+        // fire-and-forget initial poll populates the inbox in the background.
+        router.replace("/inbox?just-enabled=1");
       }
     } finally {
       setEnabling(false);

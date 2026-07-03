@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "@/lib/db/helpers";
+import { withAuth, conversationDecidedFilter } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
 import { conversations } from "@/lib/db/schema";
 import { eq, and, or, desc, ilike, sql, getTableColumns } from "drizzle-orm";
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const offset = parseInt(params.get("offset") ?? "0", 10);
   const limit = parseInt(params.get("limit") ?? "50", 10);
 
-  const conditions = [eq(conversations.orgId, orgId)];
+  const conditions = [eq(conversations.orgId, orgId), conversationDecidedFilter()];
 
   if (status && status !== "all") {
     conditions.push(eq(conversations.status, status as ConversationStatus));
@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
       status: c.status,
       customer_email: c.customerEmail,
       customer_name: c.customerName,
+      draft_state: c.draftState,
       autopilot_disabled: c.autopilotDisabled,
       created_at: c.createdAt,
       updated_at: c.updatedAt,

@@ -2,13 +2,18 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { profiles, organizations, subscriptions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { profiles, organizations, subscriptions, emailConnections } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { isCloud } from "@/lib/config";
 import { isActiveSubscription } from "@/lib/db/helpers";
 import type { Role } from "@/lib/permissions";
+
+const AUTH_ERROR_PATTERN = /401|403|invalid_grant|invalid_token|invalid_scope|authentication\s*failed|token refresh failed|unauthorized|permission denied/i;
+// Wait one full cron cycle (2 min) plus margin before surfacing a generic
+// connection error — a single failed poll often clears on the next attempt.
+const TRANSIENT_GRACE_MS = 5 * 60 * 1000;
 
 export default async function DashboardLayout({
   children,
@@ -36,6 +41,8 @@ export default async function DashboardLayout({
 
   let subscriptionStatus: string | null = null;
   let llmErrorMessage: string | null = null;
+  let emailConnectionErrored = false;
+  let emailConnectionNeedsReconnect = false;
 
   // Check onboarding status
   if (profile) {
@@ -53,6 +60,34 @@ export default async function DashboardLayout({
     }
 
     llmErrorMessage = org?.llmErrorMessage ?? null;
+
+    // Look up errored email connections for this org. Auth-shaped errors
+    // surface immediately (they don't auto-recover); other errors only
+    // surface if the connection hasn't successfully polled for at least
+    // one cron cycle, so brief transient errors don't flash a banner.
+    const erroredConns = await db
+      .select({
+        errorMessage: emailConnections.errorMessage,
+        lastPolledAt: emailConnections.lastPolledAt,
+      })
+      .from(emailConnections)
+      .where(
+        and(
+          eq(emailConnections.orgId, profile.orgId),
+          eq(emailConnections.status, "error")
+        )
+      );
+
+    for (const conn of erroredConns) {
+      const isAuth = !!conn.errorMessage && AUTH_ERROR_PATTERN.test(conn.errorMessage);
+      const isStale =
+        !conn.lastPolledAt ||
+        Date.now() - new Date(conn.lastPolledAt).getTime() > TRANSIENT_GRACE_MS;
+      if (isAuth || isStale) {
+        emailConnectionErrored = true;
+        if (isAuth) emailConnectionNeedsReconnect = true;
+      }
+    }
 
     // On cloud: check subscription status
     if (isCloud() && org?.onboardingCompletedAt) {
@@ -97,6 +132,8 @@ export default async function DashboardLayout({
         userRole={(profile?.role ?? "agent") as Role}
         subscriptionStatus={subscriptionStatus}
         llmErrorMessage={llmErrorMessage}
+        emailConnectionErrored={emailConnectionErrored}
+        emailConnectionNeedsReconnect={emailConnectionNeedsReconnect}
       >
         {children}
       </DashboardShell>

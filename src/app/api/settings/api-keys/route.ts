@@ -5,6 +5,7 @@ import { orgApiKeys } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { encrypt } from "@/lib/email/encryption";
 import { requireOwner } from "@/lib/permissions";
+import { clearLLMError } from "@/lib/rag/llm-errors";
 
 export async function POST(request: NextRequest) {
   const auth = await withAuth();
@@ -47,6 +48,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
+  // The next draft attempt will repopulate the banner if the new key also
+  // fails — clearing here gives users a clean slate after replacing a key.
+  await clearLLMError(orgId);
+
   return NextResponse.json({ ok: true });
 }
 
@@ -74,6 +79,8 @@ export async function DELETE(request: NextRequest) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+
+  await clearLLMError(orgId);
 
   return NextResponse.json({ ok: true });
 }

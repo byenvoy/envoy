@@ -6,6 +6,7 @@ import { NavBar } from "./nav-bar";
 import { CommandPalette } from "./command-palette";
 import { SubscriptionBanner } from "./subscription-banner";
 import { LLMErrorBanner } from "./llm-error-banner";
+import { EmailConnectionErrorBanner } from "./email-connection-error-banner";
 import type { Role } from "@/lib/permissions";
 
 interface ShellContext {
@@ -28,10 +29,12 @@ interface DashboardShellProps {
   userRole: Role;
   subscriptionStatus?: string | null;
   llmErrorMessage?: string | null;
+  emailConnectionErrored?: boolean;
+  emailConnectionNeedsReconnect?: boolean;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ userInitials, userName, userEmail, userRole, subscriptionStatus, llmErrorMessage, children }: DashboardShellProps) {
+export function DashboardShell({ userInitials, userName, userEmail, userRole, subscriptionStatus, llmErrorMessage, emailConnectionErrored, emailConnectionNeedsReconnect, children }: DashboardShellProps) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileNavContent, setMobileNavContent] = useState<React.ReactNode>(null);
   const pathname = usePathname();
@@ -74,6 +77,9 @@ export function DashboardShell({ userInitials, userName, userEmail, userRole, su
         />
         {subscriptionStatus && <SubscriptionBanner status={subscriptionStatus} />}
         {llmErrorMessage && <LLMErrorBanner message={llmErrorMessage} />}
+        {emailConnectionErrored && (
+          <EmailConnectionErrorBanner needsReconnect={!!emailConnectionNeedsReconnect} />
+        )}
         <main className={isInbox ? "min-h-0 flex-1" : "mx-auto max-w-5xl px-3 py-6 sm:px-6 sm:py-8"}>
           {children}
         </main>

@@ -14,11 +14,12 @@ import {
   organizations,
 } from "@/lib/db/schema";
 import { eq, and, desc, asc, or, ilike, sql, getTableColumns } from "drizzle-orm";
+import { conversationDecidedFilter } from "@/lib/db/helpers";
 import { createShopifyClient } from "@/lib/integrations/shopify-client-factory";
 import { parseSearch } from "@/lib/search/parse-search";
 import { InboxView } from "@/components/inbox/inbox-view";
 import { PollingOptIn } from "@/components/inbox/polling-opt-in";
-import type { Conversation, Message, Draft, ConversationStatus, MessageDirection, DraftStatus } from "@/lib/types/database";
+import type { Conversation, Message, Draft, ConversationStatus, MessageDirection, DraftStatus, DraftState } from "@/lib/types/database";
 
 const PAGE_SIZE = 50;
 
@@ -43,7 +44,7 @@ export default async function InboxPage({
 
   // Build where conditions for conversations query
   const effectiveStatus = statusFilter ?? "open";
-  const baseConditions = [eq(conversations.orgId, orgId)];
+  const baseConditions = [eq(conversations.orgId, orgId), conversationDecidedFilter()];
 
   if (effectiveStatus !== "all") {
     baseConditions.push(eq(conversations.status, effectiveStatus as ConversationStatus));
@@ -104,7 +105,8 @@ export default async function InboxPage({
     db
       .select({ status: conversations.status })
       .from(conversations)
-      .where(eq(conversations.orgId, orgId)),
+      // Same visibility rule as the list so tab counts match what's shown
+      .where(and(eq(conversations.orgId, orgId), conversationDecidedFilter())),
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(autopilotTopics)
@@ -135,6 +137,7 @@ export default async function InboxPage({
     status: c.status,
     customer_email: c.customerEmail,
     customer_name: c.customerName,
+    draft_state: c.draftState as DraftState | null,
     autopilot_disabled: c.autopilotDisabled,
     created_at: c.createdAt.toISOString(),
     updated_at: c.updatedAt.toISOString(),
@@ -206,8 +209,9 @@ export default async function InboxPage({
       body_html: m.bodyHtml,
       message_id: m.messageId,
       in_reply_to: m.inReplyTo,
-      source: m.source as "imap" | "smtp" | "manual",
+      source: m.source as "imap" | "smtp" | "manual" | "gmail",
       connection_id: m.connectionId,
+      is_automated: m.isAutomated,
       sent_by_autopilot: m.sentByAutopilot,
       sent_at: m.sentAt.toISOString(),
       created_at: m.createdAt.toISOString(),

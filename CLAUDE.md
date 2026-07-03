@@ -9,6 +9,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 ## Commands
 
 - `npm run dev` — Start development server
+- `npm run worker` — Start KB crawl worker (required for knowledge base sync; run in a separate terminal)
 - `npm run build` — Production build
 - `npm run lint` — Run ESLint
 - `npm start` — Start production server
@@ -28,7 +29,7 @@ Envoy is a self-hosted AI customer support platform with a human-in-the-loop RAG
 - **Auth:** Better Auth (email/password, sessions stored in Postgres)
 - **Embeddings:** OpenAI text-embedding-3-small (1536 dimensions)
 - **LLM:** Anthropic Claude Haiku (default), abstracted behind provider interface
-- **Email:** OAuth (Google/Microsoft) via IMAP/SMTP
+- **Email:** Gmail via REST API (OAuth, `gmail.modify` scope); IMAP/SMTP transport preserved for Microsoft (currently dormant)
 - **Web scraping:** Mozilla Readability + Turndown (local, no external APIs)
 - **Analytics:** PostHog (server in `src/lib/posthog-server.ts`, browser SDK via `posthog-js`). Group analytics enabled — events are associated with the `organization` group type. Use `captureEvent(userId, orgId, event, properties?)` from `src/lib/posthog-server.ts` for all server-side event capture — it automatically adds `distinctId`, `groups`, and `org_id`.
 
