@@ -463,6 +463,7 @@ export function InboxView({
                   onSent={handleConversationSent}
                   onSendStart={handleSendStart}
                   onSendError={handleSendError}
+                  onCacheInvalidate={() => detailCache.current.delete(detailData.conversation.id)}
                 />
               </div>
             )}

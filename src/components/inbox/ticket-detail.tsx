@@ -21,9 +21,16 @@ interface DraftPanelProps {
   onSent: () => void;
   onSendStart?: () => void;
   onSendError?: () => void;
+  /**
+   * Autosave persisted a change the parent's detail cache doesn't know
+   * about. The parent should drop its cached copy (without refetching —
+   * a refetch mid-typing would swap the panel under the cursor) so the
+   * next visit fetches fresh data.
+   */
+  onCacheInvalidate?: () => void;
 }
 
-export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent, onSendStart, onSendError }: DraftPanelProps) {
+export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent, onSendStart, onSendError, onCacheInvalidate }: DraftPanelProps) {
   const router = useRouter();
   const isMac = useIsMac();
   const modKey = isMac ? "⌘" : "Ctrl";
@@ -35,6 +42,11 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     outcome: string | null;
   } | null;
 
+  // Compose mode: no AI draft exists (escalated / skipped / failed) — the
+  // same editor renders empty and the user writes the reply themselves.
+  // The first autosave creates a pending manual draft server-side.
+  const isCompose = !draft;
+
   const [editedContent, setEditedContent] = useState(
     draft?.edited_content ?? draft?.draft_content ?? ""
   );
@@ -42,9 +54,11 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isCompose);
   const [activeSources, setActiveSources] = useState<Set<string>>(new Set());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightSaveRef = useRef<Promise<void> | null>(null);
+  const sendingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hoveredMarkRef = useRef<HTMLElement | null>(null);
 
@@ -53,30 +67,51 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     [editedContent]
   );
 
-  // Auto-save with debounce
+  // Auto-save with debounce. In compose mode (no draft) the first save
+  // creates a pending manual draft so typing survives navigation; clearing
+  // all text deletes it again. The in-flight promise is tracked so Send
+  // can await it — otherwise a save landing after approval would recreate
+  // a stray pending draft with already-sent content.
   const autoSave = useCallback(
     async (content: string) => {
-      if (!draft || draft.status !== "pending") return;
-      // Don't save if content matches the original draft
-      if (content === draft.draft_content && !draft.edited_content) return;
-      if (content === draft.edited_content) return;
+      if (sendingRef.current) return;
+      if (draft) {
+        if (draft.status !== "pending") return;
+        // Don't save if content matches the original draft
+        if (content === draft.draft_content && !draft.edited_content) return;
+        if (content === draft.edited_content) return;
+        // Note: an empty save on an existing draft removes it server-side
+        // (manual drafts are deleted, AI drafts discarded) — clearing all
+        // text means "throw this draft away and start over".
+      }
 
       setSaveStatus("saving");
-      try {
-        const res = await fetch(`/api/conversations/${conversation.id}/edit`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ edited_content: content }),
-        });
-        if (res.ok) {
-          setSaveStatus("saved");
-          setTimeout(() => setSaveStatus("idle"), 2000);
+      const save = (async () => {
+        try {
+          const res = await fetch(`/api/conversations/${conversation.id}/edit`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ edited_content: content }),
+          });
+          if (res.ok) {
+            setSaveStatus("saved");
+            setTimeout(() => setSaveStatus("idle"), 2000);
+            // The parent's cached detail no longer matches the server —
+            // without this, navigating away and back shows pre-save state.
+            onCacheInvalidate?.();
+          } else {
+            // Rejected save (e.g. validation) — don't leave "Saving..." stuck.
+            setSaveStatus("idle");
+          }
+        } catch {
+          setSaveStatus("idle");
         }
-      } catch {
-        setSaveStatus("idle");
-      }
+      })();
+      inFlightSaveRef.current = save;
+      await save;
+      if (inFlightSaveRef.current === save) inFlightSaveRef.current = null;
     },
-    [conversation.id, draft]
+    [conversation.id, draft, onCacheInvalidate]
   );
 
   function handleContentChange(value: string) {
@@ -103,8 +138,14 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   }, []);
 
   async function handleSend(close: boolean = false) {
+    if (!editedContent.trim()) return;
     setLoading(close ? "send-close" : "send");
     setError(null);
+    sendingRef.current = true;
+    // Serialize against autosave: cancel the pending debounce and wait for
+    // any save already on the wire before approving.
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (inFlightSaveRef.current) await inFlightSaveRef.current.catch(() => {});
     onSendStart?.();
 
     try {
@@ -123,6 +164,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send");
       onSendError?.();
+      sendingRef.current = false;
     } finally {
       setLoading(null);
     }
@@ -159,21 +201,24 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // Keyboard shortcuts — only active while a pending draft is open.
-  // Send-class shortcuts work both inside and outside the editor; bare keys
-  // (c, e) only fire outside since the editor must own typing input.
+  // Keyboard shortcuts — active while a pending draft or compose editor is
+  // open. Send-class shortcuts work both inside and outside the editor;
+  // bare keys (c, e) only fire outside since the editor must own typing.
   const isPending = draft?.status === "pending";
-  const shortcutsEnabled = isPending && loading === null;
+  const shortcutsEnabled = (isPending || isCompose) && loading === null;
+  // An empty reply is never sendable — and after clearing an AI draft the
+  // server-side pending draft is gone, so an empty send would 404 anyway.
+  const canSend = editedContent.trim().length > 0;
 
   useKeyboardShortcut(
     { key: "Enter", mod: true },
     () => { void handleSend(false); },
-    { enabled: shortcutsEnabled, allowInEditable: true }
+    { enabled: shortcutsEnabled && canSend, allowInEditable: true }
   );
   useKeyboardShortcut(
     { key: "Enter", mod: true, shift: true },
     () => { void handleSend(true); },
-    { enabled: shortcutsEnabled, allowInEditable: true }
+    { enabled: shortcutsEnabled && canSend, allowInEditable: true }
   );
   useKeyboardShortcut(
     { key: "c", mod: true, shift: true },
@@ -289,20 +334,18 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         />
       )}
 
-      {/* No draft — escalated, skipped, or failed: manual compose */}
-      {!draft && (
-        <ComposePanel
-          conversationId={conversation.id}
-          draftState={conversation.draft_state ?? null}
-          onSent={onSent}
-          onSendStart={onSendStart}
-          onSendError={onSendError}
-        />
-      )}
-
-      {/* Draft section */}
-      {draft && isPending && (
+      {/* Draft / compose section — same editor whether the first byte came
+          from the AI or the human */}
+      {(isPending || isCompose) && (
         <div className="flex flex-1 flex-col gap-2 p-3 md:min-h-0 md:gap-3 md:p-4">
+          {/* Compose mode: explain why there's no AI draft */}
+          {isCompose && (
+            <div className="rounded-md border border-border bg-surface px-3 py-2">
+              <p className="font-display text-xs font-medium text-text-secondary">
+                {COMPOSE_NOTICES[conversation.draft_state ?? ""] ?? COMPOSE_NOTICE_DEFAULT}
+              </p>
+            </div>
+          )}
           {/* Gate 3 warning — draft flagged as needing human review */}
           {autopilotEval?.gate3_passed === false && (
             <div className="rounded-md border border-ai-accent/30 bg-ai-light px-3 py-2">
@@ -319,8 +362,8 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-display text-sm font-semibold">
-              <span className="inline-block h-2 w-2 rounded-full bg-ai-accent" />
-              <span className="text-text-primary">Draft</span>
+              <span className={`inline-block h-2 w-2 rounded-full ${isCompose ? "bg-primary" : "bg-ai-accent"}`} />
+              <span className="text-text-primary">{isCompose ? "Compose" : "Draft"}</span>
               {saveStatus === "saving" && (
                 <span className="font-mono text-[10px] font-normal text-text-secondary">Saving...</span>
               )}
@@ -374,9 +417,14 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
               ref={textareaRef}
               value={editedContent}
               onChange={(e) => handleContentChange(e.target.value)}
-              onBlur={() => setIsEditing(false)}
+              onBlur={() => {
+                // Keep the editor open while a compose is still empty — a
+                // blank markdown preview is just a dead click target.
+                if (!(isCompose && !editedContent.trim())) setIsEditing(false);
+              }}
+              placeholder="Write your reply..."
               rows={10}
-              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:min-h-0 md:px-4 md:py-3"
+              className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:min-h-0 md:px-4 md:py-3"
             />
           ) : (
             <div
@@ -460,7 +508,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 <Tooltip label={`Send & Close (${modKey}⇧↵)`}>
                   <button
                     onClick={() => handleSend(true)}
-                    disabled={loading !== null}
+                    disabled={loading !== null || !canSend}
                     aria-keyshortcuts={`${isMac ? "Meta" : "Control"}+Shift+Enter`}
                     className="w-full rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
                   >
@@ -470,7 +518,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
                 <Tooltip label={`Send (${modKey}↵)`} className="flex-1">
                   <button
                     onClick={() => handleSend(false)}
-                    disabled={loading !== null}
+                    disabled={loading !== null || !canSend}
                     aria-keyshortcuts={`${isMac ? "Meta" : "Control"}+Enter`}
                     className="w-full rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
                   >
@@ -609,112 +657,3 @@ const COMPOSE_NOTICES: Record<string, string> = {
   failed: "Envoy couldn't draft a reply for this conversation. Write your reply below.",
 };
 const COMPOSE_NOTICE_DEFAULT = "No AI draft for this conversation. Write your reply below.";
-
-function ComposePanel({
-  conversationId,
-  draftState,
-  onSent,
-  onSendStart,
-  onSendError,
-}: {
-  conversationId: string;
-  draftState: string | null;
-  onSent: () => void;
-  onSendStart?: () => void;
-  onSendError?: () => void;
-}) {
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const isMac = useIsMac();
-  const modKey = isMac ? "⌘" : "Ctrl";
-
-  async function handleSend(close: boolean) {
-    if (!content.trim()) return;
-    setLoading(close ? "send-close" : "send");
-    setError(null);
-    onSendStart?.();
-
-    try {
-      const res = await fetch(`/api/conversations/${conversationId}/compose`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, close }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to send");
-      }
-
-      onSent();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send");
-      onSendError?.();
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  useKeyboardShortcut(
-    { key: "Enter", mod: true },
-    () => { void handleSend(false); },
-    { enabled: loading === null && content.trim().length > 0, allowInEditable: true }
-  );
-  useKeyboardShortcut(
-    { key: "Enter", mod: true, shift: true },
-    () => { void handleSend(true); },
-    { enabled: loading === null && content.trim().length > 0, allowInEditable: true }
-  );
-
-  return (
-    <div className="flex flex-1 flex-col gap-2 p-3 md:min-h-0 md:gap-3 md:p-4">
-      <div className="rounded-md border border-border bg-surface px-3 py-2">
-        <p className="font-display text-xs font-medium text-text-secondary">
-          {COMPOSE_NOTICES[draftState ?? ""] ?? COMPOSE_NOTICE_DEFAULT}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2 font-display text-sm font-semibold">
-        <span className="inline-block h-2 w-2 rounded-full bg-primary" />
-        <span className="text-text-primary">Compose</span>
-      </div>
-
-      <textarea
-        ref={textareaRef}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Write your reply..."
-        autoFocus
-        rows={8}
-        className="flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2.5 font-mono text-[13px] leading-relaxed text-text-primary placeholder-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary md:px-4 md:py-3"
-      />
-
-      {error && <p className="text-xs text-error">{error}</p>}
-
-      <div className="sticky bottom-0 -mx-4 bg-surface-alt px-4 pb-[env(safe-area-inset-bottom,8px)] pt-3 md:static md:mx-0 md:bg-transparent md:px-0 md:pb-0 md:pt-0">
-        <div className="flex gap-2">
-          <Tooltip label={`Send & Close (${modKey}⇧↵)`}>
-            <button
-              onClick={() => handleSend(true)}
-              disabled={loading !== null || !content.trim()}
-              className="w-full rounded-lg border border-primary px-3 py-2 font-display text-sm font-medium text-primary transition-colors hover:bg-success-light disabled:opacity-50"
-            >
-              {loading === "send-close" ? "..." : "Send & Close"}
-            </button>
-          </Tooltip>
-          <Tooltip label={`Send (${modKey}↵)`} className="flex-1">
-            <button
-              onClick={() => handleSend(false)}
-              disabled={loading !== null || !content.trim()}
-              className="w-full rounded-lg bg-primary px-4 py-2 font-display text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
-            >
-              {loading === "send" ? "Sending..." : "Send"}
-            </button>
-          </Tooltip>
-        </div>
-      </div>
-    </div>
-  );
-}

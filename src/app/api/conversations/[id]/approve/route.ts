@@ -48,16 +48,24 @@ export async function POST(
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
   }
 
-  // Fetch latest pending draft
+  // Fetch latest pending draft. May be null for manual composes — the
+  // user typed a reply on a conversation with no AI draft (escalated,
+  // skipped, failed) and their autosave hasn't created one yet. In that
+  // case we create-and-approve a manual draft in one step below.
   const draft = await db
     .select()
     .from(drafts)
     .where(and(eq(drafts.conversationId, id), eq(drafts.status, "pending")))
     .orderBy(desc(drafts.createdAt))
     .limit(1)
-    .then((r) => r[0]);
+    .then((r) => r[0] ?? null);
 
-  if (!draft) {
+  // Check for edited content and close flag in request body
+  const body = await request.json().catch(() => ({}));
+  const editedContent = body.edited_content;
+  const closeAfterSend = body.close === true;
+
+  if (!draft && (typeof editedContent !== "string" || !editedContent.trim())) {
     return NextResponse.json({ error: "No pending draft found" }, { status: 404 });
   }
 
@@ -75,11 +83,6 @@ export async function POST(
   if (!latestInbound) {
     return NextResponse.json({ error: "No inbound message found" }, { status: 404 });
   }
-
-  // Check for edited content and close flag in request body
-  const body = await request.json().catch(() => ({}));
-  const editedContent = body.edited_content;
-  const closeAfterSend = body.close === true;
 
   // Get org's email address and connection for sending
   const emailAddr = await db
@@ -108,8 +111,12 @@ export async function POST(
     );
   }
 
-  const replyContent = editedContent ?? draft.editedContent ?? draft.draftContent;
+  const replyContent = editedContent ?? draft?.editedContent ?? draft?.draftContent;
+  if (!replyContent) {
+    return NextResponse.json({ error: "No content to send" }, { status: 400 });
+  }
   const replyHtml = await marked.parse(replyContent, { breaks: true });
+  const isManual = !draft || draft.modelUsed === "manual";
 
   try {
     const outboundMessageId = await sendReply({
@@ -121,20 +128,35 @@ export async function POST(
       connectionId,
     });
 
-    // Update draft
-    await db
-      .update(drafts)
-      .set({
+    if (draft) {
+      // Approve the existing draft
+      await db
+        .update(drafts)
+        .set({
+          status: "approved",
+          messageId: outboundMessageId,
+          approvedAt: new Date(),
+          approvedBy: userId,
+          ...(editedContent ? { editedContent } : {}),
+        })
+        .where(eq(drafts.id, draft.id));
+    } else {
+      // Manual compose with no autosaved draft yet — create the audit-trail
+      // row already approved.
+      await db.insert(drafts).values({
+        conversationId: id,
+        orgId,
+        draftContent: replyContent,
+        modelUsed: "manual",
         status: "approved",
         messageId: outboundMessageId,
         approvedAt: new Date(),
         approvedBy: userId,
-        ...(editedContent ? { editedContent } : {}),
-      })
-      .where(eq(drafts.id, draft.id));
+      });
+    }
 
     // Record shadow mode human action if this draft was evaluated by autopilot
-    if (draft.autopilotEvaluationId) {
+    if (draft?.autopilotEvaluationId) {
       const wasEdited = !!(editedContent && editedContent !== draft.draftContent);
       const editDistance = wasEdited
         ? computeWordEditDistance(draft.draftContent, editedContent!)
@@ -149,10 +171,15 @@ export async function POST(
         .where(eq(autopilotEvaluations.id, draft.autopilotEvaluationId));
     }
 
-    const wasEdited = !!(editedContent && editedContent !== draft.draftContent);
-    captureEvent(userId, orgId, "draft_sent", { was_edited: wasEdited });
-    if (wasEdited) {
-      captureEvent(userId, orgId, "draft_edited");
+    // Edit-distance analytics only make sense against an AI-authored draft
+    if (isManual) {
+      captureEvent(userId, orgId, "manual_reply_sent");
+    } else {
+      const wasEdited = !!(editedContent && editedContent !== draft!.draftContent);
+      captureEvent(userId, orgId, "draft_sent", { was_edited: wasEdited });
+      if (wasEdited) {
+        captureEvent(userId, orgId, "draft_edited");
+      }
     }
 
     // If close requested, override the "waiting" status set by sendReply
