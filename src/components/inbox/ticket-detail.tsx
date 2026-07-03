@@ -21,9 +21,16 @@ interface DraftPanelProps {
   onSent: () => void;
   onSendStart?: () => void;
   onSendError?: () => void;
+  /**
+   * Autosave persisted a change the parent's detail cache doesn't know
+   * about. The parent should drop its cached copy (without refetching —
+   * a refetch mid-typing would swap the panel under the cursor) so the
+   * next visit fetches fresh data.
+   */
+  onCacheInvalidate?: () => void;
 }
 
-export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent, onSendStart, onSendError }: DraftPanelProps) {
+export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCustomerData, onRefresh, onSent, onSendStart, onSendError, onCacheInvalidate }: DraftPanelProps) {
   const router = useRouter();
   const isMac = useIsMac();
   const modKey = isMac ? "⌘" : "Ctrl";
@@ -86,6 +93,9 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
           if (res.ok) {
             setSaveStatus("saved");
             setTimeout(() => setSaveStatus("idle"), 2000);
+            // The parent's cached detail no longer matches the server —
+            // without this, navigating away and back shows pre-save state.
+            onCacheInvalidate?.();
           }
         } catch {
           setSaveStatus("idle");
@@ -95,7 +105,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
       await save;
       if (inFlightSaveRef.current === save) inFlightSaveRef.current = null;
     },
-    [conversation.id, draft]
+    [conversation.id, draft, onCacheInvalidate]
   );
 
   function handleContentChange(value: string) {
