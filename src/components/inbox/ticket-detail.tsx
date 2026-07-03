@@ -80,13 +80,9 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
         // Don't save if content matches the original draft
         if (content === draft.draft_content && !draft.edited_content) return;
         if (content === draft.edited_content) return;
-        // Emptying an AI draft isn't a saveable state — the server rejects
-        // it, so don't pretend to save. (Emptying a manual draft deletes
-        // it server-side, which IS saveable.)
-        if (!content.trim() && draft.model_used !== "manual") {
-          setSaveStatus("idle");
-          return;
-        }
+        // Note: an empty save on an existing draft removes it server-side
+        // (manual drafts are deleted, AI drafts discarded) — clearing all
+        // text means "throw this draft away and start over".
       }
 
       setSaveStatus("saving");
@@ -142,7 +138,7 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   }, []);
 
   async function handleSend(close: boolean = false) {
-    if (isCompose && !editedContent.trim()) return;
+    if (!editedContent.trim()) return;
     setLoading(close ? "send-close" : "send");
     setError(null);
     sendingRef.current = true;
@@ -210,7 +206,9 @@ export function DraftPanel({ conversation, draft, shopifyCustomer, draftUsedCust
   // bare keys (c, e) only fire outside since the editor must own typing.
   const isPending = draft?.status === "pending";
   const shortcutsEnabled = (isPending || isCompose) && loading === null;
-  const canSend = !isCompose || editedContent.trim().length > 0;
+  // An empty reply is never sendable — and after clearing an AI draft the
+  // server-side pending draft is gone, so an empty send would 404 anyway.
+  const canSend = editedContent.trim().length > 0;
 
   useKeyboardShortcut(
     { key: "Enter", mod: true },

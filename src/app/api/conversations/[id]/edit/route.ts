@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/db/helpers";
 import { db } from "@/lib/db";
-import { conversations, drafts } from "@/lib/db/schema";
+import { conversations, drafts, autopilotEvaluations } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export async function PUT(
@@ -25,7 +25,11 @@ export async function PUT(
 
   // Get latest pending draft for this conversation
   const draft = await db
-    .select({ id: drafts.id, modelUsed: drafts.modelUsed })
+    .select({
+      id: drafts.id,
+      modelUsed: drafts.modelUsed,
+      autopilotEvaluationId: drafts.autopilotEvaluationId,
+    })
     .from(drafts)
     .where(
       and(
@@ -40,18 +44,28 @@ export async function PUT(
 
   try {
     if (draft) {
-      // Clearing all text in a manual draft deletes it — otherwise the
-      // stale content would resurrect next time the conversation opens.
-      // AI drafts keep the old contract: empty edits are rejected.
+      // Clearing all text removes the draft: manual drafts are deleted
+      // outright (they were only ever a keystroke buffer); AI drafts are
+      // discarded (status flip keeps the audit trail and shadow-mode
+      // metrics, mirroring the explicit discard endpoint). Either way the
+      // conversation returns to a blank compose.
       if (!edited_content.trim()) {
         if (draft.modelUsed === "manual") {
           await db.delete(drafts).where(eq(drafts.id, draft.id));
-          return NextResponse.json({ ok: true, deleted: true });
+        } else {
+          await db
+            .update(drafts)
+            .set({ status: "discarded" })
+            .where(eq(drafts.id, draft.id));
+
+          if (draft.autopilotEvaluationId) {
+            await db
+              .update(autopilotEvaluations)
+              .set({ humanAction: "discarded" })
+              .where(eq(autopilotEvaluations.id, draft.autopilotEvaluationId));
+          }
         }
-        return NextResponse.json(
-          { error: "edited_content is required" },
-          { status: 400 }
-        );
+        return NextResponse.json({ ok: true, deleted: true });
       }
 
       await db
