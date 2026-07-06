@@ -31,6 +31,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   OPENAI_API_KEY: "OpenAI",
   GOOGLE_AI_KEY: "Google",
   MISTRAL_API_KEY: "Mistral",
+  BASETEN_API_KEY: "Baseten",
 };
 
 /** Collect unique providers from SUPPORTED_MODELS for the API key UI. */
@@ -158,6 +159,7 @@ export default async function SettingsPage() {
   const models = Object.entries(SUPPORTED_MODELS).map(([id, config]) => ({
     id,
     label: config.label,
+    sublabel: config.sublabel,
     logo: config.logo,
     darkLogo: config.darkLogo,
     available: config.envKey ? keyAvailability.has(config.envKey) : false,

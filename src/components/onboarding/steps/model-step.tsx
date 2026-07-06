@@ -6,7 +6,9 @@ import { ModelSelector } from "@/components/settings/model-selector";
 interface ModelOption {
   id: string;
   label: string;
+  sublabel?: string;
   logo: string;
+  darkLogo?: string;
   available: boolean;
   providerKey: string;
   providerLabel: string;
