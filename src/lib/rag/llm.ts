@@ -159,7 +159,6 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     label: "GLM 5.2",
     sublabel: "via Baseten",
     logo: "/logos/zai.svg",
-    darkLogo: "/logos/zai-white.svg",
     baseUrl: "https://inference.baseten.co/v1",
     envKey: "BASETEN_API_KEY",
     costPer1kInput: 0.0014,
