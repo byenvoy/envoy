@@ -60,6 +60,8 @@ export interface LLMProvider {
 export interface ModelConfig {
   provider: "anthropic" | "openai" | "google";
   label: string;
+  /** Shown under the label when the model maker differs from the key provider (e.g. "via Baseten"). */
+  sublabel?: string;
   logo: string;
   darkLogo?: string;
   costPer1kInput: number;
@@ -149,6 +151,39 @@ export const SUPPORTED_MODELS: Record<string, ModelConfig> = {
     envKey: "MISTRAL_API_KEY",
     costPer1kInput: 0.0001,
     costPer1kOutput: 0.0003,
+  },
+  // Open-source models hosted on Baseten Model APIs (OpenAI-compatible).
+  // IDs are Baseten's model slugs, passed verbatim as the `model` param.
+  "zai-org/GLM-5.2": {
+    provider: "openai",
+    label: "GLM 5.2",
+    sublabel: "via Baseten",
+    logo: "/logos/zai.svg",
+    baseUrl: "https://inference.baseten.co/v1",
+    envKey: "BASETEN_API_KEY",
+    costPer1kInput: 0.0014,
+    costPer1kOutput: 0.0044,
+  },
+  "openai/gpt-oss-120b": {
+    provider: "openai",
+    label: "GPT-OSS 120B",
+    sublabel: "via Baseten",
+    logo: "/logos/openai.svg",
+    darkLogo: "/logos/OpenAI-white-monoblossom.svg",
+    baseUrl: "https://inference.baseten.co/v1",
+    envKey: "BASETEN_API_KEY",
+    costPer1kInput: 0.0001,
+    costPer1kOutput: 0.0005,
+  },
+  "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B": {
+    provider: "openai",
+    label: "Nemotron 3 Ultra",
+    sublabel: "via Baseten",
+    logo: "/logos/nvidia.svg",
+    baseUrl: "https://inference.baseten.co/v1",
+    envKey: "BASETEN_API_KEY",
+    costPer1kInput: 0.0006,
+    costPer1kOutput: 0.0024,
   },
 };
 

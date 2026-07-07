@@ -17,8 +17,20 @@ export function classifyLLMError(error: unknown): ClassifiedError {
   const msg = error instanceof Error ? error.message : String(error);
   const lower = msg.toLowerCase();
 
+  // HTTP status from SDK errors (OpenAI/Anthropic APIError both expose .status).
+  // More reliable than message text, which varies by provider.
+  const status =
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof (error as { status: unknown }).status === "number"
+      ? (error as { status: number }).status
+      : null;
+
   // Auth errors (invalid/revoked API key)
   if (
+    status === 401 ||
+    status === 403 ||
     lower.includes("invalid api key") ||
     lower.includes("invalid x-api-key") ||
     lower.includes("incorrect api key") ||
@@ -36,6 +48,7 @@ export function classifyLLMError(error: unknown): ClassifiedError {
 
   // Quota / credit exhaustion
   if (
+    status === 402 ||
     lower.includes("insufficient") ||
     lower.includes("quota") ||
     lower.includes("billing") ||
@@ -55,6 +68,7 @@ export function classifyLLMError(error: unknown): ClassifiedError {
 
   // Rate limits (transient, but worth surfacing)
   if (
+    status === 429 ||
     lower.includes("rate limit") ||
     lower.includes("rate_limit") ||
     lower.includes("too many requests") ||

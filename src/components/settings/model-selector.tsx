@@ -6,6 +6,7 @@ import Image from "next/image";
 interface ModelOption {
   id: string;
   label: string;
+  sublabel?: string;
   logo: string;
   darkLogo?: string;
   available: boolean;
@@ -144,12 +145,17 @@ export function ModelSelector({
                 />
               )}
               <div className="min-w-0 flex-1">
-                <span className={`block font-medium ${
+                <span className={`block truncate font-medium ${
                   isActive
                     ? "text-text-primary"
                     : "text-text-secondary"
                 }`}>
-                  {m.label}
+                  {m.label}{" "}
+                  {m.sublabel && (
+                    <span className="ml-1.5 text-xs font-normal text-text-secondary">
+                      {m.sublabel}
+                    </span>
+                  )}
                 </span>
               </div>
               {isActive && (

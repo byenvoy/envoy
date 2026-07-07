@@ -94,6 +94,7 @@ export default async function OnboardingPage() {
   const models = Object.entries(SUPPORTED_MODELS).map(([id, config]) => ({
     id,
     label: config.label,
+    sublabel: config.sublabel,
     logo: config.logo,
     darkLogo: config.darkLogo,
     available: config.envKey ? keyAvailability.has(config.envKey) : false,
