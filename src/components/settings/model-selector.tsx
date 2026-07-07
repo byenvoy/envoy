@@ -145,18 +145,18 @@ export function ModelSelector({
                 />
               )}
               <div className="min-w-0 flex-1">
-                <span className={`block font-medium ${
+                <span className={`block truncate font-medium ${
                   isActive
                     ? "text-text-primary"
                     : "text-text-secondary"
                 }`}>
-                  {m.label}
+                  {m.label}{" "}
+                  {m.sublabel && (
+                    <span className="ml-1.5 text-xs font-normal text-text-secondary">
+                      {m.sublabel}
+                    </span>
+                  )}
                 </span>
-                {m.sublabel && (
-                  <span className="block text-xs text-text-secondary">
-                    {m.sublabel}
-                  </span>
-                )}
               </div>
               {isActive && (
                 <div className="shrink-0">
