@@ -55,7 +55,9 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
       if (urls.length > 0 && urls.every((u) => u.endsWith(".xml"))) {
         const children = prioritizeSitemapChildren(urls).slice(0, 5);
         for (const child of children) {
+          console.log(`[discover-browser] Fetching child sitemap: ${child}`);
           const childUrls = await fetchSitemap(page, child);
+          console.log(`[discover-browser] Child sitemap done: ${childUrls.length} URLs`);
           allPageUrls.push(...childUrls);
         }
       } else {
