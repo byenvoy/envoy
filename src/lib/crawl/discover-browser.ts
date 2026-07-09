@@ -4,6 +4,9 @@ import { isSupportRelevant, isStaticAsset, isNegativeFiltered } from "./discover
 const BROWSER_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
+// Hard cap so the job never hangs the worker
+const DISCOVER_TIMEOUT_MS = 45_000;
+
 /**
  * Puppeteer-based URL discovery fallback. Launches a headless browser,
  * loads the homepage, and extracts all same-domain links. Used by the
@@ -27,61 +30,83 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
     ],
   });
 
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Browser discover timed out")), DISCOVER_TIMEOUT_MS)
+  );
+
   try {
-    const page = await browser.newPage();
-    await page.setUserAgent(BROWSER_UA);
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(navigator, "webdriver", { get: () => false });
-    });
+    return await Promise.race([discoverPages(browser, baseUrl, baseHost), timeout]);
+  } finally {
+    await browser.close();
+  }
+}
 
-    // Load homepage and extract all links
-    await page.goto(baseUrl, { waitUntil: "networkidle2", timeout: 30000 });
+async function discoverPages(
+  browser: Awaited<ReturnType<typeof puppeteer.launch>>,
+  baseUrl: string,
+  baseHost: string
+): Promise<string[]> {
+  const page = await browser.newPage();
+  await page.setUserAgent(BROWSER_UA);
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => false });
+  });
 
-    const hrefs: string[] = await page.evaluate(() =>
+  // Load homepage and extract all links
+  const response = await page.goto(baseUrl, { waitUntil: "networkidle2", timeout: 20000 });
+
+  // Detect Cloudflare challenge pages — no useful links to extract
+  const title = await page.title();
+  const isChallenge =
+    !response?.ok() ||
+    title.toLowerCase().includes("attention required") ||
+    title.toLowerCase().includes("just a moment");
+
+  let hrefs: string[] = [];
+  if (!isChallenge) {
+    hrefs = await page.evaluate(() =>
       Array.from(document.querySelectorAll("a[href]"), (a) =>
         (a as HTMLAnchorElement).href
       )
     );
-
-    // Also try sitemap via the browser (bypasses Cloudflare JS challenge)
-    const sitemapUrls = await extractSitemapUrls(page, baseUrl);
-
-    await page.close();
-
-    // Merge, deduplicate, and filter
-    const allUrls = [...new Set([...hrefs, ...sitemapUrls])];
-
-    const filtered = allUrls.filter((url) => {
-      try {
-        const host = new URL(url).hostname;
-        return (
-          host === baseHost &&
-          !isStaticAsset(url) &&
-          !isNegativeFiltered(url)
-        );
-      } catch {
-        return false;
-      }
-    });
-
-    // Strip fragments
-    const cleaned = [...new Set(filtered.map((u) => u.split("#")[0]))];
-
-    // Sort: support-relevant first
-    const support: string[] = [];
-    const rest: string[] = [];
-    for (const url of cleaned) {
-      if (isSupportRelevant(url)) {
-        support.push(url);
-      } else {
-        rest.push(url);
-      }
-    }
-
-    return [...support, ...rest];
-  } finally {
-    await browser.close();
   }
+
+  // Try sitemap via the browser (faster timeout since it's supplementary)
+  const sitemapUrls = await extractSitemapUrls(page, baseUrl);
+
+  await page.close();
+
+  // Merge, deduplicate, and filter
+  const allUrls = [...new Set([...hrefs, ...sitemapUrls])];
+
+  const filtered = allUrls.filter((url) => {
+    try {
+      const host = new URL(url).hostname;
+      return (
+        host === baseHost &&
+        !isStaticAsset(url) &&
+        !isNegativeFiltered(url)
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  // Strip fragments
+  const cleaned = [...new Set(filtered.map((u) => u.split("#")[0]))];
+
+  // Sort: support-relevant first
+  const support: string[] = [];
+  const rest: string[] = [];
+  for (const url of cleaned) {
+    if (isSupportRelevant(url)) {
+      support.push(url);
+    } else {
+      rest.push(url);
+    }
+  }
+
+  return [...support, ...rest];
 }
 
 async function extractSitemapUrls(
@@ -92,7 +117,7 @@ async function extractSitemapUrls(
     // Try robots.txt first to find sitemap URL
     const robotsResponse = await page.goto(`${baseUrl}/robots.txt`, {
       waitUntil: "networkidle2",
-      timeout: 15000,
+      timeout: 10000,
     });
 
     if (!robotsResponse || !robotsResponse.ok()) return [];
@@ -105,15 +130,14 @@ async function extractSitemapUrls(
     }
 
     if (sitemapUrls.length === 0) {
-      // Fall back to default sitemap.xml
       sitemapUrls.push(`${baseUrl}/sitemap.xml`);
     }
 
     const pageUrls: string[] = [];
-    for (const sitemapUrl of sitemapUrls.slice(0, 3)) {
+    for (const sitemapUrl of sitemapUrls.slice(0, 2)) {
       const res = await page.goto(sitemapUrl, {
         waitUntil: "networkidle2",
-        timeout: 15000,
+        timeout: 10000,
       });
       if (!res || !res.ok()) continue;
 
@@ -124,14 +148,14 @@ async function extractSitemapUrls(
         pageUrls.push(match[1]);
       }
 
-      // If it's a sitemap index, follow child sitemaps
-      if (pageUrls.every((u) => u.endsWith(".xml"))) {
+      // If it's a sitemap index, follow child sitemaps (limit to 3)
+      if (pageUrls.length > 0 && pageUrls.every((u) => u.endsWith(".xml"))) {
         const children = [...pageUrls];
         pageUrls.length = 0;
-        for (const child of children.slice(0, 5)) {
+        for (const child of children.slice(0, 3)) {
           const childRes = await page.goto(child, {
             waitUntil: "networkidle2",
-            timeout: 15000,
+            timeout: 10000,
           });
           if (!childRes || !childRes.ok()) continue;
           const childText = await page.evaluate(() => document.body.innerText);
