@@ -23,8 +23,6 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
       "--disable-dev-shm-usage",
       "--disable-software-rasterizer",
       "--disable-blink-features=AutomationControlled",
-      "--single-process",
-      "--no-zygote",
     ],
   });
 
@@ -33,17 +31,6 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
     await page.setUserAgent(BROWSER_UA);
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, "webdriver", { get: () => false });
-    });
-
-    // Block non-essential resources (sitemaps are XML, don't need these)
-    await page.setRequestInterception(true);
-    page.on("request", (req) => {
-      const type = req.resourceType();
-      if (["image", "font", "media", "stylesheet"].includes(type)) {
-        req.abort();
-      } else {
-        req.continue();
-      }
     });
 
     // 1. Try robots.txt to find sitemap URLs
