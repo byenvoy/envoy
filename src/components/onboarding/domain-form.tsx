@@ -2,6 +2,18 @@
 
 import { useState } from "react";
 
+const SUPPORT_PATTERNS =
+  /\/(support|faq|help|docs|knowledge|article|guide|tutorial|delivery|returns|shipping|terms|policies|contact|about)/i;
+
+function isSupportRelevant(url: string): boolean {
+  try {
+    const path = new URL(url).pathname;
+    return SUPPORT_PATTERNS.test(path);
+  } catch {
+    return false;
+  }
+}
+
 interface LocaleInfo {
   locales: string[];
   defaultLocale: string;
@@ -34,7 +46,7 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
       if (data.status === "completed") {
         const urls = (data.urls ?? []).map((url: string) => ({
           url,
-          suggested: true,
+          suggested: isSupportRelevant(url),
         }));
         if (urls.length === 0) {
           setError("No pages found. Check the domain and try again.");
