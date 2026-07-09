@@ -2,18 +2,6 @@
 
 import { useState } from "react";
 
-const SUPPORT_PATTERNS =
-  /\/(support|faq|help|docs|knowledge|article|guide|tutorial|delivery|returns|shipping|terms|policies|contact|about)/i;
-
-function isSupportRelevant(url: string): boolean {
-  try {
-    const path = new URL(url).pathname;
-    return SUPPORT_PATTERNS.test(path);
-  } catch {
-    return false;
-  }
-}
-
 interface LocaleInfo {
   locales: string[];
   defaultLocale: string;
@@ -30,45 +18,10 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
   const [domain, setDomain] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  async function pollDiscoverJob(jobId: string) {
-    setStatusMessage("Site protected — scanning with browser…");
-
-    for (let i = 0; i < 30; i++) {
-      await new Promise((r) => setTimeout(r, 2000));
-
-      const res = await fetch(`/api/crawl/jobs/${jobId}/status`);
-      if (!res.ok) break;
-
-      const data = await res.json();
-
-      if (data.status === "completed") {
-        const urls = (data.urls ?? []).map((url: string) => ({
-          url,
-          suggested: isSupportRelevant(url),
-        }));
-        if (urls.length === 0) {
-          setError("No pages found. Check the domain and try again.");
-          return;
-        }
-        onUrlsDiscovered(urls, null);
-        return;
-      }
-
-      if (data.status === "failed") {
-        setError(data.error || "Discovery failed. Please try again.");
-        return;
-      }
-    }
-
-    setError("Discovery timed out. Please try again.");
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setStatusMessage(null);
     setLoading(true);
 
     try {
@@ -90,18 +43,11 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
         return;
       }
 
-      // Fetch-based discover returned 0 URLs — poll the worker job
-      if (data.jobId) {
-        await pollDiscoverJob(data.jobId);
-        return;
-      }
-
       setError("No pages found. Check the domain and try again.");
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
-      setStatusMessage(null);
     }
   }
 
@@ -127,19 +73,12 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
       {error && (
         <p className="text-sm text-error">{error}</p>
       )}
-      {statusMessage && !error && (
-        <p className="text-sm text-text-secondary">{statusMessage}</p>
-      )}
       <button
         type="submit"
         disabled={loading}
         className="w-full cursor-pointer rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
       >
-        {loading
-          ? statusMessage
-            ? "Scanning pages..."
-            : "Discovering pages..."
-          : "Discover pages"}
+        {loading ? "Discovering pages..." : "Discover pages"}
       </button>
     </form>
   );

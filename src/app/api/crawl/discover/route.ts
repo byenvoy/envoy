@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, enqueueCrawlJob } from "@/lib/db/helpers";
+import { withAuth } from "@/lib/db/helpers";
 import {
   discoverUrls,
   isSupportRelevant,
@@ -8,7 +8,6 @@ import {
 export async function POST(request: Request) {
   const auth = await withAuth();
   if (!auth.success) return auth.response;
-  const { orgId } = auth.context;
 
   const body = await request.json();
   const domain = body.domain as string;
@@ -38,12 +37,6 @@ export async function POST(request: Request) {
   }
 
   const { urls, localeInfo } = await discoverUrls(domain);
-
-  if (urls.length === 0) {
-    // Fetch-based discovery failed — queue a worker job that uses Puppeteer
-    const jobId = await enqueueCrawlJob(orgId, "discover", [normalized]);
-    return NextResponse.json({ urls: [], jobId, localeInfo: null });
-  }
 
   const results = urls.map((url) => ({
     url,
