@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/lib/db/helpers";
+import { withAuth, enqueueCrawlJob } from "@/lib/db/helpers";
 import {
   discoverUrls,
   isSupportRelevant,
@@ -18,10 +18,9 @@ export async function POST(request: Request) {
   }
 
   // Validate URL - reject localhost/private IPs
+  const normalized = domain.startsWith("http") ? domain : `https://${domain}`;
   try {
-    const url = new URL(
-      domain.startsWith("http") ? domain : `https://${domain}`
-    );
+    const url = new URL(normalized);
     if (
       url.hostname === "localhost" ||
       url.hostname === "127.0.0.1" ||
@@ -39,6 +38,12 @@ export async function POST(request: Request) {
   }
 
   const { urls, localeInfo } = await discoverUrls(domain);
+
+  if (urls.length === 0) {
+    // Fetch-based discovery failed — queue a worker job that uses Puppeteer
+    const jobId = await enqueueCrawlJob(orgId, "discover", [normalized]);
+    return NextResponse.json({ urls: [], jobId, localeInfo: null });
+  }
 
   const results = urls.map((url) => ({
     url,

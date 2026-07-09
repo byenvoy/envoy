@@ -17,6 +17,8 @@ export async function GET(
 
   return NextResponse.json({
     status: job.status,
+    type: job.type,
+    urls: job.urls,
     totalPages: job.totalPages,
     pagesExtracted: job.pagesExtracted,
     pagesEmbedded: job.pagesEmbedded,

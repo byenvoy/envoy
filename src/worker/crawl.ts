@@ -11,7 +11,7 @@ import {
 import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers/advisory-lock";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers/plan-limits";
 import { isCloud } from "@/lib/config";
-import { processInitialCrawlJob, processRecrawlJob, processResyncJob } from "@/lib/crawl/process-job";
+import { processInitialCrawlJob, processRecrawlJob, processResyncJob, processDiscoverJob } from "@/lib/crawl/process-job";
 
 const RECRAWL_LOCK_ID = 73502;
 const RECRAWL_SCHEDULE = process.env.RECRAWL_SCHEDULE ?? "0 */6 * * *";
@@ -42,6 +42,8 @@ async function processLoop() {
         await processRecrawlJob(job);
       } else if (job.type === "resync") {
         await processResyncJob(job);
+      } else if (job.type === "discover") {
+        await processDiscoverJob(job);
       } else {
         console.error(`[worker] Unknown job type: ${job.type}`);
       }

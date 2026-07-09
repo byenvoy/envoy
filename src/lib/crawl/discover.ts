@@ -16,7 +16,7 @@ export function isSupportRelevant(url: string): boolean {
 const STATIC_ASSET_PATTERN =
   /\.(woff2?|ttf|eot|otf|css|js|mjs|png|jpe?g|gif|svg|ico|webp|avif|webmanifest|map|json)(\?.*)?$/i;
 
-function isStaticAsset(url: string): boolean {
+export function isStaticAsset(url: string): boolean {
   try {
     const path = new URL(url).pathname;
     return STATIC_ASSET_PATTERN.test(path);
@@ -37,7 +37,7 @@ const NEGATIVE_PATTERNS = [
   /\/blogs\/.*\/tagged\//i,
 ];
 
-function isNegativeFiltered(url: string): boolean {
+export function isNegativeFiltered(url: string): boolean {
   try {
     const path = new URL(url).pathname;
     return NEGATIVE_PATTERNS.some((p) => p.test(path));

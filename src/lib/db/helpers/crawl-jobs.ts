@@ -4,7 +4,7 @@ import { eq, and, sql, inArray } from "drizzle-orm";
 
 export async function enqueueCrawlJob(
   orgId: string,
-  type: "initial" | "recrawl" | "resync",
+  type: "initial" | "recrawl" | "resync" | "discover",
   urls?: string[]
 ): Promise<string> {
   const [job] = await db
@@ -54,7 +54,7 @@ export async function claimNextJob() {
   return {
     id: row.id,
     orgId: row.org_id,
-    type: row.type as "initial" | "recrawl" | "resync",
+    type: row.type as "initial" | "recrawl" | "resync" | "discover",
     status: row.status,
     urls: row.urls,
     totalPages: row.total_pages,

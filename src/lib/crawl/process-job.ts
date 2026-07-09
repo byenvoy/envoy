@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { knowledgeBasePages } from "@/lib/db/schema";
+import { crawlJobs, knowledgeBasePages } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { updateJobProgress, completeJob, failJob } from "@/lib/db/helpers/crawl-jobs";
 import { extractPages, type ExtractedPage } from "./extract";
+import { discoverWithBrowser } from "./discover-browser";
 import { checkPage } from "./check-page";
 import { syncPageChunks } from "@/lib/rag/sync";
 import { recrawlOrg } from "./recrawl";
@@ -10,7 +11,7 @@ import { recrawlOrg } from "./recrawl";
 interface CrawlJob {
   id: string;
   orgId: string;
-  type: "initial" | "recrawl" | "resync";
+  type: "initial" | "recrawl" | "resync" | "discover";
   urls: string[] | null;
   totalPages: number;
 }
@@ -224,6 +225,30 @@ export async function processResyncJob(job: CrawlJob) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[job ${job.id}] Resync failed:`, message);
+    await failJob(job.id, message);
+  }
+}
+
+export async function processDiscoverJob(job: CrawlJob) {
+  const domain = job.urls?.[0];
+  if (!domain) {
+    await failJob(job.id, "No domain provided for discover job");
+    return;
+  }
+
+  try {
+    const urls = await discoverWithBrowser(domain);
+
+    await db
+      .update(crawlJobs)
+      .set({ urls, totalPages: urls.length })
+      .where(eq(crawlJobs.id, job.id));
+
+    await completeJob(job.id);
+    console.log(`[job ${job.id}] Discover complete: ${urls.length} URLs found`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[job ${job.id}] Discover failed:`, message);
     await failJob(job.id, message);
   }
 }
