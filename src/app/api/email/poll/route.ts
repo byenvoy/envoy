@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { emailConnections, organizations } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
-import { tryAdvisoryLock, advisoryUnlock, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
+import { tryAdvisoryLock, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
 import { isCloud } from "@/lib/config";
 
@@ -18,9 +18,9 @@ export async function GET(request: NextRequest) {
   }
 
   // Advisory lock to prevent concurrent poll runs
-  const lockAcquired = await tryAdvisoryLock(73501);
+  const lock = await tryAdvisoryLock(73501);
 
-  if (!lockAcquired) {
+  if (!lock) {
     return NextResponse.json({ error: "Poll already in progress" }, { status: 409 });
   }
 
@@ -75,6 +75,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ polled, errors, conversations_processed: conversationsCreated });
   } finally {
-    await advisoryUnlock(73501);
+    await lock.release();
   }
 }

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { emailConnections, organizations } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { withAuth } from "@/lib/db/helpers/auth";
-import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers";
+import { tryAdvisoryLock } from "@/lib/db/helpers";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
 import { isCloud } from "@/lib/config";
@@ -58,8 +58,8 @@ export async function POST() {
   }
 
   // Acquire advisory lock (same as cron — prevents concurrent polls)
-  const lockAcquired = await tryAdvisoryLock(73501);
-  if (!lockAcquired) {
+  const lock = await tryAdvisoryLock(73501);
+  if (!lock) {
     return NextResponse.json({ error: "Poll already in progress" }, { status: 409 });
   }
 
@@ -78,6 +78,6 @@ export async function POST() {
       .where(eq(emailConnections.id, connection.id));
     return NextResponse.json({ error: "Poll failed" }, { status: 500 });
   } finally {
-    await advisoryUnlock(73501);
+    await lock.release();
   }
 }

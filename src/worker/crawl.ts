@@ -8,7 +8,7 @@ import {
   enqueueCrawlJob,
   hasActiveRecrawlJob,
 } from "@/lib/db/helpers/crawl-jobs";
-import { tryAdvisoryLock, advisoryUnlock } from "@/lib/db/helpers/advisory-lock";
+import { tryAdvisoryLock } from "@/lib/db/helpers/advisory-lock";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers/plan-limits";
 import { isCloud } from "@/lib/config";
 import { processInitialCrawlJob, processRecrawlJob, processResyncJob, processDiscoverJob } from "@/lib/crawl/process-job";
@@ -55,8 +55,8 @@ async function processLoop() {
 }
 
 async function enqueueRecrawls() {
-  const locked = await tryAdvisoryLock(RECRAWL_LOCK_ID);
-  if (!locked) {
+  const lock = await tryAdvisoryLock(RECRAWL_LOCK_ID);
+  if (!lock) {
     console.log("[worker] Skipping recrawl enqueue — another instance is running");
     return;
   }
@@ -92,7 +92,7 @@ async function enqueueRecrawls() {
   } catch (err) {
     console.error("[worker] Failed to enqueue recrawls:", err);
   } finally {
-    await advisoryUnlock(RECRAWL_LOCK_ID);
+    await lock.release();
   }
 }
 
