@@ -339,53 +339,6 @@ async function fromSupportSubdomains(baseUrl: string): Promise<string[]> {
   return found;
 }
 
-// Noise patterns specific to Wayback Machine results
-const WAYBACK_NOISE = [
-  /^\./,           // .well-known, .netlify, etc.
-  /\/_next\//,     // Next.js internal routes
-  /\/admin(\/|$)/, // Admin pages
-  /\/login(\/|$)/, // Login pages
-  /\/api\//,       // API endpoints
-  /ads\.txt$/,
-  /app-ads\.txt$/,
-  /robots\.txt$/,
-  /sitemap.*\.xml$/,
-];
-
-async function fromWaybackMachine(baseUrl: string): Promise<string[]> {
-  const host = new URL(baseUrl).hostname;
-  try {
-    const cdxUrl = `https://web.archive.org/cdx/search/cdx?url=${host}/*&output=text&fl=original&filter=statuscode:200&filter=mimetype:text/html&collapse=urlkey&limit=500`;
-    const res = await fetch(cdxUrl, {
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!res.ok) return [];
-
-    const text = await res.text();
-    const urls = text.trim().split("\n").filter(Boolean);
-
-    // Filter out Wayback-specific noise and normalize
-    return urls.filter((url) => {
-      try {
-        const { pathname } = new URL(url);
-        return !WAYBACK_NOISE.some((p) => p.test(pathname));
-      } catch {
-        return false;
-      }
-    }).map((url) => {
-      // Strip query params — Wayback often captures tracking params
-      try {
-        const u = new URL(url);
-        return `${u.origin}${u.pathname}`;
-      } catch {
-        return url;
-      }
-    });
-  } catch {
-    return [];
-  }
-}
-
 async function fromShopifyPages(baseUrl: string): Promise<string[]> {
   // Detect Shopify by checking for /pages.json
   const data = await fetchJson(`${baseUrl}/pages.json`);
@@ -413,7 +366,6 @@ export async function discoverUrls(domain: string): Promise<DiscoverResult> {
     commonPathUrls,
     subdomainUrls,
     shopifyUrls,
-    waybackUrls,
   ] = await Promise.all([
     fromSitemap(baseUrl),
     fromRobotsSitemap(baseUrl),
@@ -421,7 +373,6 @@ export async function discoverUrls(domain: string): Promise<DiscoverResult> {
     fromCommonPaths(baseUrl),
     fromSupportSubdomains(baseUrl),
     fromShopifyPages(baseUrl),
-    fromWaybackMachine(baseUrl),
   ]);
 
   // Merge all results
@@ -432,7 +383,6 @@ export async function discoverUrls(domain: string): Promise<DiscoverResult> {
     ...homepageUrls,
     ...sitemapUrls,
     ...robotsUrls,
-    ...waybackUrls,
   ];
 
   // Deduplicate, filter static assets, and apply negative filtering
