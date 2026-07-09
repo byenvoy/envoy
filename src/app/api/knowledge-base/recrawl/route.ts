@@ -4,7 +4,6 @@ import { knowledgeBasePages } from "@/lib/db/schema";
 import { eq, and, inArray, isNotNull } from "drizzle-orm";
 import {
   tryAdvisoryLock,
-  advisoryUnlock,
   enqueueCrawlJob,
   hasActiveRecrawlJob,
   getOrgSubscription,
@@ -26,8 +25,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const lockAcquired = await tryAdvisoryLock(73502);
-  if (!lockAcquired) {
+  const lock = await tryAdvisoryLock(73502);
+  if (!lock) {
     return NextResponse.json(
       { error: "Recrawl enqueue already in progress" },
       { status: 409 }
@@ -63,6 +62,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ jobsEnqueued });
   } finally {
-    await advisoryUnlock(73502);
+    await lock.release();
   }
 }

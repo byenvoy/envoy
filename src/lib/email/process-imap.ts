@@ -76,6 +76,7 @@ export async function processImapEmail(
   // Create new conversation if no thread found. draft_state starts at
   // 'generating' — the dispatcher records the pipeline's decision
   // (drafted/escalated/skipped/failed) once it processes this message.
+  let createdNewConversation = false;
   if (!conversationId) {
     const conversation = await db
       .insert(conversations)
@@ -93,6 +94,7 @@ export async function processImapEmail(
 
     if (!conversation) throw new Error("Failed to create conversation");
     conversationId = conversation.id;
+    createdNewConversation = true;
   } else {
     // Reopen conversation if it was waiting/closed; reset draft_state for
     // the new inbound so the pipeline decision is re-recorded.
@@ -107,23 +109,40 @@ export async function processImapEmail(
       .where(eq(conversations.id, conversationId));
   }
 
-  // Insert inbound message
-  await db.insert(messages).values({
-    conversationId,
-    orgId: connection.orgId,
-    direction: "inbound",
-    fromEmail: fromAddr,
-    fromName,
-    toEmail,
-    bodyText,
-    bodyHtml,
-    messageId,
-    inReplyTo,
-    source,
-    connectionId: connection.id,
-    isAutomated: isAutomatedEmail(parsed),
-    sentAt: parsed.date ?? new Date(),
-  });
+  // Insert inbound message. The dedup SELECT above is not atomic with this
+  // insert, so overlapping polls can both pass it and race to insert the same
+  // message_id. onConflictDoNothing makes the DB the source of truth: the loser
+  // inserts nothing rather than crashing on the message_id unique constraint.
+  const inserted = await db
+    .insert(messages)
+    .values({
+      conversationId,
+      orgId: connection.orgId,
+      direction: "inbound",
+      fromEmail: fromAddr,
+      fromName,
+      toEmail,
+      bodyText,
+      bodyHtml,
+      messageId,
+      inReplyTo,
+      source,
+      connectionId: connection.id,
+      isAutomated: isAutomatedEmail(parsed),
+      sentAt: parsed.date ?? new Date(),
+    })
+    .onConflictDoNothing({ target: messages.messageId })
+    .returning({ id: messages.id });
+
+  // Lost the race: another poll already ingested this message_id. Skip it, and
+  // clean up the conversation we just created so it doesn't linger empty and
+  // trigger a spurious draft.
+  if (inserted.length === 0) {
+    if (createdNewConversation) {
+      await db.delete(conversations).where(eq(conversations.id, conversationId));
+    }
+    return null;
+  }
 
   return conversationId;
 }

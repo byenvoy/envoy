@@ -74,22 +74,31 @@ export async function processSentEmail(
   // Only add to existing conversations
   if (!conversationId) return null;
 
-  // Insert outbound message
-  await db.insert(messages).values({
-    conversationId,
-    orgId: connection.orgId,
-    direction: "outbound",
-    fromEmail: fromAddr,
-    fromName,
-    toEmail: toAddr,
-    bodyText,
-    bodyHtml,
-    messageId,
-    inReplyTo,
-    source,
-    connectionId: connection.id,
-    sentAt: parsed.date ?? new Date(),
-  });
+  // Insert outbound message. The dedup SELECT above is not atomic with this
+  // insert; onConflictDoNothing keeps overlapping polls from crashing on the
+  // message_id unique constraint. If this message_id was already ingested,
+  // skip the timestamp bump too.
+  const inserted = await db
+    .insert(messages)
+    .values({
+      conversationId,
+      orgId: connection.orgId,
+      direction: "outbound",
+      fromEmail: fromAddr,
+      fromName,
+      toEmail: toAddr,
+      bodyText,
+      bodyHtml,
+      messageId,
+      inReplyTo,
+      source,
+      connectionId: connection.id,
+      sentAt: parsed.date ?? new Date(),
+    })
+    .onConflictDoNothing({ target: messages.messageId })
+    .returning({ id: messages.id });
+
+  if (inserted.length === 0) return null;
 
   // Update conversation timestamp
   await db
