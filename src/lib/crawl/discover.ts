@@ -357,7 +357,7 @@ async function fromWaybackMachine(baseUrl: string): Promise<string[]> {
   try {
     const cdxUrl = `https://web.archive.org/cdx/search/cdx?url=${host}/*&output=text&fl=original&filter=statuscode:200&filter=mimetype:text/html&collapse=urlkey&limit=500`;
     const res = await fetch(cdxUrl, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) return [];
 
