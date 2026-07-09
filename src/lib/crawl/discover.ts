@@ -1,3 +1,6 @@
+const BROWSER_UA =
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
 const SUPPORT_PATTERNS =
   /\/(support|faq|help|docs|knowledge|article|guide|tutorial|delivery|returns|shipping|terms|policies|contact|about)/i;
 
@@ -113,7 +116,7 @@ async function fetchText(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(10000),
-      headers: { "User-Agent": "Envoy/1.0 (knowledge-base crawler)" },
+      headers: { "User-Agent": BROWSER_UA },
     });
     if (!res.ok) return null;
     return await res.text();
@@ -286,7 +289,7 @@ async function fromCommonPaths(baseUrl: string): Promise<string[]> {
       const res = await fetch(url, {
         method: "HEAD",
         signal: AbortSignal.timeout(5000),
-        headers: { "User-Agent": "Envoy/1.0 (knowledge-base crawler)" },
+        headers: { "User-Agent": BROWSER_UA },
         redirect: "follow",
       });
       if (res.ok) return url;
@@ -319,7 +322,7 @@ async function fromSupportSubdomains(baseUrl: string): Promise<string[]> {
       const res = await fetch(url, {
         method: "HEAD",
         signal: AbortSignal.timeout(5000),
-        headers: { "User-Agent": "Envoy/1.0 (knowledge-base crawler)" },
+        headers: { "User-Agent": BROWSER_UA },
         redirect: "follow",
       });
       if (res.ok) return url;

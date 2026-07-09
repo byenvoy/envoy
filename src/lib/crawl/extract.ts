@@ -3,6 +3,9 @@ import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { computeHash } from "./hash";
 
+const BROWSER_UA =
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
 const NOISE_TAGS = [
   "script",
   "style",
@@ -218,7 +221,10 @@ async function extractSingle(
 ): Promise<ExtractedPage> {
   const page = await browser.newPage();
   try {
-    await page.setUserAgent("Envoy/1.0 (knowledge-base crawler)");
+    await page.setUserAgent(BROWSER_UA);
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => false });
+    });
 
     const response = await page.goto(url, {
       waitUntil: "networkidle2",
@@ -260,7 +266,7 @@ export async function extractPages(
   const browser = await puppeteer.launch({
     headless: "shell",
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--disable-software-rasterizer"],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--disable-software-rasterizer", "--disable-blink-features=AutomationControlled"],
   });
 
   try {

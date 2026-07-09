@@ -1,3 +1,6 @@
+const BROWSER_UA =
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
 export interface CheckPageOptions {
   url: string;
   etag?: string | null;
@@ -25,7 +28,7 @@ export async function checkPage({
   lastModified,
 }: CheckPageOptions): Promise<CheckPageResult> {
   const headers: Record<string, string> = {
-    "User-Agent": "Envoy/1.0 (knowledge-base crawler)",
+    "User-Agent": BROWSER_UA,
   };
 
   if (etag) headers["If-None-Match"] = etag;
