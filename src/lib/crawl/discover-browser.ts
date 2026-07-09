@@ -98,7 +98,7 @@ async function getSitemapUrlsFromRobots(
 ): Promise<string[]> {
   try {
     const res = await page.goto(`${baseUrl}/robots.txt`, {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle2",
       timeout: 10000,
     });
     if (!res || !res.ok()) return [];
@@ -121,7 +121,7 @@ async function fetchSitemap(
 ): Promise<string[]> {
   try {
     const res = await page.goto(url, {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle2",
       timeout: 10000,
     });
     if (!res || !res.ok()) return [];
