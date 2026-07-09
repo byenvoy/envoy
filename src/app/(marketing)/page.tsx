@@ -248,6 +248,40 @@ export default async function LandingPage() {
                   </div>
                 ))}
               </div>
+              <div className="mt-6 border-t border-border pt-5">
+                <p className="font-mono text-xs text-text-secondary">
+                  Open weight models via Baseten
+                </p>
+                <div className="mt-4 flex flex-wrap gap-4">
+                  {[
+                    { name: "GLM 5.2", src: "/logos/zai.svg" },
+                    { name: "GPT-OSS 120B", src: "/logos/openai.svg", darkSrc: "/logos/OpenAI-white-monoblossom.svg" },
+                    { name: "Nemotron 3 Ultra", src: "/logos/nvidia.svg" },
+                  ].map((model) => (
+                    <div
+                      key={model.name}
+                      className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-surface shadow-sm"
+                    >
+                      <Image
+                        src={model.src}
+                        alt={model.name}
+                        width={40}
+                        height={40}
+                        className={`h-10 w-10 object-contain ${"darkSrc" in model && model.darkSrc ? "dark:hidden" : ""}`}
+                      />
+                      {"darkSrc" in model && model.darkSrc && (
+                        <Image
+                          src={model.darkSrc}
+                          alt={model.name}
+                          width={40}
+                          height={40}
+                          className="hidden h-10 w-10 object-contain dark:block"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </ScrollReveal>
           </div>
         </div>
