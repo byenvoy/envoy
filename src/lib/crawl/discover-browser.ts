@@ -5,9 +5,9 @@ const BROWSER_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
 /**
- * Puppeteer-based URL discovery fallback. Fetches sitemaps through a real
- * browser to bypass Cloudflare JS challenges that block plain fetch.
- * Deliberately lightweight — only loads XML sitemaps, no heavy HTML pages.
+ * Puppeteer-based URL discovery. Loads the homepage to establish a browser
+ * session on the target domain, then uses in-page fetch() to retrieve
+ * sitemaps (same-origin, carries cookies, bypasses Cloudflare WAF).
  */
 export async function discoverWithBrowser(domain: string): Promise<string[]> {
   const baseUrl = domain.startsWith("http") ? domain : `https://${domain}`;
@@ -27,37 +27,46 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
     ],
   });
 
-  console.log(`[discover-browser] Browser launched`);
   try {
     const page = await browser.newPage();
-    console.log(`[discover-browser] Page created`);
     await page.setUserAgent(BROWSER_UA);
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, "webdriver", { get: () => false });
     });
 
-    // 1. Try robots.txt to find sitemap URLs
+    // Load homepage to establish same-origin context + Cloudflare cookies
+    console.log(`[discover-browser] Loading homepage`);
+    try {
+      await page.goto(baseUrl, { waitUntil: "networkidle2", timeout: 20000 });
+      console.log(`[discover-browser] Homepage loaded`);
+    } catch {
+      console.log(`[discover-browser] Homepage timed out, continuing`);
+    }
+
+    // Now fetch sitemaps via in-page fetch() (same-origin, carries cookies)
     console.log(`[discover-browser] Fetching robots.txt`);
-    const sitemapUrls = await getSitemapUrlsFromRobots(page, baseUrl);
-    console.log(`[discover-browser] robots.txt done, found ${sitemapUrls.length} sitemap URLs`);
+    const sitemapUrls = await inPageFetchText(page, `${baseUrl}/robots.txt`)
+      .then(parseSitemapUrlsFromRobots);
+    console.log(`[discover-browser] Found ${sitemapUrls.length} sitemap URLs in robots.txt`);
+
     if (sitemapUrls.length === 0) {
       sitemapUrls.push(`${baseUrl}/sitemap.xml`);
     }
 
-    // 2. Fetch and parse each sitemap
+    // Fetch and parse each sitemap
     const allPageUrls: string[] = [];
     for (const sitemapUrl of sitemapUrls.slice(0, 3)) {
       console.log(`[discover-browser] Fetching sitemap: ${sitemapUrl}`);
-      const urls = await fetchSitemap(page, sitemapUrl);
-      console.log(`[discover-browser] Sitemap done: ${urls.length} URLs`);
+      const urls = await inPageFetchText(page, sitemapUrl).then(parseLocUrls);
+      console.log(`[discover-browser] Got ${urls.length} URLs`);
 
-      // If it's a sitemap index, follow children
+      // If it's a sitemap index, follow child sitemaps
       if (urls.length > 0 && urls.every((u) => u.endsWith(".xml"))) {
         const children = prioritizeSitemapChildren(urls).slice(0, 5);
         for (const child of children) {
-          console.log(`[discover-browser] Fetching child sitemap: ${child}`);
-          const childUrls = await fetchSitemap(page, child);
-          console.log(`[discover-browser] Child sitemap done: ${childUrls.length} URLs`);
+          console.log(`[discover-browser] Fetching child: ${child}`);
+          const childUrls = await inPageFetchText(page, child).then(parseLocUrls);
+          console.log(`[discover-browser] Child: ${childUrls.length} URLs`);
           allPageUrls.push(...childUrls);
         }
       } else {
@@ -66,25 +75,20 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
     }
 
     await page.close();
+    console.log(`[discover-browser] Done, ${allPageUrls.length} total URLs before filtering`);
 
-    // Filter to same-domain, non-static, non-negative
+    // Filter, deduplicate, sort
     const filtered = [...new Set(allPageUrls)].filter((url) => {
       try {
         const host = new URL(url).hostname;
-        return (
-          host === baseHost &&
-          !isStaticAsset(url) &&
-          !isNegativeFiltered(url)
-        );
+        return host === baseHost && !isStaticAsset(url) && !isNegativeFiltered(url);
       } catch {
         return false;
       }
     });
 
-    // Strip fragments and deduplicate
     const cleaned = [...new Set(filtered.map((u) => u.split("#")[0]))];
 
-    // Sort: support-relevant first
     const support: string[] = [];
     const rest: string[] = [];
     for (const url of cleaned) {
@@ -101,53 +105,39 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
   }
 }
 
-async function getSitemapUrlsFromRobots(
-  page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>["newPage"]>>,
-  baseUrl: string
-): Promise<string[]> {
-  try {
-    const text = await page.evaluate(async (robotsUrl: string) => {
-      const res = await fetch(robotsUrl);
-      if (!res.ok) return "";
-      return res.text();
-    }, `${baseUrl}/robots.txt`);
-
-    if (!text) return [];
-    const urls: string[] = [];
-    for (const line of text.split("\n")) {
-      const match = line.match(/^Sitemap:\s*(.+)/i);
-      if (match) urls.push(match[1].trim());
-    }
-    return urls;
-  } catch {
-    return [];
-  }
-}
-
-async function fetchSitemap(
+/** Fetch a URL as text from within the page context (same-origin, carries cookies) */
+async function inPageFetchText(
   page: Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>["newPage"]>>,
   url: string
-): Promise<string[]> {
+): Promise<string> {
   try {
-    // Fetch XML as text from the browser context (carries cookies, skips rendering)
-    const text = await page.evaluate(async (sitemapUrl: string) => {
-      const res = await fetch(sitemapUrl);
+    return await page.evaluate(async (fetchUrl: string) => {
+      const res = await fetch(fetchUrl);
       if (!res.ok) return "";
       return res.text();
     }, url);
-
-    if (!text) return [];
-
-    const urls: string[] = [];
-    const locRegex = /<loc>\s*(.*?)\s*<\/loc>/gi;
-    let match;
-    while ((match = locRegex.exec(text)) !== null) {
-      urls.push(match[1]);
-    }
-    return urls;
   } catch {
-    return [];
+    return "";
   }
+}
+
+function parseSitemapUrlsFromRobots(text: string): string[] {
+  const urls: string[] = [];
+  for (const line of text.split("\n")) {
+    const match = line.match(/^Sitemap:\s*(.+)/i);
+    if (match) urls.push(match[1].trim());
+  }
+  return urls;
+}
+
+function parseLocUrls(text: string): string[] {
+  const urls: string[] = [];
+  const locRegex = /<loc>\s*(.*?)\s*<\/loc>/gi;
+  let match;
+  while ((match = locRegex.exec(text)) !== null) {
+    urls.push(match[1]);
+  }
+  return urls;
 }
 
 const PRODUCT_SITEMAP = /product|collect/i;
