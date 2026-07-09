@@ -115,13 +115,13 @@ async function getSitemapUrlsFromRobots(
   baseUrl: string
 ): Promise<string[]> {
   try {
-    const res = await page.goto(`${baseUrl}/robots.txt`, {
-      waitUntil: "networkidle2",
-      timeout: 10000,
-    });
-    if (!res || !res.ok()) return [];
+    const text = await page.evaluate(async (robotsUrl: string) => {
+      const res = await fetch(robotsUrl);
+      if (!res.ok) return "";
+      return res.text();
+    }, `${baseUrl}/robots.txt`);
 
-    const text = await page.evaluate(() => document.body.innerText);
+    if (!text) return [];
     const urls: string[] = [];
     for (const line of text.split("\n")) {
       const match = line.match(/^Sitemap:\s*(.+)/i);
@@ -138,13 +138,15 @@ async function fetchSitemap(
   url: string
 ): Promise<string[]> {
   try {
-    const res = await page.goto(url, {
-      waitUntil: "networkidle2",
-      timeout: 10000,
-    });
-    if (!res || !res.ok()) return [];
+    // Fetch XML as text from the browser context (carries cookies, skips rendering)
+    const text = await page.evaluate(async (sitemapUrl: string) => {
+      const res = await fetch(sitemapUrl);
+      if (!res.ok) return "";
+      return res.text();
+    }, url);
 
-    const text = await page.evaluate(() => document.body.innerText);
+    if (!text) return [];
+
     const urls: string[] = [];
     const locRegex = /<loc>\s*(.*?)\s*<\/loc>/gi;
     let match;
