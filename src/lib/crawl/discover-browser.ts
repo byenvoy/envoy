@@ -13,6 +13,7 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
   const baseUrl = domain.startsWith("http") ? domain : `https://${domain}`;
   const baseHost = new URL(baseUrl).hostname;
 
+  console.log(`[discover-browser] Starting for ${domain}`);
   const browser = await puppeteer.launch({
     headless: "shell",
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
@@ -26,15 +27,19 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
     ],
   });
 
+  console.log(`[discover-browser] Browser launched`);
   try {
     const page = await browser.newPage();
+    console.log(`[discover-browser] Page created`);
     await page.setUserAgent(BROWSER_UA);
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, "webdriver", { get: () => false });
     });
 
     // 1. Try robots.txt to find sitemap URLs
+    console.log(`[discover-browser] Fetching robots.txt`);
     const sitemapUrls = await getSitemapUrlsFromRobots(page, baseUrl);
+    console.log(`[discover-browser] robots.txt done, found ${sitemapUrls.length} sitemap URLs`);
     if (sitemapUrls.length === 0) {
       sitemapUrls.push(`${baseUrl}/sitemap.xml`);
     }
@@ -42,7 +47,9 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
     // 2. Fetch and parse each sitemap
     const allPageUrls: string[] = [];
     for (const sitemapUrl of sitemapUrls.slice(0, 3)) {
+      console.log(`[discover-browser] Fetching sitemap: ${sitemapUrl}`);
       const urls = await fetchSitemap(page, sitemapUrl);
+      console.log(`[discover-browser] Sitemap done: ${urls.length} URLs`);
 
       // If it's a sitemap index, follow children
       if (urls.length > 0 && urls.every((u) => u.endsWith(".xml"))) {
