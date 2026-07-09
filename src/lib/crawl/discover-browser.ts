@@ -36,15 +36,6 @@ export async function discoverWithBrowser(domain: string): Promise<string[]> {
       Object.defineProperty(navigator, "webdriver", { get: () => false });
     });
 
-    // 0. Load homepage to establish Cloudflare clearance cookie
-    console.log(`[discover-browser] Loading homepage for CF cookie`);
-    try {
-      await page.goto(baseUrl, { waitUntil: "networkidle2", timeout: 15000 });
-      console.log(`[discover-browser] Homepage loaded`);
-    } catch {
-      console.log(`[discover-browser] Homepage timed out (continuing anyway)`);
-    }
-
     // 1. Try robots.txt to find sitemap URLs
     console.log(`[discover-browser] Fetching robots.txt`);
     const sitemapUrls = await getSitemapUrlsFromRobots(page, baseUrl);
