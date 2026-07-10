@@ -32,8 +32,12 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  async function pollDiscoverJob(jobId: string) {
-    setStatusMessage("Scanning site for pages…");
+  async function pollDiscoverJob(jobId: string, wasBlocked = false) {
+    setStatusMessage(
+      wasBlocked
+        ? "This site has bot protection — trying a browser…"
+        : "Scanning site for pages…",
+    );
 
     for (let i = 0; i < 45; i++) {
       await new Promise((r) => setTimeout(r, 2000));
@@ -52,7 +56,11 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
           suggested: isSupportRelevant(url),
         }));
         if (urls.length === 0) {
-          setError("No pages found. Check the domain and try again.");
+          setError(
+            data.blockReason
+              ? "This site is protected by bot detection (Cloudflare), so we couldn't read it automatically. Reach out and we'll help you connect it."
+              : "No pages found. Check the domain and try again.",
+          );
           return;
         }
         onUrlsDiscovered(urls, null);
@@ -88,14 +96,14 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
         return;
       }
 
-      if (data.urls.length > 0) {
+      if (data.status === "ok" && data.urls.length > 0) {
         onUrlsDiscovered(data.urls, data.localeInfo ?? null);
         return;
       }
 
-      // Fetch-based discover returned 0 URLs — poll the worker job
-      if (data.jobId) {
-        await pollDiscoverJob(data.jobId);
+      // Bot protection walled off the fetch tier — poll the browser worker job.
+      if (data.status === "blocked" && data.jobId) {
+        await pollDiscoverJob(data.jobId, true);
         return;
       }
 

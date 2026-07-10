@@ -5,7 +5,8 @@ import { eq, and, sql, inArray } from "drizzle-orm";
 export async function enqueueCrawlJob(
   orgId: string,
   type: "initial" | "recrawl" | "resync" | "discover",
-  urls?: string[]
+  urls?: string[],
+  blockReason?: string | null
 ): Promise<string> {
   const [job] = await db
     .insert(crawlJobs)
@@ -14,10 +15,26 @@ export async function enqueueCrawlJob(
       type,
       urls: urls ?? null,
       totalPages: urls?.length ?? 0,
+      blockReason: blockReason ?? null,
     })
     .returning({ id: crawlJobs.id });
 
   return job.id;
+}
+
+/**
+ * Set (or clear) the bot-protection reason on a job. Called by the browser
+ * discover worker: cleared when the browser tier recovers URLs, left in place
+ * when it too comes up blocked so the client can surface the cooperative path.
+ */
+export async function setJobBlockReason(
+  jobId: string,
+  blockReason: string | null
+) {
+  await db
+    .update(crawlJobs)
+    .set({ blockReason })
+    .where(eq(crawlJobs.id, jobId));
 }
 
 export async function claimNextJob() {
@@ -44,6 +61,7 @@ export async function claimNextJob() {
     pages_embedded: number;
     failed_urls: string[] | null;
     error: string | null;
+    block_reason: string | null;
     created_at: Date;
     started_at: Date | null;
     completed_at: Date | null;
@@ -62,6 +80,7 @@ export async function claimNextJob() {
     pagesEmbedded: row.pages_embedded,
     failedUrls: row.failed_urls,
     error: row.error,
+    blockReason: row.block_reason,
     createdAt: row.created_at,
     startedAt: row.started_at,
     completedAt: row.completed_at,

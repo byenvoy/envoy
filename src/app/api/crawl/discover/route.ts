@@ -37,21 +37,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
   }
 
-  const { urls, localeInfo } = await discoverUrls(domain);
+  const outcome = await discoverUrls(domain);
 
-  if (urls.length === 0) {
-    // Fetch-based discovery failed — queue a worker job that uses Puppeteer
-    const jobId = await enqueueCrawlJob(orgId, "discover", [normalized]);
-    return NextResponse.json({ urls: [], jobId, localeInfo: null });
+  if (outcome.status === "blocked") {
+    // Bot protection walled off the fetch tier. Queue the Puppeteer worker job
+    // as a best-effort attempt, tagged with the reason so the client can surface
+    // the cooperative path if the browser tier also comes up empty.
+    const jobId = await enqueueCrawlJob(
+      orgId,
+      "discover",
+      [normalized],
+      outcome.reason
+    );
+    return NextResponse.json({
+      status: "blocked",
+      reason: outcome.reason,
+      jobId,
+      urls: [],
+    });
   }
 
-  const results = urls.map((url) => ({
+  if (outcome.status === "empty") {
+    return NextResponse.json({ status: "empty", urls: [] });
+  }
+
+  const results = outcome.urls.map((url) => ({
     url,
     suggested: isSupportRelevant(url),
   }));
 
   return NextResponse.json({
+    status: "ok",
     urls: results,
-    localeInfo,
+    localeInfo: outcome.localeInfo,
   });
 }
