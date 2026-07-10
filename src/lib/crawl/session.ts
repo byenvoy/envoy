@@ -48,3 +48,59 @@ export async function connectBrowserbaseSession(): Promise<BrowserbaseSession | 
     return null;
   }
 }
+
+// Renew before Browserbase's default 300s session timeout, so a large blocked
+// job doesn't lose its tail to a mid-job timeout.
+const SESSION_MAX_MS = 240_000;
+
+export interface RenewingSession {
+  /** Current session browser, transparently renewed as it nears the timeout. */
+  browser(): Promise<Browser | null>;
+  close(): Promise<void>;
+  /** For per-job logging: how many sessions were spun up and total open time. */
+  stats(): { sessions: number; totalMs: number };
+}
+
+/**
+ * A Browserbase session that renews itself as it approaches the timeout, so a
+ * long-running extraction job keeps full-browser extraction for all its pages
+ * instead of degrading to Fetch once one session times out. Returns null
+ * browsers when the unblocker is unavailable (caller falls back to Fetch).
+ */
+export function createRenewingSession(
+  maxMs = SESSION_MAX_MS
+): RenewingSession {
+  let current: BrowserbaseSession | null = null;
+  let startedAt = 0;
+  let sessions = 0;
+  let totalMs = 0;
+
+  return {
+    async browser() {
+      const now = Date.now();
+      if (current && now - startedAt > maxMs) {
+        totalMs += now - startedAt;
+        await current.close();
+        current = null;
+      }
+      if (!current) {
+        current = await connectBrowserbaseSession();
+        if (current) {
+          startedAt = Date.now();
+          sessions++;
+        }
+      }
+      return current?.browser ?? null;
+    },
+    async close() {
+      if (current) {
+        totalMs += Date.now() - startedAt;
+        await current.close();
+        current = null;
+      }
+    },
+    stats() {
+      return { sessions, totalMs };
+    },
+  };
+}

@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { computeHash } from "./hash";
 import { fetchViaUnblocker, isUnblockerEnabled, probeBlock } from "./unblock";
-import { connectBrowserbaseSession } from "./session";
+import { createRenewingSession } from "./session";
 
 const BROWSER_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -355,10 +355,11 @@ export async function extractPages(
       })
     : null;
 
-  // Tier 3: one Browserbase session for all blocked hosts in this job. Falls
-  // back to the Fetch unblocker per page if the session can't start.
-  const session = hasBlocked ? await connectBrowserbaseSession() : null;
-  const sessionBrowser = session?.browser ?? null;
+  // Tier 3: a renewing Browserbase session for blocked hosts — recreated as it
+  // nears the 300s timeout so large blocked jobs keep full extraction instead
+  // of degrading their tail to Fetch. Falls back to Fetch per page if a session
+  // can't start.
+  const session = hasBlocked ? createRenewingSession() : null;
 
   try {
     const results: ExtractedPage[] = [];
@@ -366,6 +367,11 @@ export async function extractPages(
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
+      // Only hold a session while a batch actually has blocked pages; the age
+      // check (and any needed renewal) happens here, before the batch runs.
+      const batchHasBlocked = batch.some((url) => blockedHosts.has(hostOf(url)));
+      const sessionBrowser =
+        session && batchHasBlocked ? await session.browser() : null;
       const batchResults = await Promise.all(
         batch.map((url) =>
           extractOne(url, localBrowser, sessionBrowser, blockedHosts)
@@ -380,6 +386,14 @@ export async function extractPages(
     return results;
   } finally {
     if (localBrowser) await localBrowser.close();
-    if (session) await session.close();
+    if (session) {
+      await session.close();
+      const { sessions, totalMs } = session.stats();
+      if (sessions > 0) {
+        console.log(
+          `[extract] Browserbase: ${sessions} session(s), ~${Math.round(totalMs / 1000)}s total`
+        );
+      }
+    }
   }
 }
