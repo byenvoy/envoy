@@ -1,4 +1,9 @@
-import { fetchViaUnblocker, isUnblockerEnabled } from "./unblock";
+import {
+  fetchViaUnblocker,
+  isUnblockerEnabled,
+  probeBlock,
+  type BlockReason,
+} from "./unblock";
 
 const BROWSER_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -368,65 +373,6 @@ async function fromShopifyPages(baseUrl: string): Promise<string[]> {
   return pages.map((p) => `${baseUrl}/pages/${p.handle}`);
 }
 
-// --- Bot-protection detection ---
-
-export type BlockReason = "cloudflare" | "bot-protection";
-
-interface BlockInfo {
-  reason: BlockReason;
-  evidence: string;
-}
-
-/**
- * Classify a response as a bot-protection block. A 403/429/503 from Cloudflare
- * (identified by the `server`/`cf-ray`/`cf-mitigated` headers) is the case we
- * care about — the plain-fetch tier can't clear it, so the caller should route
- * to the browser/unblocker path rather than report "no pages found".
- */
-function classifyBlock(res: Response): BlockInfo | null {
-  const blockedStatus =
-    res.status === 403 || res.status === 429 || res.status === 503;
-  if (!blockedStatus) return null;
-
-  const server = res.headers.get("server")?.toLowerCase() ?? "";
-  const isCloudflare =
-    server.includes("cloudflare") ||
-    res.headers.has("cf-ray") ||
-    res.headers.has("cf-mitigated");
-
-  return isCloudflare
-    ? { reason: "cloudflare", evidence: `HTTP ${res.status} (cloudflare)` }
-    : { reason: "bot-protection", evidence: `HTTP ${res.status}` };
-}
-
-/**
- * Cheaply probe a URL for a bot-protection block. Uses HEAD (no body) and falls
- * back to GET for servers that reject HEAD. Returns null on network errors —
- * those are not a definitive block signal.
- */
-async function probeBlock(url: string): Promise<BlockInfo | null> {
-  try {
-    let res = await fetch(url, {
-      method: "HEAD",
-      redirect: "follow",
-      signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": BROWSER_UA },
-    });
-    if (res.status === 405 || res.status === 501) {
-      res = await fetch(url, {
-        method: "GET",
-        redirect: "follow",
-        signal: AbortSignal.timeout(8000),
-        headers: { "User-Agent": BROWSER_UA },
-      });
-    }
-    res.body?.cancel().catch(() => {});
-    return classifyBlock(res);
-  } catch {
-    return null;
-  }
-}
-
 // --- Main discovery ---
 
 export type DiscoverOutcome =
@@ -461,6 +407,7 @@ async function discoverViaUnblocker(
 ): Promise<DiscoverOutcome | null> {
   if (!isUnblockerEnabled()) return null;
 
+  console.log(`[discover] retrying ${baseUrl} via unblocker`);
   const [sitemapUrls, robotsUrls] = await Promise.all([
     fromSitemap(baseUrl, fetchViaUnblocker),
     fromRobotsSitemap(baseUrl, fetchViaUnblocker),
@@ -469,6 +416,7 @@ async function discoverViaUnblocker(
   const unique = [...new Set([...sitemapUrls, ...robotsUrls])].filter(
     (u) => !isStaticAsset(u) && !isNegativeFiltered(u)
   );
+  console.log(`[discover] unblocker recovered ${unique.length} URLs for ${baseUrl}`);
   if (unique.length === 0) return null;
 
   return toOkOutcome(unique);

@@ -2,6 +2,7 @@ import puppeteer, { type Browser, type Page } from "puppeteer";
 import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { computeHash } from "./hash";
+import { fetchViaUnblocker, isUnblockerEnabled, probeBlock } from "./unblock";
 
 const BROWSER_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -259,15 +260,91 @@ async function extractSingle(
   }
 }
 
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Extract a page through the Browserbase unblocker (real browser UA on
+ * Browserbase's network) instead of local Puppeteer. Used for bot-protected
+ * sites where Puppeteer from our datacenter IP times out. Fetches the raw HTML
+ * and runs it through the same markdown pipeline as the Puppeteer path.
+ */
+async function extractViaUnblocker(url: string): Promise<ExtractedPage> {
+  const html = await fetchViaUnblocker(url);
+  if (!html) {
+    return { url, title: null, markdown: null, contentHash: null, error: "Unblocker fetch failed" };
+  }
+  return htmlToMarkdown(html, url);
+}
+
+/**
+ * Detect which of the given hosts are bot-protected, so their pages skip
+ * Puppeteer (which times out ~30s/page on a blocked datacenter IP) and go
+ * straight to the unblocker. Only runs when the unblocker is available.
+ */
+async function detectBlockedHosts(urls: string[]): Promise<Set<string>> {
+  const blocked = new Set<string>();
+  if (!isUnblockerEnabled()) return blocked;
+
+  const hosts = [...new Set(urls.map(hostOf).filter(Boolean))];
+  await Promise.all(
+    hosts.map(async (host) => {
+      const info = await probeBlock(`https://${host}/`);
+      if (info) {
+        blocked.add(host);
+        console.log(`[extract] ${host} is bot-protected (${info.evidence}); using unblocker`);
+      }
+    })
+  );
+  return blocked;
+}
+
+async function extractOne(
+  url: string,
+  browser: Browser | null,
+  blockedHosts: Set<string>
+): Promise<ExtractedPage> {
+  // Known bot-protected host → straight to the unblocker (no Puppeteer timeout).
+  if (blockedHosts.has(hostOf(url))) {
+    return extractViaUnblocker(url);
+  }
+
+  const result = browser
+    ? await extractSingle(browser, url)
+    : { url, title: null, markdown: null, contentHash: null, error: "No browser available" };
+
+  // Per-page safety net: a page on a host we didn't flag as blocked can still
+  // fail (timeout / 403). Retry it through the unblocker when available.
+  if (result.error && isUnblockerEnabled()) {
+    console.log(`[extract] Puppeteer failed for ${url} (${result.error}); retrying via unblocker`);
+    const viaUnblocker = await extractViaUnblocker(url);
+    if (!viaUnblocker.error) return viaUnblocker;
+  }
+
+  return result;
+}
+
 export async function extractPages(
   urls: string[],
   onPage?: (page: ExtractedPage) => void | Promise<void>
 ): Promise<ExtractedPage[]> {
-  const browser = await puppeteer.launch({
-    headless: "shell",
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--disable-software-rasterizer", "--disable-blink-features=AutomationControlled"],
-  });
+  const blockedHosts = await detectBlockedHosts(urls);
+
+  // Only launch Puppeteer if some pages actually need it — a fully bot-protected
+  // job extracts entirely through the unblocker.
+  const needsBrowser = urls.some((url) => !blockedHosts.has(hostOf(url)));
+  const browser = needsBrowser
+    ? await puppeteer.launch({
+        headless: "shell",
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--disable-software-rasterizer", "--disable-blink-features=AutomationControlled"],
+      })
+    : null;
 
   try {
     const results: ExtractedPage[] = [];
@@ -276,7 +353,7 @@ export async function extractPages(
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url) => extractSingle(browser, url))
+        batch.map((url) => extractOne(url, browser, blockedHosts))
       );
       for (const page of batchResults) {
         results.push(page);
@@ -286,6 +363,6 @@ export async function extractPages(
 
     return results;
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
 }
