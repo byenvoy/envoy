@@ -33,10 +33,13 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   async function pollDiscoverJob(jobId: string) {
-    setStatusMessage("Site protected — scanning with browser…");
+    setStatusMessage("Scanning site for pages…");
 
     for (let i = 0; i < 45; i++) {
       await new Promise((r) => setTimeout(r, 2000));
+
+      if (i === 5) setStatusMessage("Finding pages…");
+      if (i === 15) setStatusMessage("Almost there…");
 
       const res = await fetch(`/api/crawl/jobs/${jobId}/status`);
       if (!res.ok) break;
