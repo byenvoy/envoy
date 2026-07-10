@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
 import { knowledgeBasePages } from "@/lib/db/schema";
-import { eq, and, inArray, isNotNull, sql } from "drizzle-orm";
+import { eq, and, inArray, isNotNull } from "drizzle-orm";
 import { checkPage } from "./check-page";
-import { extractPages, type ExtractedPage } from "./extract";
+import { extractPages, fetchContentHash, type ExtractedPage } from "./extract";
+import { isUnblockerEnabled } from "./unblock";
 import { syncPageChunks } from "@/lib/rag/sync";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers/plan-limits";
 import { isCloud } from "@/lib/config";
@@ -25,6 +26,11 @@ export interface RecrawlProgressUpdate {
   totalPages?: number;
   pagesChecked?: number;
   pagesUpdated?: number;
+}
+
+/** checkPage reports bot-protection blocks as these non-OK statuses. */
+function isBlockError(error?: string): boolean {
+  return !!error && /^HTTP (403|429|503)$/.test(error);
 }
 
 export async function recrawlOrg(
@@ -59,6 +65,7 @@ export async function recrawlOrg(
     page: typeof pages[number];
     etag: string | null;
     lastModified: string | null;
+    checkHash: string | null;
   }> = [];
 
   for (const page of pages) {
@@ -85,10 +92,34 @@ export async function recrawlOrg(
         continue;
       }
 
+      // Bot protection defeats checkPage's conditional GET (403 → always
+      // "changed"), which would session-extract every blocked page every cycle.
+      // Detect change cheaply via a Fetch-only hash and skip unchanged pages.
+      if (isBlockError(check.error) && isUnblockerEnabled()) {
+        const checkHash = await fetchContentHash(page.url!);
+        if (checkHash && checkHash === page.checkHash) {
+          result.pagesSkipped++;
+          await db
+            .update(knowledgeBasePages)
+            .set({ lastCrawledAt: new Date() })
+            .where(eq(knowledgeBasePages.id, page.id));
+          if (onProgress) await onProgress({ pagesChecked: 1 });
+          continue;
+        }
+        possiblyChanged.push({
+          page,
+          etag: check.etag,
+          lastModified: check.lastModified,
+          checkHash,
+        });
+        continue;
+      }
+
       possiblyChanged.push({
         page,
         etag: check.etag,
         lastModified: check.lastModified,
+        checkHash: null,
       });
     } catch (err) {
       console.error(`Check failed for ${page.url}:`, err);
@@ -112,7 +143,7 @@ export async function recrawlOrg(
 
   // Phase 3: compare hashes and sync changed pages
   for (let i = 0; i < possiblyChanged.length; i++) {
-    const { page, etag, lastModified } = possiblyChanged[i];
+    const { page, etag, lastModified, checkHash } = possiblyChanged[i];
     const ext = extracted[i];
     const now = new Date();
 
@@ -132,6 +163,7 @@ export async function recrawlOrg(
             etag,
             lastModifiedHeader: lastModified,
             lastCrawledAt: now,
+            ...(checkHash ? { checkHash } : {}),
           })
           .where(eq(knowledgeBasePages.id, page.id));
         if (onProgress) await onProgress({ pagesChecked: 1 });
@@ -149,6 +181,7 @@ export async function recrawlOrg(
           lastModifiedHeader: lastModified,
           lastCrawledAt: now,
           updatedAt: now,
+          ...(checkHash ? { checkHash } : {}),
         })
         .where(eq(knowledgeBasePages.id, page.id));
 

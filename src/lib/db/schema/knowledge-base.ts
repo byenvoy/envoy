@@ -24,6 +24,10 @@ export const knowledgeBasePages = pgTable(
     title: text("title"),
     markdownContent: text("markdown_content"),
     contentHash: text("content_hash"),
+    // Hash of the cheap Fetch-only render, used to detect changes on blocked
+    // sites without paying for a session extraction. Distinct from contentHash
+    // (which is the full session-rendered content and won't match a Fetch hash).
+    checkHash: text("check_hash"),
     isActive: boolean("is_active").notNull().default(true),
     source: text("source").notNull().default("crawled"),
     etag: text("etag"),

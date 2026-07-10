@@ -284,6 +284,28 @@ async function extractViaUnblocker(url: string): Promise<ExtractedPage> {
 }
 
 /**
+ * Cheap change-detection hash for a blocked page: fetch its Fetch-only render
+ * (no JS/session) and hash the resulting markdown. Recrawl compares this to the
+ * stored checkHash to decide whether a session re-extraction is even needed —
+ * far cheaper than session-extracting every blocked page every cycle. Returns
+ * null when the Fetch fails (caller then treats the page as changed).
+ */
+export async function fetchContentHash(url: string): Promise<string | null> {
+  const html = await fetchViaUnblocker(url);
+  if (!html) return null;
+  const { markdown } = htmlToMarkdown(html, url);
+  if (!markdown) return null;
+  // Cloudflare's email obfuscation rotates a per-request token in
+  // /cdn-cgi/l/email-protection#<hash> links; normalize it out so an unchanged
+  // page hashes identically across recrawls.
+  const normalized = markdown.replace(
+    /email-protection#[0-9a-f]+/gi,
+    "email-protection"
+  );
+  return computeHash(normalized);
+}
+
+/**
  * Detect which of the given hosts are bot-protected, so their pages skip
  * Puppeteer (which times out ~30s/page on a blocked datacenter IP) and go
  * straight to the unblocker. Only runs when the unblocker is available.
