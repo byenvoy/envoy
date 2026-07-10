@@ -22,21 +22,6 @@ export async function enqueueCrawlJob(
   return job.id;
 }
 
-/**
- * Set (or clear) the bot-protection reason on a job. Called by the browser
- * discover worker: cleared when the browser tier recovers URLs, left in place
- * when it too comes up blocked so the client can surface the cooperative path.
- */
-export async function setJobBlockReason(
-  jobId: string,
-  blockReason: string | null
-) {
-  await db
-    .update(crawlJobs)
-    .set({ blockReason })
-    .where(eq(crawlJobs.id, jobId));
-}
-
 export async function claimNextJob() {
   const result = await db.execute(sql`
     UPDATE crawl_jobs SET status = 'running', started_at = now()

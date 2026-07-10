@@ -6,7 +6,6 @@ export { incrementAutopilotDailySends } from "./autopilot";
 export { getOrgSubscription, isActiveSubscription } from "./plan-limits";
 export {
   enqueueCrawlJob,
-  setJobBlockReason,
   claimNextJob,
   updateJobProgress,
   completeJob,
