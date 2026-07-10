@@ -32,12 +32,8 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  async function pollDiscoverJob(jobId: string, wasBlocked = false) {
-    setStatusMessage(
-      wasBlocked
-        ? "This site has bot protection — trying a browser…"
-        : "Scanning site for pages…",
-    );
+  async function pollDiscoverJob(jobId: string) {
+    setStatusMessage("Scanning site for pages…");
 
     for (let i = 0; i < 45; i++) {
       await new Promise((r) => setTimeout(r, 2000));
@@ -103,7 +99,7 @@ export function DomainForm({ onUrlsDiscovered }: DomainFormProps) {
 
       // Bot protection walled off the fetch tier — poll the browser worker job.
       if (data.status === "blocked" && data.jobId) {
-        await pollDiscoverJob(data.jobId, true);
+        await pollDiscoverJob(data.jobId);
         return;
       }
 
