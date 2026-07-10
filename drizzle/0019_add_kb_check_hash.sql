@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge_base_pages" ADD COLUMN "check_hash" text;

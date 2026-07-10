@@ -134,6 +134,13 @@
       "when": 1783706448329,
       "tag": "0018_add_crawl_jobs_block_reason",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1783726046852,
+      "tag": "0019_add_kb_check_hash",
+      "breakpoints": true
     }
   ]
 }
