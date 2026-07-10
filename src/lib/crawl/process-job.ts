@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { crawlJobs, knowledgeBasePages } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { updateJobProgress, completeJob, failJob } from "@/lib/db/helpers/crawl-jobs";
 import { extractPages, type ExtractedPage } from "./extract";
 import { discoverWithBrowser } from "./discover-browser";
@@ -30,6 +30,29 @@ export async function processInitialCrawlJob(job: CrawlJob) {
     }
 
     try {
+      // Skip pages whose content is already stored under a different URL — e.g.
+      // locale variants (/faqs and /en-US/faqs) that serve identical content.
+      // Storing both is redundant for retrieval and wastes embeddings.
+      if (page.contentHash) {
+        const [dup] = await db
+          .select({ url: knowledgeBasePages.url })
+          .from(knowledgeBasePages)
+          .where(
+            and(
+              eq(knowledgeBasePages.orgId, job.orgId),
+              eq(knowledgeBasePages.contentHash, page.contentHash),
+              ne(knowledgeBasePages.url, page.url)
+            )
+          )
+          .limit(1);
+        if (dup) {
+          console.log(
+            `[job ${job.id}] Skipping ${page.url}: duplicate content of ${dup.url}`
+          );
+          return true;
+        }
+      }
+
       const headers = await checkPage({ url: page.url });
 
       const [savedPage] = await db
