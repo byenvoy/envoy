@@ -3,6 +3,7 @@ import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { computeHash } from "./hash";
 import { fetchViaUnblocker, isUnblockerEnabled, probeBlock } from "./unblock";
+import { connectBrowserbaseSession } from "./session";
 
 const BROWSER_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -297,7 +298,7 @@ async function detectBlockedHosts(urls: string[]): Promise<Set<string>> {
       const info = await probeBlock(`https://${host}/`);
       if (info) {
         blocked.add(host);
-        console.log(`[extract] ${host} is bot-protected (${info.evidence}); using unblocker`);
+        console.log(`[extract] ${host} is bot-protected (${info.evidence}); routing to Browserbase`);
       }
     })
   );
@@ -306,16 +307,24 @@ async function detectBlockedHosts(urls: string[]): Promise<Set<string>> {
 
 async function extractOne(
   url: string,
-  browser: Browser | null,
+  localBrowser: Browser | null,
+  sessionBrowser: Browser | null,
   blockedHosts: Set<string>
 ): Promise<ExtractedPage> {
-  // Known bot-protected host → straight to the unblocker (no Puppeteer timeout).
   if (blockedHosts.has(hostOf(url))) {
+    // Tier 3: a Browserbase session runs full extractSingle (JS + tab-clicking),
+    // recovering content the no-JS Fetch tier misses (e.g. non-active FAQ tabs).
+    if (sessionBrowser) {
+      const result = await extractSingle(sessionBrowser, url);
+      if (!result.error) return result;
+      console.log(`[extract] session extraction failed for ${url} (${result.error}); falling back to Fetch`);
+    }
+    // Tier 2 fallback: Fetch (no JS) when the session is unavailable or failed.
     return extractViaUnblocker(url);
   }
 
-  const result = browser
-    ? await extractSingle(browser, url)
+  const result = localBrowser
+    ? await extractSingle(localBrowser, url)
     : { url, title: null, markdown: null, contentHash: null, error: "No browser available" };
 
   // Per-page safety net: a page on a host we didn't flag as blocked can still
@@ -334,17 +343,22 @@ export async function extractPages(
   onPage?: (page: ExtractedPage) => void | Promise<void>
 ): Promise<ExtractedPage[]> {
   const blockedHosts = await detectBlockedHosts(urls);
+  const hasReachable = urls.some((url) => !blockedHosts.has(hostOf(url)));
+  const hasBlocked = urls.some((url) => blockedHosts.has(hostOf(url)));
 
-  // Only launch Puppeteer if some pages actually need it — a fully bot-protected
-  // job extracts entirely through the unblocker.
-  const needsBrowser = urls.some((url) => !blockedHosts.has(hostOf(url)));
-  const browser = needsBrowser
+  // Local Puppeteer for reachable hosts (free, renders JS).
+  const localBrowser = hasReachable
     ? await puppeteer.launch({
         headless: "shell",
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
         args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--disable-software-rasterizer", "--disable-blink-features=AutomationControlled"],
       })
     : null;
+
+  // Tier 3: one Browserbase session for all blocked hosts in this job. Falls
+  // back to the Fetch unblocker per page if the session can't start.
+  const session = hasBlocked ? await connectBrowserbaseSession() : null;
+  const sessionBrowser = session?.browser ?? null;
 
   try {
     const results: ExtractedPage[] = [];
@@ -353,7 +367,9 @@ export async function extractPages(
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url) => extractOne(url, browser, blockedHosts))
+        batch.map((url) =>
+          extractOne(url, localBrowser, sessionBrowser, blockedHosts)
+        )
       );
       for (const page of batchResults) {
         results.push(page);
@@ -363,6 +379,7 @@ export async function extractPages(
 
     return results;
   } finally {
-    if (browser) await browser.close();
+    if (localBrowser) await localBrowser.close();
+    if (session) await session.close();
   }
 }
