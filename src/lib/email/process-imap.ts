@@ -73,76 +73,80 @@ export async function processImapEmail(
     }
   }
 
-  // Create new conversation if no thread found. draft_state starts at
-  // 'generating' — the dispatcher records the pipeline's decision
-  // (drafted/escalated/skipped/failed) once it processes this message.
-  let createdNewConversation = false;
-  if (!conversationId) {
-    const conversation = await db
-      .insert(conversations)
-      .values({
-        orgId: connection.orgId,
-        subject,
-        status: "open",
-        draftState: "generating",
-        customerEmail: fromAddr,
-        customerName: fromName,
-        lastMessageAt: parsed.date ?? new Date(),
-      })
-      .returning()
-      .then((r) => r[0]);
+  // Atomically create/reopen the conversation and insert the message. Wrapping
+  // both in one transaction means a failed message insert — a message_id race,
+  // or any DB constraint rejection — rolls back a freshly-created conversation
+  // instead of leaving it orphaned with no messages. An orphan conversation
+  // otherwise lingers in the inbox and 500s on regenerate ("No messages in
+  // conversation"). draft_state starts at 'generating'; the dispatcher records
+  // the pipeline's decision (drafted/escalated/skipped/failed) later.
+  const DUPLICATE = Symbol("duplicate-message");
+  try {
+    return await db.transaction(async (tx) => {
+      let convId = conversationId;
+      if (!convId) {
+        const conversation = await tx
+          .insert(conversations)
+          .values({
+            orgId: connection.orgId,
+            subject,
+            status: "open",
+            draftState: "generating",
+            customerEmail: fromAddr,
+            customerName: fromName,
+            lastMessageAt: parsed.date ?? new Date(),
+          })
+          .returning({ id: conversations.id })
+          .then((r) => r[0]);
 
-    if (!conversation) throw new Error("Failed to create conversation");
-    conversationId = conversation.id;
-    createdNewConversation = true;
-  } else {
-    // Reopen conversation if it was waiting/closed; reset draft_state for
-    // the new inbound so the pipeline decision is re-recorded.
-    await db
-      .update(conversations)
-      .set({
-        status: "open",
-        draftState: "generating",
-        updatedAt: new Date(),
-        lastMessageAt: parsed.date ?? new Date(),
-      })
-      .where(eq(conversations.id, conversationId));
+        if (!conversation) throw new Error("Failed to create conversation");
+        convId = conversation.id;
+      } else {
+        // Reopen if waiting/closed; reset draft_state for the new inbound.
+        await tx
+          .update(conversations)
+          .set({
+            status: "open",
+            draftState: "generating",
+            updatedAt: new Date(),
+            lastMessageAt: parsed.date ?? new Date(),
+          })
+          .where(eq(conversations.id, convId));
+      }
+
+      // The dedup SELECT above is not atomic with this insert, so overlapping
+      // polls can both pass it and race here. onConflictDoNothing makes the DB
+      // the source of truth: the loser inserts nothing on the message_id unique
+      // constraint rather than crashing.
+      const inserted = await tx
+        .insert(messages)
+        .values({
+          conversationId: convId,
+          orgId: connection.orgId,
+          direction: "inbound",
+          fromEmail: fromAddr,
+          fromName,
+          toEmail,
+          bodyText,
+          bodyHtml,
+          messageId,
+          inReplyTo,
+          source,
+          connectionId: connection.id,
+          isAutomated: isAutomatedEmail(parsed),
+          sentAt: parsed.date ?? new Date(),
+        })
+        .onConflictDoNothing({ target: messages.messageId })
+        .returning({ id: messages.id });
+
+      // Lost the race: roll the whole transaction back (undoing any
+      // freshly-created conversation) and tell the caller to skip.
+      if (inserted.length === 0) throw DUPLICATE;
+
+      return convId;
+    });
+  } catch (err) {
+    if (err === DUPLICATE) return null;
+    throw err;
   }
-
-  // Insert inbound message. The dedup SELECT above is not atomic with this
-  // insert, so overlapping polls can both pass it and race to insert the same
-  // message_id. onConflictDoNothing makes the DB the source of truth: the loser
-  // inserts nothing rather than crashing on the message_id unique constraint.
-  const inserted = await db
-    .insert(messages)
-    .values({
-      conversationId,
-      orgId: connection.orgId,
-      direction: "inbound",
-      fromEmail: fromAddr,
-      fromName,
-      toEmail,
-      bodyText,
-      bodyHtml,
-      messageId,
-      inReplyTo,
-      source,
-      connectionId: connection.id,
-      isAutomated: isAutomatedEmail(parsed),
-      sentAt: parsed.date ?? new Date(),
-    })
-    .onConflictDoNothing({ target: messages.messageId })
-    .returning({ id: messages.id });
-
-  // Lost the race: another poll already ingested this message_id. Skip it, and
-  // clean up the conversation we just created so it doesn't linger empty and
-  // trigger a spurious draft.
-  if (inserted.length === 0) {
-    if (createdNewConversation) {
-      await db.delete(conversations).where(eq(conversations.id, conversationId));
-    }
-    return null;
-  }
-
-  return conversationId;
 }

@@ -4,6 +4,7 @@ import { emailConnections, organizations } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { tryAdvisoryLock, getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
+import { TokenRevokedError } from "@/lib/email/oauth-tokens";
 import { isCloud } from "@/lib/config";
 
 export async function GET(request: NextRequest) {
@@ -62,10 +63,14 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         console.error(`Poll error for connection ${conn.id}:`, err);
         errors++;
+        // A revoked refresh token never self-recovers — mark the connection
+        // 'revoked' so the poller stops selecting it (it filters to
+        // active/error) instead of retrying and re-logging every cycle. The
+        // reconnect flow resets it to 'active'.
         await db
           .update(emailConnections)
           .set({
-            status: "error",
+            status: err instanceof TokenRevokedError ? "revoked" : "error",
             errorMessage: err instanceof Error ? err.message : "Unknown error",
             updatedAt: new Date(),
           })
