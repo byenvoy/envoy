@@ -6,6 +6,7 @@ import { withAuth } from "@/lib/db/helpers/auth";
 import { tryAdvisoryLock } from "@/lib/db/helpers";
 import { getOrgSubscription, isActiveSubscription } from "@/lib/db/helpers";
 import { pollConnection } from "@/lib/email/imap-poll";
+import { TokenRevokedError } from "@/lib/email/oauth-tokens";
 import { isCloud } from "@/lib/config";
 
 const POLL_COOLDOWN_MS = 30_000; // 30 seconds
@@ -68,10 +69,12 @@ export async function POST() {
     return NextResponse.json({ polled: true, newMessages: processed });
   } catch (err) {
     console.error(`Manual poll error for org ${orgId}:`, err);
+    // Revoked refresh token → mark 'revoked' (needs reconnect) rather than
+    // 'error' (retryable), matching the cron poll.
     await db
       .update(emailConnections)
       .set({
-        status: "error",
+        status: err instanceof TokenRevokedError ? "revoked" : "error",
         errorMessage: err instanceof Error ? err.message : "Unknown error",
         updatedAt: new Date(),
       })

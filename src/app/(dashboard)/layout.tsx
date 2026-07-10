@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { profiles, organizations, subscriptions, emailConnections } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { isCloud } from "@/lib/config";
@@ -65,25 +65,33 @@ export default async function DashboardLayout({
     // surface immediately (they don't auto-recover); other errors only
     // surface if the connection hasn't successfully polled for at least
     // one cron cycle, so brief transient errors don't flash a banner.
+    // Staleness is computed in SQL (Postgres now()) rather than reading the
+    // wall clock during render.
     const erroredConns = await db
       .select({
+        status: emailConnections.status,
         errorMessage: emailConnections.errorMessage,
-        lastPolledAt: emailConnections.lastPolledAt,
+        isStale: sql<boolean>`
+          ${emailConnections.lastPolledAt} is null
+          or ${emailConnections.lastPolledAt} < now() - ${TRANSIENT_GRACE_MS} * interval '1 millisecond'
+        `,
       })
       .from(emailConnections)
       .where(
         and(
           eq(emailConnections.orgId, profile.orgId),
-          eq(emailConnections.status, "error")
+          inArray(emailConnections.status, ["error", "revoked"])
         )
       );
 
     for (const conn of erroredConns) {
-      const isAuth = !!conn.errorMessage && AUTH_ERROR_PATTERN.test(conn.errorMessage);
-      const isStale =
-        !conn.lastPolledAt ||
-        Date.now() - new Date(conn.lastPolledAt).getTime() > TRANSIENT_GRACE_MS;
-      if (isAuth || isStale) {
+      // 'revoked' is set only for auth-fatal failures (token revoked/expired),
+      // so it always calls for a reconnect. 'error' rows are auth-shaped only
+      // if the message matches, and otherwise wait out the transient grace.
+      const isAuth =
+        conn.status === "revoked" ||
+        (!!conn.errorMessage && AUTH_ERROR_PATTERN.test(conn.errorMessage));
+      if (isAuth || conn.isStale) {
         emailConnectionErrored = true;
         if (isAuth) emailConnectionNeedsReconnect = true;
       }

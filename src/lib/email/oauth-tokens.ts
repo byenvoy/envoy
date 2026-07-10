@@ -5,6 +5,24 @@ import { decryptTokens, encryptTokens } from "./encryption";
 import { OAUTH_PROVIDERS, getClientCredentials } from "./oauth-config";
 type EmailConnectionRow = typeof emailConnections.$inferSelect;
 
+/**
+ * Thrown when the OAuth provider rejects the refresh token as permanently
+ * invalid (e.g. Google `invalid_grant`: user revoked access, token expired,
+ * or the OAuth app is still in Testing mode where refresh tokens die after
+ * 7 days). These never self-recover — the connection must be reconnected — so
+ * the poller marks it `revoked` and stops retrying rather than logging the
+ * same failure every cycle.
+ */
+export class TokenRevokedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TokenRevokedError";
+  }
+}
+
+// Provider responses that mean "reconnect required", not "retry later".
+const FATAL_OAUTH_ERROR = /invalid_grant|invalid_client|unauthorized_client|invalid_scope/i;
+
 export async function getValidTokens(
   connection: EmailConnectionRow
 ): Promise<{ access_token: string; refresh_token: string }> {
@@ -39,7 +57,11 @@ export async function getValidTokens(
 
   if (!res.ok) {
     const error = await res.text();
-    throw new Error(`Token refresh failed: ${error}`);
+    const message = `Token refresh failed: ${error}`;
+    if (FATAL_OAUTH_ERROR.test(error)) {
+      throw new TokenRevokedError(message);
+    }
+    throw new Error(message);
   }
 
   const data = await res.json();
