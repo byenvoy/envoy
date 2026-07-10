@@ -29,6 +29,7 @@ RUN npm run build
 RUN npx esbuild src/worker/crawl.ts --bundle --platform=node --format=esm \
     --outfile=dist/worker.mjs \
     --external:puppeteer --external:jsdom --external:postgres --external:node-cron \
+    --external:@browserbasehq/sdk \
     --alias:@/lib=./src/lib --alias:@/worker=./src/worker
 
 # --- Production ---
