@@ -24,6 +24,7 @@ export async function GET(
     pagesEmbedded: job.pagesEmbedded,
     failedUrls: job.failedUrls,
     error: job.error,
+    blockReason: job.blockReason,
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     completedAt: job.completedAt,

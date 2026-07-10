@@ -1,0 +1,1 @@
+ALTER TABLE "crawl_jobs" ADD COLUMN "block_reason" text;

@@ -241,7 +241,14 @@ export async function processDiscoverJob(job: CrawlJob) {
 
     await db
       .update(crawlJobs)
-      .set({ urls, totalPages: urls.length })
+      .set({
+        urls,
+        totalPages: urls.length,
+        // If the browser tier recovered pages, clear any block flag set at
+        // enqueue time. If it came up empty, leave the flag so the client can
+        // surface the cooperative path.
+        ...(urls.length > 0 ? { blockReason: null } : {}),
+      })
       .where(eq(crawlJobs.id, job.id));
 
     await completeJob(job.id);

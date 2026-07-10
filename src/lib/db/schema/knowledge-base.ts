@@ -79,6 +79,7 @@ export const crawlJobs = pgTable(
     pagesEmbedded: integer("pages_embedded").notNull().default(0),
     failedUrls: text("failed_urls").array(),
     error: text("error"),
+    blockReason: text("block_reason"), // "cloudflare" | "bot-protection" | null — set when discovery is walled off by bot protection
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),

@@ -5,7 +5,8 @@ import { eq, and, sql, inArray } from "drizzle-orm";
 export async function enqueueCrawlJob(
   orgId: string,
   type: "initial" | "recrawl" | "resync" | "discover",
-  urls?: string[]
+  urls?: string[],
+  blockReason?: string | null
 ): Promise<string> {
   const [job] = await db
     .insert(crawlJobs)
@@ -14,6 +15,7 @@ export async function enqueueCrawlJob(
       type,
       urls: urls ?? null,
       totalPages: urls?.length ?? 0,
+      blockReason: blockReason ?? null,
     })
     .returning({ id: crawlJobs.id });
 
@@ -44,6 +46,7 @@ export async function claimNextJob() {
     pages_embedded: number;
     failed_urls: string[] | null;
     error: string | null;
+    block_reason: string | null;
     created_at: Date;
     started_at: Date | null;
     completed_at: Date | null;
@@ -62,6 +65,7 @@ export async function claimNextJob() {
     pagesEmbedded: row.pages_embedded,
     failedUrls: row.failed_urls,
     error: row.error,
+    blockReason: row.block_reason,
     createdAt: row.created_at,
     startedAt: row.started_at,
     completedAt: row.completed_at,

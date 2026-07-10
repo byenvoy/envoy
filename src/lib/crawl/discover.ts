@@ -1,3 +1,5 @@
+import { fetchViaUnblocker, isUnblockerEnabled } from "./unblock";
+
 const BROWSER_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
@@ -173,27 +175,41 @@ function prioritizeChildSitemaps(urls: string[]): string[] {
   return [...support, ...other, ...product];
 }
 
-async function resolveSitemapXml(xml: string): Promise<string[]> {
+// A pluggable text fetcher. Defaults to plain `fetchText`, but the sitemap
+// signals can be re-run through the Browserbase unblocker on bot-blocked sites.
+type Fetcher = (url: string) => Promise<string | null>;
+
+async function resolveSitemapXml(
+  xml: string,
+  fetcher: Fetcher = fetchText
+): Promise<string[]> {
   let urls = parseSitemapUrls(xml);
 
   if (isSitemapIndex(urls)) {
-    const childUrls: string[] = [];
     const children = prioritizeChildSitemaps(urls).slice(0, 10);
-    for (const childUrl of children) {
-      const childXml = await fetchText(childUrl);
-      if (childXml) {
-        const parsed = parseSitemapUrls(childXml);
-        if (isSitemapIndex(parsed)) {
-          const grandchildren = prioritizeChildSitemaps(parsed).slice(0, 5);
-          for (const grandchild of grandchildren) {
-            const gcXml = await fetchText(grandchild);
-            if (gcXml) childUrls.push(...parseSitemapUrls(gcXml));
-          }
-        } else {
-          childUrls.push(...parsed);
-        }
+    // Fetch children in parallel — bounds latency when each fetch is a
+    // round-trip through the unblocker.
+    const childXmls = await Promise.all(children.map((c) => fetcher(c)));
+
+    const childUrls: string[] = [];
+    const grandchildren: string[] = [];
+    for (const childXml of childXmls) {
+      if (!childXml) continue;
+      const parsed = parseSitemapUrls(childXml);
+      if (isSitemapIndex(parsed)) {
+        grandchildren.push(...prioritizeChildSitemaps(parsed).slice(0, 5));
+      } else {
+        childUrls.push(...parsed);
       }
     }
+
+    if (grandchildren.length > 0) {
+      const gcXmls = await Promise.all(grandchildren.map((g) => fetcher(g)));
+      for (const gcXml of gcXmls) {
+        if (gcXml) childUrls.push(...parseSitemapUrls(gcXml));
+      }
+    }
+
     urls = childUrls;
   }
 
@@ -202,15 +218,21 @@ async function resolveSitemapXml(xml: string): Promise<string[]> {
 
 // --- Discovery signals (run in parallel) ---
 
-async function fromSitemap(baseUrl: string): Promise<string[]> {
-  const xml = await fetchText(`${baseUrl}/sitemap.xml`);
+async function fromSitemap(
+  baseUrl: string,
+  fetcher: Fetcher = fetchText
+): Promise<string[]> {
+  const xml = await fetcher(`${baseUrl}/sitemap.xml`);
   if (!xml) return [];
-  const urls = await resolveSitemapXml(xml);
+  const urls = await resolveSitemapXml(xml, fetcher);
   return urls.filter((u) => sameDomain(baseUrl, u));
 }
 
-async function fromRobotsSitemap(baseUrl: string): Promise<string[]> {
-  const robots = await fetchText(`${baseUrl}/robots.txt`);
+async function fromRobotsSitemap(
+  baseUrl: string,
+  fetcher: Fetcher = fetchText
+): Promise<string[]> {
+  const robots = await fetcher(`${baseUrl}/robots.txt`);
   if (!robots) return [];
 
   const sitemapUrls: string[] = [];
@@ -219,16 +241,14 @@ async function fromRobotsSitemap(baseUrl: string): Promise<string[]> {
     if (match) sitemapUrls.push(match[1].trim());
   }
 
-  const allUrls: string[] = [];
-  for (const sitemapUrl of sitemapUrls.slice(0, 3)) {
-    const xml = await fetchText(sitemapUrl);
-    if (xml) {
-      const resolved = await resolveSitemapXml(xml);
-      allUrls.push(...resolved);
-    }
-  }
+  const resolved = await Promise.all(
+    sitemapUrls.slice(0, 3).map(async (sitemapUrl) => {
+      const xml = await fetcher(sitemapUrl);
+      return xml ? resolveSitemapXml(xml, fetcher) : [];
+    })
+  );
 
-  return allUrls.filter((u) => sameDomain(baseUrl, u));
+  return resolved.flat().filter((u) => sameDomain(baseUrl, u));
 }
 
 async function fromHomepage(baseUrl: string): Promise<string[]> {
@@ -348,15 +368,128 @@ async function fromShopifyPages(baseUrl: string): Promise<string[]> {
   return pages.map((p) => `${baseUrl}/pages/${p.handle}`);
 }
 
-// --- Main discovery ---
+// --- Bot-protection detection ---
 
-export interface DiscoverResult {
-  urls: string[];
-  localeInfo: LocaleInfo | null;
+export type BlockReason = "cloudflare" | "bot-protection";
+
+interface BlockInfo {
+  reason: BlockReason;
+  evidence: string;
 }
 
-export async function discoverUrls(domain: string): Promise<DiscoverResult> {
+/**
+ * Classify a response as a bot-protection block. A 403/429/503 from Cloudflare
+ * (identified by the `server`/`cf-ray`/`cf-mitigated` headers) is the case we
+ * care about — the plain-fetch tier can't clear it, so the caller should route
+ * to the browser/unblocker path rather than report "no pages found".
+ */
+function classifyBlock(res: Response): BlockInfo | null {
+  const blockedStatus =
+    res.status === 403 || res.status === 429 || res.status === 503;
+  if (!blockedStatus) return null;
+
+  const server = res.headers.get("server")?.toLowerCase() ?? "";
+  const isCloudflare =
+    server.includes("cloudflare") ||
+    res.headers.has("cf-ray") ||
+    res.headers.has("cf-mitigated");
+
+  return isCloudflare
+    ? { reason: "cloudflare", evidence: `HTTP ${res.status} (cloudflare)` }
+    : { reason: "bot-protection", evidence: `HTTP ${res.status}` };
+}
+
+/**
+ * Cheaply probe a URL for a bot-protection block. Uses HEAD (no body) and falls
+ * back to GET for servers that reject HEAD. Returns null on network errors —
+ * those are not a definitive block signal.
+ */
+async function probeBlock(url: string): Promise<BlockInfo | null> {
+  try {
+    let res = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      signal: AbortSignal.timeout(8000),
+      headers: { "User-Agent": BROWSER_UA },
+    });
+    if (res.status === 405 || res.status === 501) {
+      res = await fetch(url, {
+        method: "GET",
+        redirect: "follow",
+        signal: AbortSignal.timeout(8000),
+        headers: { "User-Agent": BROWSER_UA },
+      });
+    }
+    res.body?.cancel().catch(() => {});
+    return classifyBlock(res);
+  } catch {
+    return null;
+  }
+}
+
+// --- Main discovery ---
+
+export type DiscoverOutcome =
+  | { status: "ok"; urls: string[]; localeInfo: LocaleInfo | null }
+  | { status: "blocked"; reason: BlockReason; evidence: string }
+  | { status: "empty" };
+
+/** Order URLs support-relevant first and build an `ok` outcome. */
+function toOkOutcome(urls: string[]): DiscoverOutcome {
+  const support: string[] = [];
+  const rest: string[] = [];
+  for (const url of urls) {
+    if (isSupportRelevant(url)) support.push(url);
+    else rest.push(url);
+  }
+  return {
+    status: "ok",
+    urls: [...support, ...rest],
+    localeInfo: detectLocales(urls),
+  };
+}
+
+/**
+ * Tier 2: re-run the sitemap-based signals through the Browserbase unblocker.
+ * Only the sitemap/robots signals are retried — they're the URL-rich sources,
+ * and each unblocker call counts against the Browserbase quota. Returns an `ok`
+ * outcome if it recovers URLs, or null if disabled or still empty (caller then
+ * falls back to the existing browser job).
+ */
+async function discoverViaUnblocker(
+  baseUrl: string
+): Promise<DiscoverOutcome | null> {
+  if (!isUnblockerEnabled()) return null;
+
+  const [sitemapUrls, robotsUrls] = await Promise.all([
+    fromSitemap(baseUrl, fetchViaUnblocker),
+    fromRobotsSitemap(baseUrl, fetchViaUnblocker),
+  ]);
+
+  const unique = [...new Set([...sitemapUrls, ...robotsUrls])].filter(
+    (u) => !isStaticAsset(u) && !isNegativeFiltered(u)
+  );
+  if (unique.length === 0) return null;
+
+  return toOkOutcome(unique);
+}
+
+export async function discoverUrls(domain: string): Promise<DiscoverOutcome> {
   const baseUrl = normalizeUrl(domain);
+
+  // Fast-fail: if the homepage itself is walled off by bot protection, every
+  // fetch-based signal below will 403. Detect it up front, then try the
+  // unblocker before reporting "blocked".
+  const homepageBlock = await probeBlock(baseUrl);
+  if (homepageBlock) {
+    const viaUnblocker = await discoverViaUnblocker(baseUrl);
+    if (viaUnblocker) return viaUnblocker;
+    return {
+      status: "blocked",
+      reason: homepageBlock.reason,
+      evidence: homepageBlock.evidence,
+    };
+  }
 
   // Run all discovery signals in parallel
   const [
@@ -390,22 +523,22 @@ export async function discoverUrls(domain: string): Promise<DiscoverResult> {
     (u) => !isStaticAsset(u) && !isNegativeFiltered(u)
   );
 
-  // Detect locales from the full set
-  const localeInfo = detectLocales(unique);
-
-  // Partition: support-relevant URLs first, then the rest
-  const support: string[] = [];
-  const rest: string[] = [];
-  for (const url of unique) {
-    if (isSupportRelevant(url)) {
-      support.push(url);
-    } else {
-      rest.push(url);
+  if (unique.length === 0) {
+    // Homepage was reachable but yielded nothing. Check whether the sitemap
+    // specifically is bot-blocked (homepage-open / sitemap-walled sites) before
+    // concluding the site is genuinely empty.
+    const sitemapBlock = await probeBlock(`${baseUrl}/sitemap.xml`);
+    if (sitemapBlock) {
+      const viaUnblocker = await discoverViaUnblocker(baseUrl);
+      if (viaUnblocker) return viaUnblocker;
+      return {
+        status: "blocked",
+        reason: sitemapBlock.reason,
+        evidence: sitemapBlock.evidence,
+      };
     }
+    return { status: "empty" };
   }
 
-  return {
-    urls: [...support, ...rest],
-    localeInfo,
-  };
+  return toOkOutcome(unique);
 }
