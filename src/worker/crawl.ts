@@ -14,7 +14,7 @@ import { isCloud } from "@/lib/config";
 import { processInitialCrawlJob, processRecrawlJob, processResyncJob, processDiscoverJob } from "@/lib/crawl/process-job";
 
 const RECRAWL_LOCK_ID = 73502;
-const RECRAWL_SCHEDULE = process.env.RECRAWL_SCHEDULE ?? "0 */6 * * *";
+const RECRAWL_SCHEDULE = process.env.RECRAWL_SCHEDULE ?? "0 6 * * *";
 const POLL_INTERVAL_MS = 2000;
 
 function sleep(ms: number) {
